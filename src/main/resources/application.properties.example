@@ -1,0 +1,17 @@
+#Archivo de referencia sin las claves reales
+# PostgreSQL
+spring.datasource.url=jdbc:postgresql://localhost:5432/readingapp
+spring.datasource.username=TU_USUARIO
+spring.datasource.password=TU_PASSWORD
+
+# JPA / Hibernate
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=true
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
+spring.jpa.properties.hibernate.format_sql=true
+
+# Google Books
+google.books.api.key=TU_API_KEY
+
+# Server
+server.port=8080
