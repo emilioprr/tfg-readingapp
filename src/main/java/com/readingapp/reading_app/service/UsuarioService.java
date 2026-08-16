@@ -1,7 +1,9 @@
 package com.readingapp.reading_app.service;
 
 import com.readingapp.reading_app.dto.UsuarioDTO;
+import com.readingapp.reading_app.model.Lista;
 import com.readingapp.reading_app.model.Usuario;
+import com.readingapp.reading_app.repository.ListaRepository;
 import com.readingapp.reading_app.repository.UsuarioRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -9,6 +11,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Service
@@ -17,6 +20,8 @@ public class UsuarioService {
 
     private final UsuarioRepository usuarioRepository;
     private final PasswordEncoder passwordEncoder;
+    private final ListaRepository listaRepository;
+    private final NotificacionService notificacionService;
 
     @Transactional
     public UsuarioDTO.Response registrar(UsuarioDTO.RegistroRequest request) {
@@ -28,9 +33,22 @@ public class UsuarioService {
                 .nombre(request.getNombre())
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
+                .fechaAlta(LocalDate.now())
+                .seguidores(0)
                 .build();
 
         usuario = usuarioRepository.save(usuario);
+
+        Lista wishlist = Lista.builder()
+                .nombre("Wishlist")
+                .descripcion("Libros que quiero leer")
+                .esPublica(false)
+                .esAutomatica(true)
+                .fechaCreacion(java.time.LocalDateTime.now())
+                .usuario(usuario)
+                .build();
+        listaRepository.save(wishlist);
+
         return toResponse(usuario);
     }
 
@@ -74,6 +92,7 @@ public class UsuarioService {
         Usuario seguido = buscarPorId(seguidoId);
         seguidor.getSeguidos().add(seguido);
         usuarioRepository.save(seguidor);
+        notificacionService.crearNotificacionSeguidor(seguido, seguidor);
     }
 
     @Transactional

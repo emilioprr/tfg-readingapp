@@ -10,6 +10,7 @@ import com.readingapp.reading_app.repository.LibroRepository;
 import com.readingapp.reading_app.repository.UsuarioRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -49,14 +50,14 @@ public class AnotacionService {
         return toResponse(anotacion);
     }
 
-    public List<AnotacionDTO.Response> obtenerPorUsuario(Long idusuario) {
-        return anotacionRepository.findByUsuarioIdusuario(idusuario).stream()
+    public List<AnotacionDTO.Response> obtenerPorUsuario(Long idusuario, Pageable pageable) {
+        return anotacionRepository.findByUsuarioIdusuario(idusuario, pageable).stream()
                 .map(this::toResponse)
                 .toList();
     }
 
-    public List<AnotacionDTO.Response> obtenerPorLibro(Long idlibro) {
-        return anotacionRepository.findByLibroIdlibro(idlibro).stream()
+    public List<AnotacionDTO.Response> obtenerPorLibro(Long idlibro, Pageable pageable) {
+        return anotacionRepository.findByLibroIdlibro(idlibro, pageable).stream()
                 .map(this::toResponse)
                 .toList();
     }
@@ -67,8 +68,8 @@ public class AnotacionService {
                 .toList();
     }
 
-    public List<AnotacionDTO.Response> obtenerPorUsuarioYTipo(Long idusuario, TipoAnotacion tipo) {
-        return anotacionRepository.findByUsuarioIdusuarioAndTipo(idusuario, tipo).stream()
+    public List<AnotacionDTO.Response> obtenerPorUsuarioYTipo(Long idusuario, TipoAnotacion tipo, Pageable pageable) {
+        return anotacionRepository.findByUsuarioIdusuarioAndTipo(idusuario, tipo, pageable).stream()
                 .map(this::toResponse)
                 .toList();
     }

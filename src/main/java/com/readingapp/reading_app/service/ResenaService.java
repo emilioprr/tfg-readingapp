@@ -9,6 +9,7 @@ import com.readingapp.reading_app.repository.ResenaRepository;
 import com.readingapp.reading_app.repository.UsuarioRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,6 +22,7 @@ public class ResenaService {
     private final ResenaRepository resenaRepository;
     private final UsuarioRepository usuarioRepository;
     private final LibroRepository libroRepository;
+    private final NotificacionService notificacionService;
 
     @Transactional
     public ResenaDTO.Response crear(ResenaDTO.CreateRequest request) {
@@ -47,6 +49,14 @@ public class ResenaService {
                 .build();
 
         resena = resenaRepository.save(resena);
+
+        // Notificar a los seguidores del usuario que publicó la reseña
+        if (resena.getEsPublica()) {
+            for (Usuario seguidor : usuario.getSeguidoresList()) {
+                notificacionService.crearNotificacionNuevaResena(resena, seguidor);
+            }
+        }
+
         return toResponse(resena);
     }
 
@@ -55,20 +65,20 @@ public class ResenaService {
         return toResponse(resena);
     }
 
-    public List<ResenaDTO.Response> obtenerPorUsuario(Long idusuario) {
-        return resenaRepository.findByUsuarioIdusuario(idusuario).stream()
+    public List<ResenaDTO.Response> obtenerPorUsuario(Long idusuario, Pageable pageable) {
+        return resenaRepository.findByUsuarioIdusuario(idusuario, pageable).stream()
                 .map(this::toResponse)
                 .toList();
     }
 
-    public List<ResenaDTO.Response> obtenerPorLibro(Long idlibro) {
-        return resenaRepository.findByLibroIdlibro(idlibro).stream()
+    public List<ResenaDTO.Response> obtenerPorLibro(Long idlibro, Pageable pageable) {
+        return resenaRepository.findByLibroIdlibro(idlibro, pageable).stream()
                 .map(this::toResponse)
                 .toList();
     }
 
-    public List<ResenaDTO.Response> obtenerPublicas() {
-        return resenaRepository.findByEsPublicaTrue().stream()
+    public List<ResenaDTO.Response> obtenerPublicas(Pageable pageable) {
+        return resenaRepository.findByEsPublicaTrue(pageable).stream()
                 .map(this::toResponse)
                 .toList();
     }
@@ -106,6 +116,11 @@ public class ResenaService {
         Resena resena = buscarPorId(resenaId);
         usuario.getResenasLikeadas().add(resena);
         usuarioRepository.save(usuario);
+
+        // Notificar al autor de la reseña (si no es él mismo)
+        if (!resena.getUsuario().getIdusuario().equals(usuarioId)) {
+            notificacionService.crearNotificacionLike(resena, usuario);
+        }
     }
 
     @Transactional

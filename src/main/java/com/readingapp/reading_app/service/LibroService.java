@@ -9,6 +9,8 @@ import com.readingapp.reading_app.repository.AutorRepository;
 import com.readingapp.reading_app.repository.UsuarioRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -55,16 +57,16 @@ public class LibroService {
         return toResponse(libro);
     }
 
-    public List<LibroDTO.Response> obtenerTodos() {
-        return libroRepository.findAll().stream()
+    public List<LibroDTO.Response> obtenerTodos(Pageable pageable) {
+        return libroRepository.findAll(pageable).stream()
                 .map(this::toResponse)
                 .toList();
     }
 
     /*Busca libros por título en la BD local. Si no encuentra resultados, busca en Google Books, importa 10 resultados y los devuelve.*/
     @Transactional
-    public List<LibroDTO.Response> buscarPorTitulo(String titulo) {
-        List<Libro> resultados = libroRepository.findByTituloContainingIgnoreCase(titulo);
+    public Page<LibroDTO.Response> buscarPorTitulo(String titulo, Pageable pageable) {
+        Page<Libro> resultados = libroRepository.findByTituloContainingIgnoreCase(titulo, pageable);
 
         if (resultados.isEmpty()) {
             // No hay resultados locales, buscar en Google Books e importar
@@ -72,23 +74,22 @@ public class LibroService {
 
             if (importados > 0) {
                 // Volver a buscar en la BD con los libros recién importados
-                resultados = libroRepository.findByTituloContainingIgnoreCase(titulo);
+                resultados = libroRepository.findByTituloContainingIgnoreCase(titulo, pageable);
             }
         }
 
-        return resultados.stream()
+        return resultados.map(this::toResponse);
+
+    }
+
+    public List<LibroDTO.Response> buscarPorGenero(String genero, Pageable pageable) {
+        return libroRepository.findByGeneroIgnoreCase(genero, pageable).stream()
                 .map(this::toResponse)
                 .toList();
     }
 
-    public List<LibroDTO.Response> buscarPorGenero(String genero) {
-        return libroRepository.findByGeneroIgnoreCase(genero).stream()
-                .map(this::toResponse)
-                .toList();
-    }
-
-    public List<LibroDTO.Response> obtenerPorAutor(Long idautor) {
-        return libroRepository.findByAutorIdautor(idautor).stream()
+    public List<LibroDTO.Response> obtenerPorAutor(Long idautor, Pageable pageable) {
+        return libroRepository.findByAutorIdautor(idautor, pageable).stream()
                 .map(this::toResponse)
                 .toList();
     }
