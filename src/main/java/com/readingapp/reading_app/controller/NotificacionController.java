@@ -4,6 +4,8 @@ import com.readingapp.reading_app.dto.NotificacionDTO;
 import com.readingapp.reading_app.model.enums.TipoNotificacion;
 import com.readingapp.reading_app.service.NotificacionService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,19 +19,19 @@ public class NotificacionController {
     private final NotificacionService notificacionService;
 
     @GetMapping("/usuario/{idusuario}")
-    public ResponseEntity<List<NotificacionDTO.Response>> obtenerTodas(@PathVariable Long idusuario) {
-        return ResponseEntity.ok(notificacionService.obtenerTodas(idusuario));
+    public ResponseEntity<List<NotificacionDTO.Response>> obtenerTodas(@PathVariable Long idusuario, @PageableDefault(size = 20) Pageable pageable) {
+        return ResponseEntity.ok(notificacionService.obtenerTodas(idusuario, pageable));
     }
 
     @GetMapping("/usuario/{idusuario}/no-leidas")
-    public ResponseEntity<List<NotificacionDTO.Response>> obtenerNoLeidas(@PathVariable Long idusuario) {
-        return ResponseEntity.ok(notificacionService.obtenerNoLeidas(idusuario));
+    public ResponseEntity<List<NotificacionDTO.Response>> obtenerNoLeidas(@PathVariable Long idusuario, @PageableDefault(size = 20) Pageable pageable) {
+        return ResponseEntity.ok(notificacionService.obtenerNoLeidas(idusuario, pageable));
     }
 
     @GetMapping("/usuario/{idusuario}/tipo/{tipo}")
     public ResponseEntity<List<NotificacionDTO.Response>> obtenerPorTipo(@PathVariable Long idusuario,
-                                                                         @PathVariable TipoNotificacion tipo) {
-        return ResponseEntity.ok(notificacionService.obtenerPorTipo(idusuario, tipo));
+                                                                         @PathVariable TipoNotificacion tipo, @PageableDefault(size = 20) Pageable pageable) {
+        return ResponseEntity.ok(notificacionService.obtenerPorTipo(idusuario, tipo, pageable));
     }
 
     @GetMapping("/usuario/{idusuario}/contador")

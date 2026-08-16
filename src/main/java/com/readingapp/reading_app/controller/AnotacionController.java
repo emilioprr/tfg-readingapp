@@ -5,6 +5,8 @@ import com.readingapp.reading_app.model.enums.TipoAnotacion;
 import com.readingapp.reading_app.service.AnotacionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -29,13 +31,13 @@ public class AnotacionController {
     }
 
     @GetMapping("/usuario/{idusuario}")
-    public ResponseEntity<List<AnotacionDTO.Response>> obtenerPorUsuario(@PathVariable Long idusuario) {
-        return ResponseEntity.ok(anotacionService.obtenerPorUsuario(idusuario));
+    public ResponseEntity<List<AnotacionDTO.Response>> obtenerPorUsuario(@PathVariable Long idusuario, @PageableDefault(size = 20) Pageable pageable) {
+        return ResponseEntity.ok(anotacionService.obtenerPorUsuario(idusuario, pageable));
     }
 
     @GetMapping("/libro/{idlibro}")
-    public ResponseEntity<List<AnotacionDTO.Response>> obtenerPorLibro(@PathVariable Long idlibro) {
-        return ResponseEntity.ok(anotacionService.obtenerPorLibro(idlibro));
+    public ResponseEntity<List<AnotacionDTO.Response>> obtenerPorLibro(@PathVariable Long idlibro, @PageableDefault(size = 20) Pageable pageable) {
+        return ResponseEntity.ok(anotacionService.obtenerPorLibro(idlibro, pageable));
     }
 
     @GetMapping("/usuario/{idusuario}/libro/{idlibro}")
@@ -46,8 +48,8 @@ public class AnotacionController {
 
     @GetMapping("/usuario/{idusuario}/tipo/{tipo}")
     public ResponseEntity<List<AnotacionDTO.Response>> obtenerPorUsuarioYTipo(@PathVariable Long idusuario,
-                                                                              @PathVariable TipoAnotacion tipo) {
-        return ResponseEntity.ok(anotacionService.obtenerPorUsuarioYTipo(idusuario, tipo));
+                                                                              @PathVariable TipoAnotacion tipo, @PageableDefault(size = 20) Pageable pageable) {
+        return ResponseEntity.ok(anotacionService.obtenerPorUsuarioYTipo(idusuario, tipo, pageable));
     }
 
     @PutMapping("/{id}")
