@@ -6,6 +6,7 @@ import com.readingapp.reading_app.model.enums.TipoNotificacion;
 import com.readingapp.reading_app.repository.NotificacionRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,20 +18,20 @@ public class NotificacionService {
 
     private final NotificacionRepository notificacionRepository;
 
-    public List<NotificacionDTO.Response> obtenerTodas(Long idusuario) {
-        return notificacionRepository.findByUsuarioIdusuarioOrderByFechaDesc(idusuario).stream()
+    public List<NotificacionDTO.Response> obtenerTodas(Long idusuario, Pageable pageable) {
+        return notificacionRepository.findByUsuarioIdusuarioOrderByFechaDesc(idusuario, pageable).stream()
                 .map(this::toResponse)
                 .toList();
     }
 
-    public List<NotificacionDTO.Response> obtenerNoLeidas(Long idusuario) {
-        return notificacionRepository.findByUsuarioIdusuarioAndLeidaFalseOrderByFechaDesc(idusuario).stream()
+    public List<NotificacionDTO.Response> obtenerNoLeidas(Long idusuario,  Pageable pageable) {
+        return notificacionRepository.findByUsuarioIdusuarioAndLeidaFalseOrderByFechaDesc(idusuario, pageable).stream()
                 .map(this::toResponse)
                 .toList();
     }
 
-    public List<NotificacionDTO.Response> obtenerPorTipo(Long idusuario, TipoNotificacion tipo) {
-        return notificacionRepository.findByUsuarioIdusuarioAndTipoOrderByFechaDesc(idusuario, tipo).stream()
+    public List<NotificacionDTO.Response> obtenerPorTipo(Long idusuario, TipoNotificacion tipo, Pageable pageable) {
+        return notificacionRepository.findByUsuarioIdusuarioAndTipoOrderByFechaDesc(idusuario, tipo, pageable).stream()
                 .map(this::toResponse)
                 .toList();
     }

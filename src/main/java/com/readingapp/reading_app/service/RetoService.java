@@ -19,6 +19,7 @@ public class RetoService {
 
     private final RetoRepository retoRepository;
     private final UsuarioRepository usuarioRepository;
+    private final NotificacionService notificacionService;
 
     @Transactional
     public RetoDTO.Response crear(RetoDTO.CreateRequest request) {
@@ -60,6 +61,7 @@ public class RetoService {
                 .orElseThrow(() -> new EntityNotFoundException("Reto no encontrado"));
         reto.setRetoCumplido(true);
         reto = retoRepository.save(reto);
+        notificacionService.crearNotificacionRetoCumplido(reto.getUsuario());
         return toResponse(reto);
     }
 
