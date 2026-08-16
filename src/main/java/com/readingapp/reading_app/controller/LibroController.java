@@ -4,9 +4,12 @@ import com.readingapp.reading_app.dto.LibroDTO;
 import com.readingapp.reading_app.service.LibroService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 
 import java.util.List;
 
@@ -28,23 +31,23 @@ public class LibroController {
     }
 
     @GetMapping
-    public ResponseEntity<List<LibroDTO.Response>> obtenerTodos() {
-        return ResponseEntity.ok(libroService.obtenerTodos());
+    public ResponseEntity<List<LibroDTO.Response>> obtenerTodos( @PageableDefault(size = 20) Pageable pageable) {
+        return ResponseEntity.ok(libroService.obtenerTodos(pageable));
     }
 
     @GetMapping("/buscar")
-    public ResponseEntity<List<LibroDTO.Response>> buscarPorTitulo(@RequestParam String titulo) {
-        return ResponseEntity.ok(libroService.buscarPorTitulo(titulo));
+    public ResponseEntity<Page<LibroDTO.Response>> buscarPorTitulo(@RequestParam String titulo, @PageableDefault(size = 20) Pageable pageable) {
+        return ResponseEntity.ok(libroService.buscarPorTitulo(titulo, pageable));
     }
 
     @GetMapping("/genero/{genero}")
-    public ResponseEntity<List<LibroDTO.Response>> buscarPorGenero(@PathVariable String genero) {
-        return ResponseEntity.ok(libroService.buscarPorGenero(genero));
+    public ResponseEntity<List<LibroDTO.Response>> buscarPorGenero(@PathVariable String genero, @PageableDefault(size = 20) Pageable pageable) {
+        return ResponseEntity.ok(libroService.buscarPorGenero(genero, pageable));
     }
 
     @GetMapping("/autor/{idautor}")
-    public ResponseEntity<List<LibroDTO.Response>> obtenerPorAutor(@PathVariable Long idautor) {
-        return ResponseEntity.ok(libroService.obtenerPorAutor(idautor));
+    public ResponseEntity<List<LibroDTO.Response>> obtenerPorAutor(@PathVariable Long idautor, @PageableDefault(size = 20) Pageable pageable) {
+        return ResponseEntity.ok(libroService.obtenerPorAutor(idautor, pageable));
     }
 
     @PutMapping("/{id}")
