@@ -37,6 +37,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/libros/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/autores/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/resenas/publicas").permitAll()
+                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
                         // Todo lo demás requiere autenticación
                         .anyRequest().authenticated()
                 )

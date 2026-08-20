@@ -91,7 +91,9 @@ public class UsuarioService {
         Usuario seguidor = buscarPorId(seguidorId);
         Usuario seguido = buscarPorId(seguidoId);
         seguidor.getSeguidos().add(seguido);
+        seguido.setSeguidores(seguido.getSeguidores() + 1);
         usuarioRepository.save(seguidor);
+        usuarioRepository.save(seguido);
         notificacionService.crearNotificacionSeguidor(seguido, seguidor);
     }
 
@@ -100,7 +102,9 @@ public class UsuarioService {
         Usuario seguidor = buscarPorId(seguidorId);
         Usuario seguido = buscarPorId(seguidoId);
         seguidor.getSeguidos().remove(seguido);
+        seguido.setSeguidores(Math.max(0, seguido.getSeguidores() - 1));
         usuarioRepository.save(seguidor);
+        usuarioRepository.save(seguido);
     }
 
     public List<UsuarioDTO.Response> obtenerSeguidos(Long id) {

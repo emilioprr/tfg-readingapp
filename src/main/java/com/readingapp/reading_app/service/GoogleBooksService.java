@@ -87,6 +87,12 @@ public class GoogleBooksService {
     @Transactional
     public boolean importarPorIsbn(String isbn) {
         try {
+            // Verificar si ya existe por ISBN
+            if (libroRepository.existsByIsbn(isbn)) {
+                log.info("Libro con ISBN {} ya existe en la BD", isbn);
+                return false;
+            }
+
             Map<String, Object> response = restTemplate.getForObject(
                     GOOGLE_BOOKS_URL,
                     Map.class,
@@ -113,32 +119,43 @@ public class GoogleBooksService {
         String titulo = (String) volumeInfo.get("title");
         if (titulo == null) return false;
 
+        // Verificar duplicado por ID externo
         String idExterno = (String) item.get("id");
-
-        if (idExterno != null && libroRepository.findAll().stream()
-                .anyMatch(l -> idExterno.equals(l.getIdapiexterna()))) {
+        if (idExterno != null && libroRepository.existsByIdapiexterna(idExterno)) {
             return false;
         }
 
+        // Obtener ISBN
+        String isbn = extraerIsbn(volumeInfo);
+
+        // Verificar duplicado por ISBN
+        if (isbn != null && libroRepository.existsByIsbn(isbn)) {
+            return false;
+        }
+
+        // Obtener o crear autor
         List<String> autores = (List<String>) volumeInfo.get("authors");
-        String nombreAutor = (autores != null && !autores.isEmpty()) ? autores.get(0) : "Desconocido";
+        String nombreAutor = (autores != null && !autores.isEmpty()) ? autores.get(0).trim() : "Desconocido";
         Autor autor = obtenerOCrearAutor(nombreAutor);
 
+        // Obtener datos del libro
         String sinopsis = (String) volumeInfo.get("description");
         Integer paginas = volumeInfo.get("pageCount") != null ? ((Number) volumeInfo.get("pageCount")).intValue() : null;
         String fechaPublicacion = (String) volumeInfo.get("publishedDate");
         Integer anio = extraerAnio(fechaPublicacion);
-        String isbn = extraerIsbn(volumeInfo);
 
+        // Obtener portada
         String portada = null;
         Map<String, Object> imageLinks = (Map<String, Object>) volumeInfo.get("imageLinks");
         if (imageLinks != null) {
             portada = (String) imageLinks.getOrDefault("thumbnail", imageLinks.get("smallThumbnail"));
         }
 
+        // Obtener género
         List<String> categorias = (List<String>) volumeInfo.get("categories");
         String genero = (categorias != null && !categorias.isEmpty()) ? categorias.get(0) : null;
 
+        // Crear y guardar libro
         Libro libro = Libro.builder()
                 .idapiexterna(idExterno)
                 .titulo(titulo)
@@ -156,16 +173,22 @@ public class GoogleBooksService {
     }
 
     private Autor obtenerOCrearAutor(String nombre) {
-        List<Autor> existentes = autorRepository.findByNombreContainingIgnoreCase(nombre);
+        // Normalizar nombre: quitar espacios extra
+        String nombreNormalizado = nombre.trim().replaceAll("\\s+", " ");
 
+        List<Autor> existentes = autorRepository.findByNombreContainingIgnoreCase(nombreNormalizado);
+
+        // Buscar coincidencia exacta (ignorando mayúsculas)
         for (Autor a : existentes) {
-            if (a.getNombre().equalsIgnoreCase(nombre)) {
+            if (a.getNombre().trim().equalsIgnoreCase(nombreNormalizado)) {
                 return a;
             }
         }
 
+        // Crear nuevo autor
         Autor autor = Autor.builder()
-                .nombre(nombre)
+                .nombre(nombreNormalizado)
+                .seguidores(0)
                 .build();
         return autorRepository.save(autor);
     }
