@@ -63,21 +63,25 @@ public class AutorService {
     }
 
     @Transactional
-    public void seguirAutor(Long usuarioId, Long autorId) {
+    public void seguirAutor(Long autorId, Long usuarioId) {
+        Autor autor = buscarPorId(autorId);
         Usuario usuario = usuarioRepository.findById(usuarioId)
                 .orElseThrow(() -> new EntityNotFoundException("Usuario no encontrado"));
-        Autor autor = buscarPorId(autorId);
         usuario.getAutoresSeguidos().add(autor);
+        autor.setSeguidores(autor.getSeguidores() + 1);
         usuarioRepository.save(usuario);
+        autorRepository.save(autor);
     }
 
     @Transactional
-    public void dejarDeSeguirAutor(Long usuarioId, Long autorId) {
+    public void dejarDeSeguirAutor(Long autorId, Long usuarioId) {
+        Autor autor = buscarPorId(autorId);
         Usuario usuario = usuarioRepository.findById(usuarioId)
                 .orElseThrow(() -> new EntityNotFoundException("Usuario no encontrado"));
-        Autor autor = buscarPorId(autorId);
         usuario.getAutoresSeguidos().remove(autor);
+        autor.setSeguidores(Math.max(0, autor.getSeguidores() - 1));
         usuarioRepository.save(usuario);
+        autorRepository.save(autor);
     }
 
     @Transactional

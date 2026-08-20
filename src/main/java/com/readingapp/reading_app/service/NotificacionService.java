@@ -99,6 +99,7 @@ public class NotificacionService {
         Notificacion notificacion = Notificacion.builder()
                 .tipo(TipoNotificacion.NUEVO_SEGUIDOR)
                 .mensaje(seguidor.getNombre() + " empezó a seguirte")
+                .fecha(java.time.LocalDateTime.now())
                 .usuario(seguido)
                 .usuarioOrigen(seguidor)
                 .build();
