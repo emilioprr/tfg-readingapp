@@ -24,7 +24,7 @@ public class LibroService {
     private final AutorRepository autorRepository;
     private final UsuarioRepository usuarioRepository;
     private final NotificacionService notificacionService;
-    private final GoogleBooksService googleBooksService;
+    private final OpenLibraryService openLibraryService;
 
     @Transactional
     public LibroDTO.Response crear(LibroDTO.CreateRequest request) {
@@ -63,14 +63,14 @@ public class LibroService {
                 .toList();
     }
 
-    /*Busca libros por título en la BD local. Si no encuentra resultados, busca en Google Books, importa 10 resultados y los devuelve.*/
+    /*Busca libros por título en la BD local. Si no encuentra resultados, busca en OpenLibrary, importa 10 resultados y los devuelve.*/
     @Transactional
     public Page<LibroDTO.Response> buscarPorTitulo(String titulo, Pageable pageable) {
         Page<Libro> resultados = libroRepository.findByTituloContainingIgnoreCase(titulo, pageable);
 
         if (resultados.isEmpty()) {
-            // No hay resultados locales, buscar en Google Books e importar
-            int importados = googleBooksService.importarPorCategoria("intitle:" + titulo, 10, "");
+            // No hay resultados locales, buscar en OpenLibrary e importar
+            int importados = openLibraryService.importarPorTitulo(titulo, 5);
 
             if (importados > 0) {
                 // Volver a buscar en la BD con los libros recién importados
