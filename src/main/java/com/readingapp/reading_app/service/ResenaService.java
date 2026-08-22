@@ -9,11 +9,13 @@ import com.readingapp.reading_app.repository.ResenaRepository;
 import com.readingapp.reading_app.repository.UsuarioRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
+import java.time.LocalDateTime;
+import java.util.HashSet;
 
 @Service
 @RequiredArgsConstructor
@@ -31,26 +33,24 @@ public class ResenaService {
         Libro libro = libroRepository.findById(request.getIdlibro())
                 .orElseThrow(() -> new EntityNotFoundException("Libro no encontrado"));
 
-        // Verificar que no exista ya una reseña de este usuario para este libro
         resenaRepository.findByUsuarioIdusuarioAndLibroIdlibro(request.getIdusuario(), request.getIdlibro())
                 .ifPresent(r -> { throw new IllegalArgumentException("Ya existe una reseña de este usuario para este libro"); });
 
         Resena resena = Resena.builder()
                 .texto(request.getTexto())
                 .puntuacion(request.getPuntuacion())
-                .puntestilo(request.getPuntestilo())
-                .puntritmo(request.getPuntritmo())
-                .puntpersonajes(request.getPuntpersonajes())
+                .ritmo(request.getRitmo())
+                .etiquetas(request.getEtiquetas() != null ? request.getEtiquetas() : new HashSet<>())
                 .leidopreviamente(request.getLeidopreviamente() != null ? request.getLeidopreviamente() : false)
                 .esPublica(request.getEsPublica() != null ? request.getEsPublica() : true)
                 .tieneSpoiler(request.getTieneSpoiler() != null ? request.getTieneSpoiler() : false)
+                .fechaCreacion(LocalDateTime.now())
                 .usuario(usuario)
                 .libro(libro)
                 .build();
 
         resena = resenaRepository.save(resena);
 
-        // Notificar a los seguidores del usuario que publicó la reseña
         if (resena.getEsPublica()) {
             for (Usuario seguidor : usuario.getSeguidoresList()) {
                 notificacionService.crearNotificacionNuevaResena(resena, seguidor);
@@ -61,53 +61,39 @@ public class ResenaService {
     }
 
     public ResenaDTO.Response obtenerPorId(Long id) {
-        Resena resena = buscarPorId(id);
-        return toResponse(resena);
+        return toResponse(buscarPorId(id));
     }
 
-    public List<ResenaDTO.Response> obtenerPorUsuario(Long idusuario, Pageable pageable) {
-        return resenaRepository.findByUsuarioIdusuario(idusuario, pageable).stream()
-                .map(this::toResponse)
-                .toList();
+    public Page<ResenaDTO.Response> obtenerPorUsuario(Long idusuario, Pageable pageable) {
+        return resenaRepository.findByUsuarioIdusuario(idusuario, pageable).map(this::toResponse);
     }
 
-    public List<ResenaDTO.Response> obtenerPorLibro(Long idlibro, Pageable pageable) {
-        return resenaRepository.findByLibroIdlibro(idlibro, pageable).stream()
-                .map(this::toResponse)
-                .toList();
+    public Page<ResenaDTO.Response> obtenerPorLibro(Long idlibro, Pageable pageable) {
+        return resenaRepository.findByLibroIdlibro(idlibro, pageable).map(this::toResponse);
     }
 
-    public List<ResenaDTO.Response> obtenerPublicas(Pageable pageable) {
-        return resenaRepository.findByEsPublicaTrue(pageable).stream()
-                .map(this::toResponse)
-                .toList();
+    public Page<ResenaDTO.Response> obtenerPublicas(Pageable pageable) {
+        return resenaRepository.findByEsPublicaTrue(pageable).map(this::toResponse);
     }
 
     @Transactional
     public ResenaDTO.Response actualizar(Long id, ResenaDTO.UpdateRequest request) {
         Resena resena = buscarPorId(id);
-
         if (request.getTexto() != null) resena.setTexto(request.getTexto());
         if (request.getPuntuacion() != null) resena.setPuntuacion(request.getPuntuacion());
-        if (request.getPuntestilo() != null) resena.setPuntestilo(request.getPuntestilo());
-        if (request.getPuntritmo() != null) resena.setPuntritmo(request.getPuntritmo());
-        if (request.getPuntpersonajes() != null) resena.setPuntpersonajes(request.getPuntpersonajes());
+        if (request.getRitmo() != null) resena.setRitmo(request.getRitmo());
+        if (request.getEtiquetas() != null) resena.setEtiquetas(request.getEtiquetas());
         if (request.getEsPublica() != null) resena.setEsPublica(request.getEsPublica());
         if (request.getTieneSpoiler() != null) resena.setTieneSpoiler(request.getTieneSpoiler());
-
         resena = resenaRepository.save(resena);
         return toResponse(resena);
     }
 
     @Transactional
     public void eliminar(Long id) {
-        if (!resenaRepository.existsById(id)) {
-            throw new EntityNotFoundException("Reseña no encontrada");
-        }
+        if (!resenaRepository.existsById(id)) throw new EntityNotFoundException("Reseña no encontrada");
         resenaRepository.deleteById(id);
     }
-
-    // === LIKES ===
 
     @Transactional
     public void darLike(Long resenaId, Long usuarioId) {
@@ -117,7 +103,6 @@ public class ResenaService {
         usuario.getResenasLikeadas().add(resena);
         usuarioRepository.save(usuario);
 
-        // Notificar al autor de la reseña (si no es él mismo)
         if (!resena.getUsuario().getIdusuario().equals(usuarioId)) {
             notificacionService.crearNotificacionLike(resena, usuario);
         }
@@ -132,8 +117,6 @@ public class ResenaService {
         usuarioRepository.save(usuario);
     }
 
-    // === HELPERS ===
-
     private Resena buscarPorId(Long id) {
         return resenaRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Reseña no encontrada con id: " + id));
@@ -144,9 +127,8 @@ public class ResenaService {
                 .idresena(resena.getIdresena())
                 .texto(resena.getTexto())
                 .puntuacion(resena.getPuntuacion())
-                .puntestilo(resena.getPuntestilo())
-                .puntritmo(resena.getPuntritmo())
-                .puntpersonajes(resena.getPuntpersonajes())
+                .ritmo(resena.getRitmo())
+                .etiquetas(resena.getEtiquetas())
                 .leidopreviamente(resena.getLeidopreviamente())
                 .esPublica(resena.getEsPublica())
                 .tieneSpoiler(resena.getTieneSpoiler())

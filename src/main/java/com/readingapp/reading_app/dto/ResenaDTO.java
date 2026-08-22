@@ -1,22 +1,21 @@
 package com.readingapp.reading_app.dto;
 
+import com.readingapp.reading_app.model.enums.EtiquetaResena;
 import jakarta.validation.constraints.*;
 import lombok.*;
 import java.math.BigDecimal;
+import java.util.Set;
 
 public class ResenaDTO {
 
     @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
     public static class CreateRequest {
         private String texto;
-        @DecimalMin(value = "0.0") @DecimalMax(value = "10.0")
+        @DecimalMin(value = "0.5") @DecimalMax(value = "5.0")
         private BigDecimal puntuacion;
-        @DecimalMin(value = "0.0") @DecimalMax(value = "10.0")
-        private BigDecimal puntestilo;
-        @DecimalMin(value = "0.0") @DecimalMax(value = "10.0")
-        private BigDecimal puntritmo;
-        @DecimalMin(value = "0.0") @DecimalMax(value = "10.0")
-        private BigDecimal puntpersonajes;
+        @Min(1) @Max(3)
+        private Integer ritmo;
+        private Set<EtiquetaResena> etiquetas;
         private Boolean leidopreviamente;
         private Boolean esPublica;
         private Boolean tieneSpoiler;
@@ -29,10 +28,11 @@ public class ResenaDTO {
     @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
     public static class UpdateRequest {
         private String texto;
+        @DecimalMin(value = "0.5") @DecimalMax(value = "5.0")
         private BigDecimal puntuacion;
-        private BigDecimal puntestilo;
-        private BigDecimal puntritmo;
-        private BigDecimal puntpersonajes;
+        @Min(1) @Max(3)
+        private Integer ritmo;
+        private Set<EtiquetaResena> etiquetas;
         private Boolean esPublica;
         private Boolean tieneSpoiler;
     }
@@ -42,9 +42,8 @@ public class ResenaDTO {
         private Long idresena;
         private String texto;
         private BigDecimal puntuacion;
-        private BigDecimal puntestilo;
-        private BigDecimal puntritmo;
-        private BigDecimal puntpersonajes;
+        private Integer ritmo;
+        private Set<EtiquetaResena> etiquetas;
         private Boolean leidopreviamente;
         private Boolean esPublica;
         private Boolean tieneSpoiler;
