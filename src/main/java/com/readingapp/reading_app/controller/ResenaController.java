@@ -4,6 +4,7 @@ import com.readingapp.reading_app.dto.ResenaDTO;
 import com.readingapp.reading_app.service.ResenaService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
@@ -30,17 +31,17 @@ public class ResenaController {
     }
 
     @GetMapping("/usuario/{idusuario}")
-    public ResponseEntity<List<ResenaDTO.Response>> obtenerPorUsuario(@PathVariable Long idusuario, @PageableDefault(size = 10) Pageable pageable) {
+    public ResponseEntity<Page<ResenaDTO.Response>> obtenerPorUsuario(@PathVariable Long idusuario, @PageableDefault(size = 10) Pageable pageable) {
         return ResponseEntity.ok(resenaService.obtenerPorUsuario(idusuario,  pageable));
     }
 
     @GetMapping("/libro/{idlibro}")
-    public ResponseEntity<List<ResenaDTO.Response>> obtenerPorLibro(@PathVariable Long idlibro, @PageableDefault(size = 10) Pageable pageable) {
+    public ResponseEntity<Page<ResenaDTO.Response>> obtenerPorLibro(@PathVariable Long idlibro, @PageableDefault(size = 10) Pageable pageable) {
         return ResponseEntity.ok(resenaService.obtenerPorLibro(idlibro,   pageable));
     }
 
     @GetMapping("/publicas")
-    public ResponseEntity<List<ResenaDTO.Response>> obtenerPublicas(@PageableDefault(size = 10) Pageable pageable) {
+    public ResponseEntity<Page<ResenaDTO.Response>> obtenerPublicas(@PageableDefault(size = 10) Pageable pageable) {
         return ResponseEntity.ok(resenaService.obtenerPublicas(pageable));
     }
 

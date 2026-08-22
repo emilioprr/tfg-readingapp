@@ -33,6 +33,7 @@ public class ListaService {
                 .descripcion(request.getDescripcion())
                 .esPublica(request.getEsPublica() != null ? request.getEsPublica() : true)
                 .esAutomatica(false)
+                .fechaCreacion(java.time.LocalDateTime.now())
                 .usuario(usuario)
                 .build();
 
