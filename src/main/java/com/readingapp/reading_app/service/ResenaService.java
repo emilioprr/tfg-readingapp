@@ -37,6 +37,13 @@ public class ResenaService {
         resenaRepository.findByUsuarioIdusuarioAndLibroIdlibro(request.getIdusuario(), request.getIdlibro())
                 .ifPresent(r -> { throw new IllegalArgumentException("Ya existe una reseña de este usuario para este libro"); });
 
+        if (request.getPuntuacion() != null) {
+            double val = request.getPuntuacion().doubleValue();
+            if (val % 0.5 != 0) {
+                throw new IllegalArgumentException("La puntuación debe ser en intervalos de 0.5");
+            }
+        }
+
         Resena resena = Resena.builder()
                 .texto(request.getTexto())
                 .puntuacion(request.getPuntuacion())
