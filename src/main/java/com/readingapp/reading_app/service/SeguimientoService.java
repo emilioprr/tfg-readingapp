@@ -31,9 +31,9 @@ public class SeguimientoService {
         Libro libro = libroRepository.findById(request.getIdlibro())
                 .orElseThrow(() -> new EntityNotFoundException("Libro no encontrado"));
 
-        // Validar que la página no supere el total del libro
-        if (libro.getNumPaginas() != null && request.getNumPagina() > libro.getNumPaginas()) {
-            throw new IllegalArgumentException("La página no puede superar el total de páginas del libro");
+        // Validar que la página no supere el total del libro y exista
+        if (request.getEstado() == EstadoLectura.LEIDO && libro.getNumPaginas() != null) {
+            request.setNumPagina(libro.getNumPaginas());
         }
 
         Seguimiento seguimiento = Seguimiento.builder()

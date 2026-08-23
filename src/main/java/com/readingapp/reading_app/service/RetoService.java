@@ -48,6 +48,10 @@ public class RetoService {
             creador = usuarioRepository.findById(request.getIdCreador()).orElse(null);
         }
 
+        if (request.getFechaFin().isBefore(request.getFechaInicio())) {
+            throw new IllegalArgumentException("La fecha de fin no puede ser anterior a la de inicio");
+        }
+
         Reto reto = Reto.builder()
                 .titulo(request.getTitulo())
                 .descripcion(request.getDescripcion())
