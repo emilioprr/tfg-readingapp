@@ -1,5 +1,6 @@
 package com.readingapp.reading_app.controller;
 
+import com.readingapp.reading_app.config.SecurityUtils;
 import com.readingapp.reading_app.dto.SesionLecturaDTO;
 import com.readingapp.reading_app.service.SesionLecturaService;
 import jakarta.validation.Valid;
@@ -21,6 +22,7 @@ public class SesionLecturaController {
     @PostMapping
     public ResponseEntity<SesionLecturaDTO.Response> registrar(
             @Valid @RequestBody SesionLecturaDTO.CreateRequest request) {
+        SecurityUtils.validarUsuario(request.getIdusuario());
         return ResponseEntity.status(HttpStatus.CREATED).body(sesionLecturaService.registrar(request));
     }
 

@@ -1,5 +1,6 @@
 package com.readingapp.reading_app.controller;
 
+import com.readingapp.reading_app.config.SecurityUtils;
 import com.readingapp.reading_app.dto.LibroDTO;
 import com.readingapp.reading_app.service.LibroService;
 import jakarta.validation.Valid;
@@ -66,12 +67,14 @@ public class LibroController {
 
     @PostMapping("/{libroId}/favorito/{usuarioId}")
     public ResponseEntity<Void> agregarFavorito(@PathVariable Long libroId, @PathVariable Long usuarioId) {
+        SecurityUtils.validarUsuario(usuarioId);
         libroService.agregarFavorito(usuarioId, libroId);
         return ResponseEntity.ok().build();
     }
 
     @DeleteMapping("/{libroId}/favorito/{usuarioId}")
     public ResponseEntity<Void> quitarFavorito(@PathVariable Long libroId, @PathVariable Long usuarioId) {
+        SecurityUtils.validarUsuario(usuarioId);
         libroService.quitarFavorito(usuarioId, libroId);
         return ResponseEntity.noContent().build();
     }

@@ -1,5 +1,6 @@
 package com.readingapp.reading_app.service;
 
+import com.readingapp.reading_app.config.SecurityUtils;
 import com.readingapp.reading_app.dto.NotificacionDTO;
 import com.readingapp.reading_app.model.*;
 import com.readingapp.reading_app.model.enums.TipoNotificacion;
@@ -49,6 +50,7 @@ public class NotificacionService {
     public void marcarLeida(Long id) {
         Notificacion notificacion = notificacionRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Notificación no encontrada"));
+        SecurityUtils.validarUsuario(notificacion.getUsuario().getIdusuario());
         notificacion.setLeida(true);
         notificacionRepository.save(notificacion);
     }

@@ -1,5 +1,6 @@
 package com.readingapp.reading_app.service;
 
+import com.readingapp.reading_app.config.SecurityUtils;
 import com.readingapp.reading_app.dto.LibroDTO;
 import com.readingapp.reading_app.dto.ListaDTO;
 import com.readingapp.reading_app.model.Libro;
@@ -60,23 +61,24 @@ public class ListaService {
 
     @Transactional
     public ListaDTO.Response actualizar(Long id, ListaDTO.UpdateRequest request) {
-        Lista lista = buscarPorId(id);
-
+        Lista lista = listaRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Lista no encontrada con id: " + id));
+        SecurityUtils.validarUsuario(lista.getUsuario().getIdusuario());
         if (lista.getEsAutomatica()) {
             throw new IllegalArgumentException("No se puede editar una lista automática");
         }
-
         if (request.getNombre() != null) lista.setNombre(request.getNombre());
         if (request.getDescripcion() != null) lista.setDescripcion(request.getDescripcion());
         if (request.getEsPublica() != null) lista.setEsPublica(request.getEsPublica());
-
         lista = listaRepository.save(lista);
         return toResponse(lista);
     }
 
     @Transactional
     public void eliminar(Long id) {
-        Lista lista = buscarPorId(id);
+        Lista lista = listaRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Lista no encontrada con id: " + id));
+        SecurityUtils.validarUsuario(lista.getUsuario().getIdusuario());
         if (lista.getEsAutomatica()) {
             throw new IllegalArgumentException("No se puede eliminar una lista automática");
         }
@@ -86,20 +88,22 @@ public class ListaService {
     // === GESTIÓN DE LIBROS EN LISTA ===
 
     @Transactional
-    public void agregarLibro(Long listaId, Long libroId) {
-        Lista lista = buscarPorId(listaId);
-        Libro libro = libroRepository.findById(libroId)
+    public void agregarLibro(Long idlista, Long idlibro) {
+        Lista lista = listaRepository.findById(idlista)
+                .orElseThrow(() -> new EntityNotFoundException("Lista no encontrada"));
+        SecurityUtils.validarUsuario(lista.getUsuario().getIdusuario());
+        Libro libro = libroRepository.findById(idlibro)
                 .orElseThrow(() -> new EntityNotFoundException("Libro no encontrado"));
         lista.getLibros().add(libro);
         listaRepository.save(lista);
     }
 
     @Transactional
-    public void quitarLibro(Long listaId, Long libroId) {
-        Lista lista = buscarPorId(listaId);
-        Libro libro = libroRepository.findById(libroId)
-                .orElseThrow(() -> new EntityNotFoundException("Libro no encontrado"));
-        lista.getLibros().remove(libro);
+    public void quitarLibro(Long idlista, Long idlibro) {
+        Lista lista = listaRepository.findById(idlista)
+                .orElseThrow(() -> new EntityNotFoundException("Lista no encontrada"));
+        SecurityUtils.validarUsuario(lista.getUsuario().getIdusuario());
+        lista.getLibros().removeIf(l -> l.getIdlibro().equals(idlibro));
         listaRepository.save(lista);
     }
 

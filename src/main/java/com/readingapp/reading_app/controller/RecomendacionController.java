@@ -1,5 +1,6 @@
 package com.readingapp.reading_app.controller;
 
+import com.readingapp.reading_app.config.SecurityUtils;
 import com.readingapp.reading_app.dto.RecomendacionDTO;
 import com.readingapp.reading_app.service.RecomendacionService;
 import jakarta.validation.Valid;
@@ -19,6 +20,7 @@ public class RecomendacionController {
 
     @PostMapping
     public ResponseEntity<RecomendacionDTO.Response> crear(@Valid @RequestBody RecomendacionDTO.CreateRequest request) {
+        SecurityUtils.validarUsuario(request.getIdusuarioEmisor());
         return ResponseEntity.status(HttpStatus.CREATED).body(recomendacionService.crear(request));
     }
 

@@ -1,5 +1,6 @@
 package com.readingapp.reading_app.service;
 
+import com.readingapp.reading_app.config.SecurityUtils;
 import com.readingapp.reading_app.dto.AnotacionDTO;
 import com.readingapp.reading_app.model.Anotacion;
 import com.readingapp.reading_app.model.Libro;
@@ -76,23 +77,23 @@ public class AnotacionService {
 
     @Transactional
     public AnotacionDTO.Response actualizar(Long id, AnotacionDTO.UpdateRequest request) {
-        Anotacion anotacion = buscarPorId(id);
-
+        Anotacion anotacion = anotacionRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Anotación no encontrada con id: " + id));
+        SecurityUtils.validarUsuario(anotacion.getUsuario().getIdusuario());
         if (request.getTexto() != null) anotacion.setTexto(request.getTexto());
         if (request.getParte() != null) anotacion.setParte(request.getParte());
         if (request.getTipo() != null) anotacion.setTipo(request.getTipo());
         if (request.getEsPublica() != null) anotacion.setEsPublica(request.getEsPublica());
         if (request.getTieneSpoiler() != null) anotacion.setTieneSpoiler(request.getTieneSpoiler());
-
         anotacion = anotacionRepository.save(anotacion);
         return toResponse(anotacion);
     }
 
     @Transactional
     public void eliminar(Long id) {
-        if (!anotacionRepository.existsById(id)) {
-            throw new EntityNotFoundException("Anotación no encontrada");
-        }
+        Anotacion anotacion = anotacionRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Anotación no encontrada con id: " + id));
+        SecurityUtils.validarUsuario(anotacion.getUsuario().getIdusuario());
         anotacionRepository.deleteById(id);
     }
 

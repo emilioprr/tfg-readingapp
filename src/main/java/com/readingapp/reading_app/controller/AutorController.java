@@ -1,5 +1,6 @@
 package com.readingapp.reading_app.controller;
 
+import com.readingapp.reading_app.config.SecurityUtils;
 import com.readingapp.reading_app.dto.AutorDTO;
 import com.readingapp.reading_app.service.AutorService;
 import jakarta.validation.Valid;
@@ -49,15 +50,17 @@ public class AutorController {
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping("/{autorId}/seguir/{usuarioId}")
-    public ResponseEntity<Void> seguirAutor(@PathVariable Long autorId, @PathVariable Long usuarioId) {
-        autorService.seguirAutor(usuarioId, autorId);
+    @PostMapping("/{idautor}/seguir/{idusuario}")
+    public ResponseEntity<Void> seguirAutor(@PathVariable Long idautor, @PathVariable Long idusuario) {
+        SecurityUtils.validarUsuario(idusuario);
+        autorService.seguirAutor(idautor, idusuario);
         return ResponseEntity.ok().build();
     }
 
-    @DeleteMapping("/{autorId}/seguir/{usuarioId}")
-    public ResponseEntity<Void> dejarDeSeguirAutor(@PathVariable Long autorId, @PathVariable Long usuarioId) {
-        autorService.dejarDeSeguirAutor(usuarioId, autorId);
+    @DeleteMapping("/{idautor}/seguir/{idusuario}")
+    public ResponseEntity<Void> dejarDeSeguirAutor(@PathVariable Long idautor, @PathVariable Long idusuario) {
+        SecurityUtils.validarUsuario(idusuario);
+        autorService.dejarDeSeguirAutor(idautor, idusuario);
         return ResponseEntity.noContent().build();
     }
 }

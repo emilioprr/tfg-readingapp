@@ -1,5 +1,6 @@
 package com.readingapp.reading_app.controller;
 
+import com.readingapp.reading_app.config.SecurityUtils;
 import com.readingapp.reading_app.dto.AnotacionDTO;
 import com.readingapp.reading_app.model.enums.TipoAnotacion;
 import com.readingapp.reading_app.service.AnotacionService;
@@ -22,6 +23,7 @@ public class AnotacionController {
 
     @PostMapping
     public ResponseEntity<AnotacionDTO.Response> crear(@Valid @RequestBody AnotacionDTO.CreateRequest request) {
+        SecurityUtils.validarUsuario(request.getIdusuario());
         return ResponseEntity.status(HttpStatus.CREATED).body(anotacionService.crear(request));
     }
 

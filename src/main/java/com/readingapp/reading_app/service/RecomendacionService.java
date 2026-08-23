@@ -1,5 +1,6 @@
 package com.readingapp.reading_app.service;
 
+import com.readingapp.reading_app.config.SecurityUtils;
 import com.readingapp.reading_app.dto.RecomendacionDTO;
 import com.readingapp.reading_app.model.Libro;
 import com.readingapp.reading_app.model.Recomendacion;
@@ -74,9 +75,11 @@ public class RecomendacionService {
     public void marcarVista(Long id) {
         Recomendacion recomendacion = recomendacionRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Recomendación no encontrada"));
+        SecurityUtils.validarUsuario(recomendacion.getReceptor().getIdusuario());
         recomendacion.setVisto(true);
         recomendacionRepository.save(recomendacion);
     }
+
 
     @Transactional
     public void eliminar(Long id) {

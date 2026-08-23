@@ -1,5 +1,6 @@
 package com.readingapp.reading_app.service;
 
+import com.readingapp.reading_app.config.SecurityUtils;
 import com.readingapp.reading_app.dto.ResenaDTO;
 import com.readingapp.reading_app.model.Libro;
 import com.readingapp.reading_app.model.Resena;
@@ -79,6 +80,7 @@ public class ResenaService {
     @Transactional
     public ResenaDTO.Response actualizar(Long id, ResenaDTO.UpdateRequest request) {
         Resena resena = buscarPorId(id);
+        SecurityUtils.validarUsuario(resena.getUsuario().getIdusuario());
         if (request.getTexto() != null) resena.setTexto(request.getTexto());
         if (request.getPuntuacion() != null) resena.setPuntuacion(request.getPuntuacion());
         if (request.getRitmo() != null) resena.setRitmo(request.getRitmo());
@@ -89,9 +91,11 @@ public class ResenaService {
         return toResponse(resena);
     }
 
+
     @Transactional
     public void eliminar(Long id) {
-        if (!resenaRepository.existsById(id)) throw new EntityNotFoundException("Reseña no encontrada");
+        Resena resena = buscarPorId(id);
+        SecurityUtils.validarUsuario(resena.getUsuario().getIdusuario());
         resenaRepository.deleteById(id);
     }
 

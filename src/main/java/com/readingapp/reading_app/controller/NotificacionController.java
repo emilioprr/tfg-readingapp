@@ -1,5 +1,6 @@
 package com.readingapp.reading_app.controller;
 
+import com.readingapp.reading_app.config.SecurityUtils;
 import com.readingapp.reading_app.dto.NotificacionDTO;
 import com.readingapp.reading_app.model.enums.TipoNotificacion;
 import com.readingapp.reading_app.service.NotificacionService;
@@ -20,22 +21,26 @@ public class NotificacionController {
 
     @GetMapping("/usuario/{idusuario}")
     public ResponseEntity<List<NotificacionDTO.Response>> obtenerTodas(@PathVariable Long idusuario, @PageableDefault(size = 20) Pageable pageable) {
+        SecurityUtils.validarUsuario(idusuario);
         return ResponseEntity.ok(notificacionService.obtenerTodas(idusuario, pageable));
     }
 
     @GetMapping("/usuario/{idusuario}/no-leidas")
     public ResponseEntity<List<NotificacionDTO.Response>> obtenerNoLeidas(@PathVariable Long idusuario, @PageableDefault(size = 20) Pageable pageable) {
+        SecurityUtils.validarUsuario(idusuario);
         return ResponseEntity.ok(notificacionService.obtenerNoLeidas(idusuario, pageable));
     }
 
     @GetMapping("/usuario/{idusuario}/tipo/{tipo}")
     public ResponseEntity<List<NotificacionDTO.Response>> obtenerPorTipo(@PathVariable Long idusuario,
                                                                          @PathVariable TipoNotificacion tipo, @PageableDefault(size = 20) Pageable pageable) {
+        SecurityUtils.validarUsuario(idusuario);
         return ResponseEntity.ok(notificacionService.obtenerPorTipo(idusuario, tipo, pageable));
     }
 
     @GetMapping("/usuario/{idusuario}/contador")
     public ResponseEntity<NotificacionDTO.ContadorResponse> contarNoLeidas(@PathVariable Long idusuario) {
+        SecurityUtils.validarUsuario(idusuario);
         return ResponseEntity.ok(notificacionService.contarNoLeidas(idusuario));
     }
 
@@ -47,6 +52,7 @@ public class NotificacionController {
 
     @PutMapping("/usuario/{idusuario}/leer-todas")
     public ResponseEntity<Void> marcarTodasLeidas(@PathVariable Long idusuario) {
+        SecurityUtils.validarUsuario(idusuario);
         notificacionService.marcarTodasLeidas(idusuario);
         return ResponseEntity.ok().build();
     }
