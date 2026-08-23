@@ -1,5 +1,6 @@
 package com.readingapp.reading_app.controller;
 
+import com.readingapp.reading_app.config.SecurityUtils;
 import com.readingapp.reading_app.dto.ListaDTO;
 import com.readingapp.reading_app.service.ListaService;
 import jakarta.validation.Valid;
@@ -20,6 +21,7 @@ public class ListaController {
     @PostMapping("/usuario/{usuarioId}")
     public ResponseEntity<ListaDTO.Response> crear(@PathVariable Long usuarioId,
                                                    @Valid @RequestBody ListaDTO.CreateRequest request) {
+        SecurityUtils.validarUsuario(usuarioId);
         return ResponseEntity.status(HttpStatus.CREATED).body(listaService.crear(usuarioId, request));
     }
 

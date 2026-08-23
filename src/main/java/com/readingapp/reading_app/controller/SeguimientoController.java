@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.readingapp.reading_app.config.SecurityUtils;
 
 import java.util.List;
 
@@ -20,6 +21,7 @@ public class SeguimientoController {
 
     @PostMapping
     public ResponseEntity<SeguimientoDTO.Response> registrar(@Valid @RequestBody SeguimientoDTO.CreateRequest request) {
+        SecurityUtils.validarUsuario(request.getIdusuario());
         return ResponseEntity.status(HttpStatus.CREATED).body(seguimientoService.registrar(request));
     }
 

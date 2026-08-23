@@ -1,5 +1,6 @@
 package com.readingapp.reading_app.controller;
 
+import com.readingapp.reading_app.config.SecurityUtils;
 import com.readingapp.reading_app.dto.RetoDTO;
 import com.readingapp.reading_app.model.enums.ModalidadReto;
 import com.readingapp.reading_app.service.RetoService;
@@ -74,23 +75,27 @@ public class RetoController {
     @PostMapping("/{id}/unirse")
     public ResponseEntity<RetoDTO.ParticipanteResponse> unirse(
             @PathVariable Long id, @RequestParam Long usuarioId) {
+        SecurityUtils.validarUsuario(usuarioId);
         return ResponseEntity.ok(retoService.unirse(id, usuarioId));
     }
 
     @PutMapping("/{id}/progreso")
     public ResponseEntity<RetoDTO.ParticipanteResponse> recalcularProgreso(
             @PathVariable Long id, @RequestParam Long usuarioId) {
+        SecurityUtils.validarUsuario(usuarioId);
         return ResponseEntity.ok(retoService.recalcularProgreso(id, usuarioId));
     }
 
     @DeleteMapping("/{id}/abandonar")
     public ResponseEntity<Void> abandonar(@PathVariable Long id, @RequestParam Long usuarioId) {
+        SecurityUtils.validarUsuario(usuarioId);
         retoService.abandonar(id, usuarioId);
         return ResponseEntity.noContent().build();
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminar(@PathVariable Long id, @RequestParam Long usuarioId) {
+        SecurityUtils.validarUsuario(usuarioId);
         retoService.eliminar(id, usuarioId);
         return ResponseEntity.noContent().build();
     }

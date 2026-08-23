@@ -1,5 +1,6 @@
 package com.readingapp.reading_app.controller;
 
+import com.readingapp.reading_app.config.SecurityUtils;
 import com.readingapp.reading_app.dto.UsuarioDTO;
 import com.readingapp.reading_app.service.UsuarioService;
 import jakarta.validation.Valid;
@@ -37,6 +38,7 @@ public class UsuarioController {
     @PutMapping("/{id}")
     public ResponseEntity<UsuarioDTO.Response> actualizar(@PathVariable Long id,
                                                           @RequestBody UsuarioDTO.UpdateRequest request) {
+        SecurityUtils.validarUsuario(id);
         return ResponseEntity.ok(usuarioService.actualizar(id, request));
     }
 
@@ -48,12 +50,14 @@ public class UsuarioController {
 
     @PostMapping("/{seguidorId}/seguir/{seguidoId}")
     public ResponseEntity<Void> seguirUsuario(@PathVariable Long seguidorId, @PathVariable Long seguidoId) {
+        SecurityUtils.validarUsuario(seguidorId);
         usuarioService.seguirUsuario(seguidorId, seguidoId);
         return ResponseEntity.ok().build();
     }
 
     @DeleteMapping("/{seguidorId}/seguir/{seguidoId}")
     public ResponseEntity<Void> dejarDeSeguir(@PathVariable Long seguidorId, @PathVariable Long seguidoId) {
+        SecurityUtils.validarUsuario(seguidorId);
         usuarioService.dejarDeSeguirUsuario(seguidorId, seguidoId);
         return ResponseEntity.noContent().build();
     }
