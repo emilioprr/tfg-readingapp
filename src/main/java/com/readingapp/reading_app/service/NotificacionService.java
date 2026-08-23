@@ -10,6 +10,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -119,13 +120,16 @@ public class NotificacionService {
     }
 
     @Transactional
-    public void crearNotificacionRetoCumplido(Usuario usuario) {
-        Notificacion notificacion = Notificacion.builder()
+    public void crearNotificacionRetoCumplido(Reto reto, Usuario usuarioQueCompleto, Usuario seguidor) {
+        Notificacion notif = Notificacion.builder()
                 .tipo(TipoNotificacion.RETO_CUMPLIDO)
-                .mensaje("¡Has cumplido tu reto de lectura!")
-                .usuario(usuario)
+                .fecha(LocalDateTime.now())
+                .leida(false)
+                .usuario(seguidor)
+                .usuarioOrigen(usuarioQueCompleto)
+                .reto(reto)
                 .build();
-        notificacionRepository.save(notificacion);
+        notificacionRepository.save(notif);
     }
 
     @Transactional

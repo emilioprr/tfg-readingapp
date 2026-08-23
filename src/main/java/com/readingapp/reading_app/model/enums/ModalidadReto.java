@@ -1,4 +1,8 @@
 package com.readingapp.reading_app.model.enums;
 
-public class ModalidadReto {
+public enum ModalidadReto {
+    PERSONAL,
+    PREDEFINIDO,
+    COMPARTIDO,
+    COLABORATIVO
 }

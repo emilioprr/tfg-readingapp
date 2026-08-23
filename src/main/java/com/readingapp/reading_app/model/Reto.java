@@ -1,14 +1,16 @@
 package com.readingapp.reading_app.model;
 
+import com.readingapp.reading_app.model.enums.ModalidadReto;
+import com.readingapp.reading_app.model.enums.TipoReto;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "reto")
-@Getter @Setter
-@NoArgsConstructor @AllArgsConstructor
-@Builder
+@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class Reto {
 
     @Id
@@ -16,17 +18,36 @@ public class Reto {
     private Long idreto;
 
     @Column(nullable = false)
-    private Integer metapaginas;
+    private String titulo;
+
+    private String descripcion;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private TipoReto tipo;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private ModalidadReto modalidad;
 
     @Column(nullable = false)
-    private LocalDate fechainicio;
+    private Integer meta;
 
-    private LocalDate fechafin;
+    @Column(name = "fecha_inicio", nullable = false)
+    private LocalDate fechaInicio;
 
-    @Column(name = "reto_cumplido")
-    private Boolean retoCumplido = false;
+    @Column(name = "fecha_fin", nullable = false)
+    private LocalDate fechaFin;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "idusuario", nullable = false)
-    private Usuario usuario;
+    @ManyToOne
+    @JoinColumn(name = "id_creador")
+    private Usuario creador; // null en PREDEFINIDO y COLABORATIVO
+
+    @ManyToOne
+    @JoinColumn(name = "id_autor")
+    private Autor autor; // solo para LIBROS_AUTOR
+
+    @OneToMany(mappedBy = "reto", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<ParticipanteReto> participantes = new ArrayList<>();
 }
