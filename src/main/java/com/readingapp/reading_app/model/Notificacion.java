@@ -48,5 +48,9 @@ public class Notificacion {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "idlibro")
     private Libro libro;
+
+    @ManyToOne
+    @JoinColumn(name = "idreto")
+    private Reto reto;
 }
 
