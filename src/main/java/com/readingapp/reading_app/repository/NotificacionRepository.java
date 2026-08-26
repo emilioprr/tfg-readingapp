@@ -15,4 +15,5 @@ public interface NotificacionRepository extends JpaRepository<Notificacion, Long
     List<Notificacion> findByUsuarioIdusuarioAndLeidaFalseOrderByFechaDesc(Long idusuario);
     Page<Notificacion> findByUsuarioIdusuarioAndTipoOrderByFechaDesc(Long idusuario, TipoNotificacion tipo, Pageable pageable);
     long countByUsuarioIdusuarioAndLeidaFalse(Long idusuario);
+    void deleteByResenaIdresena(Long idresena);
 }
