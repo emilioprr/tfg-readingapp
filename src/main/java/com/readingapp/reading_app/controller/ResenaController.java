@@ -1,5 +1,6 @@
 package com.readingapp.reading_app.controller;
 
+import com.readingapp.reading_app.config.SecurityUtils;
 import com.readingapp.reading_app.dto.ResenaDTO;
 import com.readingapp.reading_app.service.ResenaService;
 import jakarta.validation.Valid;
@@ -22,6 +23,7 @@ public class ResenaController {
 
     @PostMapping
     public ResponseEntity<ResenaDTO.Response> crear(@Valid @RequestBody ResenaDTO.CreateRequest request) {
+        SecurityUtils.validarUsuario(request.getIdusuario());
         return ResponseEntity.status(HttpStatus.CREATED).body(resenaService.crear(request));
     }
 
@@ -31,8 +33,16 @@ public class ResenaController {
     }
 
     @GetMapping("/usuario/{idusuario}")
-    public ResponseEntity<Page<ResenaDTO.Response>> obtenerPorUsuario(@PathVariable Long idusuario, @PageableDefault(size = 10) Pageable pageable) {
-        return ResponseEntity.ok(resenaService.obtenerPorUsuario(idusuario,  pageable));
+    public ResponseEntity<Page<ResenaDTO.Response>> obtenerPorUsuario(
+            @PathVariable Long idusuario, @PageableDefault(size = 10) Pageable pageable) {
+        SecurityUtils.validarUsuario(idusuario);
+        return ResponseEntity.ok(resenaService.obtenerPorUsuario(idusuario, pageable));
+    }
+
+    @GetMapping("/usuario/{idusuario}/publicas")
+    public ResponseEntity<Page<ResenaDTO.Response>> obtenerPublicasPorUsuario(
+            @PathVariable Long idusuario, @PageableDefault(size = 10) Pageable pageable) {
+        return ResponseEntity.ok(resenaService.obtenerPublicasPorUsuario(idusuario, pageable));
     }
 
     @GetMapping("/libro/{idlibro}")
@@ -61,12 +71,14 @@ public class ResenaController {
 
     @PostMapping("/{resenaId}/like/{usuarioId}")
     public ResponseEntity<Void> darLike(@PathVariable Long resenaId, @PathVariable Long usuarioId) {
+        SecurityUtils.validarUsuario(usuarioId);
         resenaService.darLike(resenaId, usuarioId);
         return ResponseEntity.ok().build();
     }
 
     @DeleteMapping("/{resenaId}/like/{usuarioId}")
     public ResponseEntity<Void> quitarLike(@PathVariable Long resenaId, @PathVariable Long usuarioId) {
+        SecurityUtils.validarUsuario(usuarioId);
         resenaService.quitarLike(resenaId, usuarioId);
         return ResponseEntity.noContent().build();
     }
