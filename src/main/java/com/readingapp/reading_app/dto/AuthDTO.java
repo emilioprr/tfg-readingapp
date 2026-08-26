@@ -21,5 +21,6 @@ public class AuthDTO {
         private Long idusuario;
         private String nombre;
         private String email;
+        private String rol;
     }
 }

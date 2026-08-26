@@ -1,5 +1,6 @@
 package com.readingapp.reading_app.service;
 
+import com.readingapp.reading_app.config.SecurityUtils;
 import com.readingapp.reading_app.dto.RetoDTO;
 import com.readingapp.reading_app.model.*;
 import com.readingapp.reading_app.model.enums.EstadoLectura;
@@ -33,6 +34,10 @@ public class RetoService {
 
     @Transactional
     public RetoDTO.Response crear(RetoDTO.CreateRequest request) {
+        if (request.getModalidad() == ModalidadReto.PREDEFINIDO
+                || request.getModalidad() == ModalidadReto.COLABORATIVO) {
+            SecurityUtils.validarAdmin();
+        }
         Usuario creador = null;
 
         // PERSONAL y COMPARTIDO requieren creador
@@ -177,10 +182,7 @@ public class RetoService {
         return toParticipanteResponse(participante, reto.getMeta());
     }
 
-    /**
-     * Recalcula todos los retos activos de un usuario.
-     * Llamar desde SeguimientoService y SesionLecturaService.
-     */
+    /*Recalcula todos los retos activos de un usuario. Llamar desde SeguimientoService y SesionLecturaService*/
     @Transactional
     public void recalcularRetosActivosDeUsuario(Long idusuario) {
         List<ParticipanteReto> activos = participanteRetoRepository

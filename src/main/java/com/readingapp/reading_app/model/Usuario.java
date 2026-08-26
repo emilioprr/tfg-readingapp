@@ -1,5 +1,6 @@
 package com.readingapp.reading_app.model;
 
+import com.readingapp.reading_app.model.enums.RolUsuario;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -44,6 +45,11 @@ public class Usuario {
 
     @Column
     private Integer seguidores = 0;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    @Builder.Default
+    private RolUsuario rol = RolUsuario.USER;
 
     // RELACIONES
     @ManyToMany
