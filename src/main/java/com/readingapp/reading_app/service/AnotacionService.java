@@ -4,10 +4,13 @@ import com.readingapp.reading_app.config.SecurityUtils;
 import com.readingapp.reading_app.dto.AnotacionDTO;
 import com.readingapp.reading_app.model.Anotacion;
 import com.readingapp.reading_app.model.Libro;
+import com.readingapp.reading_app.model.Seguimiento;
 import com.readingapp.reading_app.model.Usuario;
+import com.readingapp.reading_app.model.enums.EstadoLectura;
 import com.readingapp.reading_app.model.enums.TipoAnotacion;
 import com.readingapp.reading_app.repository.AnotacionRepository;
 import com.readingapp.reading_app.repository.LibroRepository;
+import com.readingapp.reading_app.repository.SeguimientoRepository;
 import com.readingapp.reading_app.repository.UsuarioRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -15,7 +18,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -24,6 +30,7 @@ public class AnotacionService {
     private final AnotacionRepository anotacionRepository;
     private final UsuarioRepository usuarioRepository;
     private final LibroRepository libroRepository;
+    private final SeguimientoRepository seguimientoRepository;
 
     @Transactional
     public AnotacionDTO.Response crear(AnotacionDTO.CreateRequest request) {
@@ -31,6 +38,13 @@ public class AnotacionService {
                 .orElseThrow(() -> new EntityNotFoundException("Usuario no encontrado"));
         Libro libro = libroRepository.findById(request.getIdlibro())
                 .orElseThrow(() -> new EntityNotFoundException("Libro no encontrado"));
+
+        Optional<Seguimiento> ultimo = seguimientoRepository
+                .findTopByUsuarioIdusuarioAndLibroIdlibroOrderByIdseguimientoDesc(
+                        usuario.getIdusuario(), libro.getIdlibro());
+        if (ultimo.isEmpty() || ultimo.get().getEstado() != EstadoLectura.LEYENDO) {
+            throw new IllegalArgumentException("Solo puedes anotar un libro que estés leyendo actualmente");
+        }
 
         Anotacion anotacion = Anotacion.builder()
                 .texto(request.getTexto())
@@ -40,6 +54,7 @@ public class AnotacionService {
                 .tieneSpoiler(request.getTieneSpoiler() != null ? request.getTieneSpoiler() : false)
                 .usuario(usuario)
                 .libro(libro)
+                .fecha(LocalDateTime.now())
                 .build();
 
         anotacion = anotacionRepository.save(anotacion);

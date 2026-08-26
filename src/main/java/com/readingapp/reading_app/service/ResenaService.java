@@ -4,10 +4,10 @@ import com.readingapp.reading_app.config.SecurityUtils;
 import com.readingapp.reading_app.dto.ResenaDTO;
 import com.readingapp.reading_app.model.Libro;
 import com.readingapp.reading_app.model.Resena;
+import com.readingapp.reading_app.model.Seguimiento;
 import com.readingapp.reading_app.model.Usuario;
-import com.readingapp.reading_app.repository.LibroRepository;
-import com.readingapp.reading_app.repository.ResenaRepository;
-import com.readingapp.reading_app.repository.UsuarioRepository;
+import com.readingapp.reading_app.model.enums.EstadoLectura;
+import com.readingapp.reading_app.repository.*;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -26,6 +27,8 @@ public class ResenaService {
     private final UsuarioRepository usuarioRepository;
     private final LibroRepository libroRepository;
     private final NotificacionService notificacionService;
+    private final SeguimientoRepository seguimientoRepository;
+    private final NotificacionRepository notificacionRepository;
 
     @Transactional
     public ResenaDTO.Response crear(ResenaDTO.CreateRequest request) {
@@ -34,8 +37,20 @@ public class ResenaService {
         Libro libro = libroRepository.findById(request.getIdlibro())
                 .orElseThrow(() -> new EntityNotFoundException("Libro no encontrado"));
 
-        resenaRepository.findByUsuarioIdusuarioAndLibroIdlibro(request.getIdusuario(), request.getIdlibro())
-                .ifPresent(r -> { throw new IllegalArgumentException("Ya existe una reseña de este usuario para este libro"); });
+        Optional<Seguimiento> ultimo = seguimientoRepository
+                .findTopByUsuarioIdusuarioAndLibroIdlibroOrderByIdseguimientoDesc(
+                        usuario.getIdusuario(), libro.getIdlibro());
+        if (ultimo.isEmpty() || ultimo.get().getEstado() != EstadoLectura.LEIDO) {
+            throw new IllegalArgumentException("Debes haber terminado el libro antes de escribir una reseña");
+        }
+
+        long vecesLeido = seguimientoRepository.countByUsuarioIdusuarioAndLibroIdlibroAndEstado(
+                usuario.getIdusuario(), libro.getIdlibro(), EstadoLectura.LEIDO);
+        long numResenas = resenaRepository.countByUsuarioIdusuarioAndLibroIdlibro(
+                usuario.getIdusuario(), libro.getIdlibro());
+        if (numResenas >= vecesLeido) {
+            throw new IllegalArgumentException("Ya has reseñado todas tus lecturas de este libro");
+        }
 
         if (request.getPuntuacion() != null) {
             double val = request.getPuntuacion().doubleValue();
@@ -77,13 +92,17 @@ public class ResenaService {
     }
 
     public Page<ResenaDTO.Response> obtenerPorLibro(Long idlibro, Pageable pageable) {
-        return resenaRepository.findByLibroIdlibro(idlibro, pageable).map(this::toResponse);
+        return resenaRepository.findByLibroIdlibroAndEsPublicaTrueOrderByLikesDesc(idlibro, pageable)
+                .map(this::toResponse);
     }
-
     public Page<ResenaDTO.Response> obtenerPublicas(Pageable pageable) {
         return resenaRepository.findByEsPublicaTrue(pageable).map(this::toResponse);
     }
 
+    public Page<ResenaDTO.Response> obtenerPublicasPorUsuario(Long idusuario, Pageable pageable) {
+        return resenaRepository.findByUsuarioIdusuarioAndEsPublicaTrueOrderByLikesDesc(idusuario, pageable)
+                .map(this::toResponse);
+    }
     @Transactional
     public ResenaDTO.Response actualizar(Long id, ResenaDTO.UpdateRequest request) {
         Resena resena = buscarPorId(id);
@@ -103,6 +122,7 @@ public class ResenaService {
     public void eliminar(Long id) {
         Resena resena = buscarPorId(id);
         SecurityUtils.validarUsuario(resena.getUsuario().getIdusuario());
+        notificacionRepository.deleteByResenaIdresena(id);
         resenaRepository.deleteById(id);
     }
 
