@@ -8,7 +8,6 @@ public class SeguimientoDTO {
 
     @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
     public static class CreateRequest {
-        @NotNull(message = "La página es obligatoria")
         private Integer numPagina;
         @NotNull(message = "El estado es obligatorio")
         private EstadoLectura estado;

@@ -1,4 +1,5 @@
 package com.readingapp.reading_app.model.enums;
 
 public enum RolUsuario {
+    ADMIN, USER
 }

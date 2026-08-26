@@ -1,5 +1,6 @@
 package com.readingapp.reading_app.controller;
 
+import com.readingapp.reading_app.config.SecurityUtils;
 import com.readingapp.reading_app.service.GoogleBooksService;
 import com.readingapp.reading_app.service.OpenLibraryService;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +24,7 @@ public class CargaDatosController {
             @RequestParam(defaultValue = "40") int cantidad,
             @RequestParam(defaultValue = "es") String idioma) {
 
+        SecurityUtils.validarAdmin();
         int importados = googleBooksService.importarPorCategoria(query, cantidad, idioma);
         return ResponseEntity.ok(Map.of("query", query, "importados", importados));
     }
@@ -33,24 +35,28 @@ public class CargaDatosController {
             @RequestParam(defaultValue = "50") int cantidad,
             @RequestParam(defaultValue = "es") String idioma) {
 
+        SecurityUtils.validarAdmin();
         Map<String, Integer> resultado = googleBooksService.importarMultiplesCategorias(categorias, cantidad, idioma);
         return ResponseEntity.ok(resultado);
     }
 
     @PostMapping("/isbn")
     public ResponseEntity<Map<String, Object>> importarPorIsbn(@RequestParam String isbn) {
+        SecurityUtils.validarAdmin();
         boolean importado = googleBooksService.importarPorIsbn(isbn);
         return ResponseEntity.ok(Map.of("isbn", isbn, "importado", importado));
     }
 
     @PostMapping("/autor/{id}/enriquecer")
     public ResponseEntity<Map<String, Object>> enriquecerAutor(@PathVariable Long id) {
+        SecurityUtils.validarAdmin();
         boolean enriquecido = openLibraryService.enriquecerAutor(id);
         return ResponseEntity.ok(Map.of("idautor", id, "enriquecido", enriquecido));
     }
 
     @PostMapping("/autores/enriquecer")
     public ResponseEntity<Map<String, Object>> enriquecerTodos() {
+        SecurityUtils.validarAdmin();
         int enriquecidos = openLibraryService.enriquecerAutoresIncompletos();
         return ResponseEntity.ok(Map.of("autoresEnriquecidos", enriquecidos));
     }

@@ -26,26 +26,28 @@ public class AuthService {
             throw new IllegalArgumentException("Email o contraseña incorrectos");
         }
 
-        String token = jwtUtil.generateToken(usuario.getIdusuario(), usuario.getEmail());
+        String token = jwtUtil.generateToken(usuario.getIdusuario(), usuario.getEmail(), usuario.getRol().name());
 
         return AuthDTO.AuthResponse.builder()
                 .token(token)
                 .idusuario(usuario.getIdusuario())
                 .nombre(usuario.getNombre())
                 .email(usuario.getEmail())
+                .rol(usuario.getRol().name())
                 .build();
     }
 
     public AuthDTO.AuthResponse registro(UsuarioDTO.RegistroRequest request) {
         UsuarioDTO.Response usuario = usuarioService.registrar(request);
 
-        String token = jwtUtil.generateToken(usuario.getIdusuario(), usuario.getEmail());
+        String token = jwtUtil.generateToken(usuario.getIdusuario(), usuario.getEmail(), "USER");
 
         return AuthDTO.AuthResponse.builder()
                 .token(token)
                 .idusuario(usuario.getIdusuario())
                 .nombre(usuario.getNombre())
                 .email(usuario.getEmail())
+                .rol("USER")
                 .build();
     }
 }
