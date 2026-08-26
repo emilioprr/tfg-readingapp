@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -23,6 +24,7 @@ public class SeguimientoService {
     private final SeguimientoRepository seguimientoRepository;
     private final UsuarioRepository usuarioRepository;
     private final LibroRepository libroRepository;
+    private final RetoService retoService;
 
     @Transactional
     public SeguimientoDTO.Response registrar(SeguimientoDTO.CreateRequest request) {
@@ -31,9 +33,53 @@ public class SeguimientoService {
         Libro libro = libroRepository.findById(request.getIdlibro())
                 .orElseThrow(() -> new EntityNotFoundException("Libro no encontrado"));
 
+        if (request.getEstado() == EstadoLectura.LEYENDO) {
+            Optional<Seguimiento> ultimo = seguimientoRepository
+                    .findTopByUsuarioIdusuarioAndLibroIdlibroOrderByIdseguimientoDesc(
+                            usuario.getIdusuario(), libro.getIdlibro());
+            if (ultimo.isPresent() && ultimo.get().getEstado() == EstadoLectura.LEYENDO) {
+                throw new IllegalArgumentException("Ya estás leyendo este libro");
+            }
+            long leyendoActualmente = seguimientoRepository.countLibrosLeyendoActualmente(
+                    usuario.getIdusuario());
+            if (leyendoActualmente >= 10) {
+                throw new IllegalArgumentException("No puedes estar leyendo más de 10 libros a la vez");
+            }
+        }
+
+        if (request.getEstado() == EstadoLectura.LEIDO || request.getEstado() == EstadoLectura.ABANDONADO) {
+            Optional<Seguimiento> ultimo = seguimientoRepository
+                    .findTopByUsuarioIdusuarioAndLibroIdlibroOrderByIdseguimientoDesc(
+                            usuario.getIdusuario(), libro.getIdlibro());
+            if (ultimo.isEmpty() || ultimo.get().getEstado() != EstadoLectura.LEYENDO) {
+                throw new IllegalArgumentException(
+                        "Debes estar leyendo el libro antes de marcarlo como " + request.getEstado());
+            }
+        }
+
+        if (request.getEstado() == EstadoLectura.LEYENDO && request.getNumPagina() == null) {
+            request.setNumPagina(0);
+        }
+
         // Validar que la página no supere el total del libro y exista
         if (request.getEstado() == EstadoLectura.LEIDO && libro.getNumPaginas() != null) {
             request.setNumPagina(libro.getNumPaginas());
+        }
+
+        if (request.getEstado() == EstadoLectura.ABANDONADO && request.getNumPagina() == null) {
+            Optional<Seguimiento> ultimo = seguimientoRepository
+                    .findTopByUsuarioIdusuarioAndLibroIdlibroOrderByIdseguimientoDesc(
+                            usuario.getIdusuario(), libro.getIdlibro());
+            request.setNumPagina(ultimo.map(Seguimiento::getNumPagina).orElse(0));
+        }
+
+        if (request.getNumPagina() != null && libro.getNumPaginas() != null
+                && request.getNumPagina() > libro.getNumPaginas()) {
+            throw new IllegalArgumentException("La página no puede superar el total de páginas del libro");
+        }
+
+        if (request.getEstado() != EstadoLectura.LEIDO && request.getNumPagina() == null) {
+            throw new IllegalArgumentException("La página es obligatoria si el estado no es LEIDO");
         }
 
         Seguimiento seguimiento = Seguimiento.builder()
@@ -45,6 +91,7 @@ public class SeguimientoService {
                 .build();
 
         seguimiento = seguimientoRepository.save(seguimiento);
+        retoService.recalcularRetosActivosDeUsuario(usuario.getIdusuario());
         return toResponse(seguimiento);
     }
 
@@ -67,7 +114,13 @@ public class SeguimientoService {
     }
 
     public List<SeguimientoDTO.Response> obtenerPorEstado(Long idusuario, EstadoLectura estado) {
-        return seguimientoRepository.findByUsuarioIdusuarioAndEstado(idusuario, estado).stream()
+        List<Seguimiento> seguimientos;
+        if (estado == EstadoLectura.LEYENDO) {
+            seguimientos = seguimientoRepository.findLibrosLeyendoActualmente(idusuario);
+        } else {
+            seguimientos = seguimientoRepository.findByUsuarioIdusuarioAndEstado(idusuario, estado);
+        }
+        return seguimientos.stream()
                 .map(this::toResponse)
                 .toList();
     }
