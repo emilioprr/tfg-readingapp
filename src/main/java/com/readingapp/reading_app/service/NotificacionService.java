@@ -81,6 +81,8 @@ public class NotificacionService {
                 .usuario(resena.getUsuario())
                 .resena(resena)
                 .usuarioOrigen(usuarioOrigen)
+                .fecha(LocalDateTime.now())
+                .leida(false)
                 .build();
         notificacionRepository.save(notificacion);
     }
@@ -92,7 +94,10 @@ public class NotificacionService {
                 .mensaje(recomendacion.getEmisor().getNombre() + " te recomendó " + recomendacion.getLibro().getTitulo())
                 .usuario(recomendacion.getReceptor())
                 .recomendacion(recomendacion)
+                .libro(recomendacion.getLibro())
                 .usuarioOrigen(recomendacion.getEmisor())
+                .fecha(LocalDateTime.now())
+                .leida(false)
                 .build();
         notificacionRepository.save(notificacion);
     }
@@ -105,6 +110,7 @@ public class NotificacionService {
                 .fecha(java.time.LocalDateTime.now())
                 .usuario(seguido)
                 .usuarioOrigen(seguidor)
+                .leida(false)
                 .build();
         notificacionRepository.save(notificacion);
     }
@@ -117,6 +123,8 @@ public class NotificacionService {
                 .usuario(seguidor)
                 .resena(resena)
                 .usuarioOrigen(resena.getUsuario())
+                .fecha(LocalDateTime.now())
+                .leida(false)
                 .build();
         notificacionRepository.save(notificacion);
     }
@@ -141,6 +149,8 @@ public class NotificacionService {
                 .mensaje("Nuevo libro de " + libro.getAutor().getNombre() + ": " + libro.getTitulo())
                 .usuario(seguidor)
                 .libro(libro)
+                .leida(false)
+                .fecha(LocalDateTime.now())
                 .build();
         notificacionRepository.save(notificacion);
     }
