@@ -33,10 +33,10 @@ public class Reto {
     @Column(nullable = false)
     private Integer meta;
 
-    @Column(name = "fecha_inicio", nullable = false)
+    @Column(name = "fechainicio", nullable = false)
     private LocalDate fechaInicio;
 
-    @Column(name = "fecha_fin", nullable = false)
+    @Column(name = "fechafin", nullable = false)
     private LocalDate fechaFin;
 
     @ManyToOne
