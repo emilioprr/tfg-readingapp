@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict clED89WODExXzEUTD1yN3PvsOdRmmRQAJUZNnse5C9dbQaqclhNDX4Bg7Hy3VxA
+\restrict pV9FEF5j2X9024DpdARK6aoJqIn68TpZRcqdLhhWTdN7eQ0dBARj6TxlclBB5F8
 
 -- Dumped from database version 18.1
 -- Dumped by pg_dump version 18.1
@@ -276,9 +276,6 @@ CREATE TABLE public.resena (
     es_publica boolean,
     fecha_creacion timestamp(6) without time zone NOT NULL,
     leidopreviamente boolean,
-    puntestilo numeric(3,1),
-    puntpersonajes numeric(3,1),
-    puntritmo numeric(3,1),
     puntuacion numeric(2,1),
     texto text,
     tiene_spoiler boolean,
@@ -321,7 +318,6 @@ CREATE TABLE public.reto (
     idreto bigint NOT NULL,
     fechafin date,
     fechainicio date NOT NULL,
-    reto_cumplido boolean,
     descripcion character varying(255),
     meta integer NOT NULL,
     modalidad character varying(255) NOT NULL,
@@ -885,5 +881,5 @@ ALTER TABLE ONLY public.notificacion
 -- PostgreSQL database dump complete
 --
 
-\unrestrict clED89WODExXzEUTD1yN3PvsOdRmmRQAJUZNnse5C9dbQaqclhNDX4Bg7Hy3VxA
+\unrestrict pV9FEF5j2X9024DpdARK6aoJqIn68TpZRcqdLhhWTdN7eQ0dBARj6TxlclBB5F8
 
