@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import api from '../api/axios'
+import Estrellas from '../components/Estrellas'
 
 export default function LibroDetalle() {
     const { id } = useParams()
@@ -110,16 +111,36 @@ export default function LibroDetalle() {
 
     const listasNormales = listas.filter(l => !l.esAutomatica)
 
+    const getColorNota = (nota) => {
+        if (nota < 2) return '#ef4444'
+        if (nota < 4) return '#f97316'
+        if (nota < 5) return '#ca8a04'
+        if (nota < 6) return '#eab308'
+        if (nota < 7) return '#84cc16'
+        if (nota < 8) return '#22c55e'
+        if (nota < 9) return '#f59e0b'
+        return '#a855f7'
+    }
+
     return (
         <div>
             <div className="flex flex-col md:flex-row gap-8">
-                <div className="flex-shrink-0">
+                <div className="flex-shrink-0 relative">
+                    {libro.notaMedia && (
+                        <div className="absolute -top-3 -left-3 z-10 w-12 h-12 rounded-lg flex items-center justify-center font-bold text-white text-lg shadow-lg"
+                             style={{ backgroundColor: getColorNota(libro.notaMedia) }}>
+                            {libro.notaMedia}
+                        </div>
+                    )}
                     {libro.portada ? (
                         <img src={libro.portada} alt={libro.titulo} className="w-48 h-72 object-cover rounded-lg" />
                     ) : (
                         <div className="w-48 h-72 bg-gray-800 rounded-lg flex items-center justify-center text-gray-500">
                             Sin portada
                         </div>
+                    )}
+                    {libro.numResenas > 0 && (
+                        <p className="text-xs text-gray-500 text-center mt-1">{libro.numResenas} reseñas</p>
                     )}
                 </div>
 
@@ -210,7 +231,7 @@ export default function LibroDetalle() {
                             <div key={resena.idresena} className="bg-gray-900 p-4 rounded-lg border border-gray-800">
                                 <div className="flex items-center justify-between mb-2">
                                     <span className="text-amber-400 font-medium">{resena.nombreUsuario}</span>
-                                    <span className="text-amber-400">{'★'.repeat(Math.floor(resena.puntuacion))} {resena.puntuacion}</span>
+                                    <Estrellas puntuacion={resena.puntuacion} />
                                 </div>
                                 {resena.tieneSpoiler ? (
                                     <p className="text-gray-500 italic">Esta reseña contiene spoilers</p>
