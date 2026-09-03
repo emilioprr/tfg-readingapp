@@ -44,5 +44,7 @@ public class LibroDTO {
         private String genero;
         private String nombreAutor;
         private Long idautor;
+        private Double notaMedia;
+        private Integer numResenas;
     }
 }

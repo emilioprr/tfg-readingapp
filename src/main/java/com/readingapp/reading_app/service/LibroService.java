@@ -6,6 +6,7 @@ import com.readingapp.reading_app.model.Libro;
 import com.readingapp.reading_app.model.Usuario;
 import com.readingapp.reading_app.repository.LibroRepository;
 import com.readingapp.reading_app.repository.AutorRepository;
+import com.readingapp.reading_app.repository.ResenaRepository;
 import com.readingapp.reading_app.repository.UsuarioRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +26,7 @@ public class LibroService {
     private final UsuarioRepository usuarioRepository;
     private final NotificacionService notificacionService;
     private final OpenLibraryService openLibraryService;
+    private final ResenaRepository resenaRepository;
 
     @Transactional
     public LibroDTO.Response crear(LibroDTO.CreateRequest request) {
@@ -154,6 +156,9 @@ public class LibroService {
     }
 
     private LibroDTO.Response toResponse(Libro libro) {
+        Double media = resenaRepository.findNotaMediaByLibro(libro.getIdlibro());
+        long count = resenaRepository.countByLibroIdlibroAndEsPublicaTrue(libro.getIdlibro());
+
         return LibroDTO.Response.builder()
                 .idlibro(libro.getIdlibro())
                 .idapiexterna(libro.getIdapiexterna())
@@ -166,6 +171,8 @@ public class LibroService {
                 .genero(libro.getGenero())
                 .nombreAutor(libro.getAutor().getNombre())
                 .idautor(libro.getAutor().getIdautor())
+                .notaMedia(media != null ? Math.round(media * 20.0) / 10.0 : null)
+                .numResenas((int) count)
                 .build();
     }
 }
