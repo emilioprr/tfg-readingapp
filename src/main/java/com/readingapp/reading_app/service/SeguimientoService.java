@@ -37,7 +37,8 @@ public class SeguimientoService {
             Optional<Seguimiento> ultimo = seguimientoRepository
                     .findTopByUsuarioIdusuarioAndLibroIdlibroOrderByIdseguimientoDesc(
                             usuario.getIdusuario(), libro.getIdlibro());
-            if (ultimo.isPresent() && ultimo.get().getEstado() == EstadoLectura.LEYENDO) {
+            if (ultimo.isPresent() && ultimo.get().getEstado() == EstadoLectura.LEYENDO
+                    && (request.getNumPagina() == null || request.getNumPagina() == 0)) {
                 throw new IllegalArgumentException("Ya estás leyendo este libro");
             }
             long leyendoActualmente = seguimientoRepository.countLibrosLeyendoActualmente(
@@ -59,6 +60,15 @@ public class SeguimientoService {
 
         if (request.getEstado() == EstadoLectura.LEYENDO && request.getNumPagina() == null) {
             request.setNumPagina(0);
+        }
+
+        if (request.getEstado() == EstadoLectura.LEYENDO && request.getNumPagina() != null && request.getNumPagina() > 0) {
+            Optional<Seguimiento> ultimoProgreso = seguimientoRepository
+                    .findTopByUsuarioIdusuarioAndLibroIdlibroOrderByIdseguimientoDesc(
+                            usuario.getIdusuario(), libro.getIdlibro());
+            if (ultimoProgreso.isPresent() && request.getNumPagina() <= ultimoProgreso.get().getNumPagina()) {
+                throw new IllegalArgumentException("La página debe ser mayor que " + ultimoProgreso.get().getNumPagina());
+            }
         }
 
         // Validar que la página no supere el total del libro y exista

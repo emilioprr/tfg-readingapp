@@ -48,6 +48,11 @@ public class UsuarioController {
         return ResponseEntity.noContent().build();
     }
 
+    @GetMapping("/buscar")
+    public ResponseEntity<List<UsuarioDTO.Response>> buscarPorNombre(@RequestParam String nombre) {
+        return ResponseEntity.ok(usuarioService.buscarPorNombre(nombre));
+    }
+
     @PostMapping("/{seguidorId}/seguir/{seguidoId}")
     public ResponseEntity<Void> seguirUsuario(@PathVariable Long seguidorId, @PathVariable Long seguidoId) {
         SecurityUtils.validarUsuario(seguidorId);

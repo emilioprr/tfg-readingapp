@@ -15,6 +15,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -188,7 +189,11 @@ public class RetoService {
         List<ParticipanteReto> activos = participanteRetoRepository
                 .findByUsuarioIdusuarioAndRetoCumplidoFalse(idusuario);
 
+        log.info("Recalculando retos para usuario {}: {} retos activos", idusuario, activos.size());
+
         for (ParticipanteReto p : activos) {
+            int progreso = calcularProgreso(p.getReto(), idusuario);
+            log.info("Reto {}: progreso calculado = {}", p.getReto().getIdreto(), progreso);
             recalcularProgreso(p.getReto().getIdreto(), idusuario);
         }
     }
@@ -256,14 +261,21 @@ public class RetoService {
     // --- Cálculo de progreso ---
 
     private int calcularProgreso(Reto reto, Long idusuario) {
+        LocalDate inicio = reto.getFechaInicio();
+        LocalDate fin = reto.getFechaFin();
+
         return switch (reto.getTipo()) {
-            case PAGINAS -> seguimientoRepository.sumPaginasByUsuario(idusuario);
-            case HORAS -> sesionLecturaRepository.sumMinutosByUsuario(idusuario) / 60;
+            case PAGINAS -> seguimientoRepository.sumPaginasByUsuarioEntreFechas(idusuario, inicio, fin).intValue();
+            case HORAS -> sesionLecturaRepository.sumMinutosByUsuarioEntreFechas(
+                    idusuario,
+                    inicio.atStartOfDay(),
+                    fin.plusDays(1).atStartOfDay()
+            ) / 60;
             case LIBROS -> seguimientoRepository
-                    .countByUsuarioIdusuarioAndEstado(idusuario, EstadoLectura.LEIDO).intValue();
+                    .countByUsuarioIdusuarioAndEstadoAndFechaBetween(idusuario, EstadoLectura.LEIDO, inicio, fin).intValue();
             case LIBROS_AUTOR -> seguimientoRepository
-                    .countByUsuarioIdusuarioAndLibroAutorIdautorAndEstado(
-                            idusuario, reto.getAutor().getIdautor(), EstadoLectura.LEIDO).intValue();
+                    .countByUsuarioIdusuarioAndLibroAutorIdautorAndEstadoAndFechaBetween(
+                            idusuario, reto.getAutor().getIdautor(), EstadoLectura.LEIDO, inicio, fin).intValue();
         };
     }
 
@@ -308,9 +320,15 @@ public class RetoService {
     }
 
     private RetoDTO.ParticipanteResponse toParticipanteResponse(ParticipanteReto p, Integer meta) {
+        Reto reto = p.getReto();
         double porcentaje = meta > 0 ? Math.min(100.0, (p.getProgreso() * 100.0) / meta) : 0;
         return RetoDTO.ParticipanteResponse.builder()
                 .idparticipante(p.getIdparticipante())
+                .idreto(reto.getIdreto())
+                .tituloReto(reto.getTitulo())
+                .tipoReto(reto.getTipo())
+                .modalidadReto(reto.getModalidad())
+                .meta(meta)
                 .idusuario(p.getUsuario().getIdusuario())
                 .nombreUsuario(p.getUsuario().getNombre())
                 .progreso(p.getProgreso())
@@ -320,7 +338,6 @@ public class RetoService {
                 .porcentaje(Math.round(porcentaje * 10.0) / 10.0)
                 .build();
     }
-
     private RetoDTO.LogroResponse toLogroResponse(ParticipanteReto p) {
         Reto reto = p.getReto();
         return RetoDTO.LogroResponse.builder()
