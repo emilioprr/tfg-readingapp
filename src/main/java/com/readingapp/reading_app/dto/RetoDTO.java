@@ -52,6 +52,11 @@ public class RetoDTO {
     @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
     public static class ParticipanteResponse {
         private Long idparticipante;
+        private Long idreto;
+        private String tituloReto;
+        private TipoReto tipoReto;
+        private ModalidadReto modalidadReto;
+        private Integer meta;
         private Long idusuario;
         private String nombreUsuario;
         private Integer progreso;
@@ -60,7 +65,6 @@ public class RetoDTO {
         private String fechaCumplimiento;
         private Double porcentaje;
     }
-
     @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
     public static class LogroResponse {
         private Long idreto;

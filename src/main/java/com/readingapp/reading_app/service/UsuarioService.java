@@ -97,6 +97,12 @@ public class UsuarioService {
         notificacionService.crearNotificacionSeguidor(seguido, seguidor);
     }
 
+    public List<UsuarioDTO.Response> buscarPorNombre(String nombre) {
+        return usuarioRepository.findByNombreContainingIgnoreCase(nombre).stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
     @Transactional
     public void dejarDeSeguirUsuario(Long seguidorId, Long seguidoId) {
         Usuario seguidor = buscarPorId(seguidorId);
