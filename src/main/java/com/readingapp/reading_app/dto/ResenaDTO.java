@@ -53,5 +53,7 @@ public class ResenaDTO {
         private Long idlibro;
         private String tituloLibro;
         private Integer numLikes;
+        private String portadaLibro;
+        private String avatarUsuario;
     }
 }

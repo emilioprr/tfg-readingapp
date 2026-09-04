@@ -72,7 +72,7 @@ public class LibroService {
 
         if (resultados.isEmpty()) {
             // No hay resultados locales, buscar en OpenLibrary e importar
-            int importados = openLibraryService.importarPorTitulo(titulo, 5);
+            int importados = openLibraryService.importarPorTitulo(titulo, 20);
 
             if (importados > 0) {
                 // Volver a buscar en la BD con los libros recién importados
@@ -144,6 +144,22 @@ public class LibroService {
         Usuario usuario = usuarioRepository.findById(usuarioId)
                 .orElseThrow(() -> new EntityNotFoundException("Usuario no encontrado"));
         return usuario.getLibrosFavoritos().stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
+    public List<String> obtenerGeneros() {
+        return libroRepository.findGenerosDistintos();
+    }
+
+    public List<LibroDTO.Response> obtenerPopulares(Pageable pageable) {
+        return libroRepository.findPopulares(pageable).stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
+    public List<LibroDTO.Response> obtenerPopularesEntreSeguidos(Long idusuario, Pageable pageable) {
+        return libroRepository.findLibrosPopularesEntreSeguidos(idusuario, pageable).stream()
                 .map(this::toResponse)
                 .toList();
     }

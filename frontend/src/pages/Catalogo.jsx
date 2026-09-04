@@ -1,109 +1,127 @@
 import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import api from '../api/axios'
 
 export default function Catalogo() {
-    const [libros, setLibros] = useState([])
-    const [busqueda, setBusqueda] = useState('')
-    const [pagina, setPagina] = useState(0)
-    const [hayMas, setHayMas] = useState(true)
-    const [cargando, setCargando] = useState(false)
+    const [searchParams] = useSearchParams()
+    const queryInicial = searchParams.get('q') || ''
+
+    const [resultadosBusqueda, setResultadosBusqueda] = useState([])
+    const [buscando, setBuscando] = useState(!!queryInicial)
+    const [populares, setPopulares] = useState([])
+    const [generos, setGeneros] = useState([])
+    const [librosPorGenero, setLibrosPorGenero] = useState({})
+    const [cargando, setCargando] = useState(true)
 
     useEffect(() => {
-        cargarLibros(0, true)
-    }, [])
+        if (queryInicial) {
+            buscar(queryInicial)
+        } else {
+            setBuscando(false)
+            cargarPopulares()
+            cargarGeneros()
+        }
+    }, [queryInicial])
 
-    const cargarLibros = async (pag, reset = false) => {
-        setCargando(true)
+    const buscar = async (texto) => {
+        setBuscando(true)
         try {
-            const size = 12
-            const url = busqueda
-                ? `/libros/buscar?titulo=${busqueda}&page=${pag}&size=${size}`
-                : `/libros?page=${pag}&size=${size}`
-            const res = await api.get(url)
-            const datos = res.data.content || res.data || []
-
-            if (reset) {
-                setLibros(datos)
-            } else {
-                setLibros(prev => [...prev, ...datos])
-            }
-            setPagina(pag)
-            setHayMas(datos.length === size)
+            const res = await api.get(`/libros/buscar?titulo=${texto}&size=24`)
+            setResultadosBusqueda(res.data.content || res.data || [])
         } catch (err) {
-            console.error('Error cargando libros:', err)
+            console.error('Error buscando:', err)
         } finally {
             setCargando(false)
         }
     }
 
-    const cargarMas = () => {
-        cargarLibros(pagina + 1)
+    const cargarPopulares = async () => {
+        try {
+            const res = await api.get('/libros/populares?size=12')
+            setPopulares(res.data.content || res.data || [])
+        } catch (err) {
+            console.error('Error cargando populares:', err)
+        }
     }
 
-    const handleBuscar = (e) => {
-        e.preventDefault()
-        setPagina(0)
-        setHayMas(true)
-        cargarLibros(0, true)
+    const cargarGeneros = async () => {
+        try {
+            const res = await api.get('/libros/generos')
+            const lista = res.data || []
+            setGeneros(lista)
+            const librosMap = {}
+            for (const genero of lista.slice(0, 10)) {
+                try {
+                    const gRes = await api.get(`/libros/genero/${genero}?size=12`)
+                    librosMap[genero] = gRes.data.content || gRes.data || []
+                } catch (err) {
+                    console.error(`Error cargando género ${genero}:`, err)
+                }
+            }
+            setLibrosPorGenero(librosMap)
+        } catch (err) {
+            console.error('Error cargando géneros:', err)
+        } finally {
+            setCargando(false)
+        }
     }
+
+
+    const LibroCard = ({ libro }) => (
+        <Link to={`/libro/${libro.idlibro}`} className="group flex-shrink-0 w-36">
+            <div className="bg-dark-card rounded-xl overflow-hidden hover:bg-dark-elevated transition-colors relative">
+                {libro.portada ? (
+                    <img src={libro.portada} alt={libro.titulo} className="w-full h-48 object-cover" />
+                ) : (
+                    <div className="w-full h-48 bg-dark-elevated flex items-center justify-center text-dark-muted text-sm">Sin portada</div>
+                )}
+                <div className="p-2">
+                    <p className="text-sm text-dark-text truncate group-hover:text-terra transition-colors">{libro.titulo}</p>
+                    <p className="text-xs text-dark-muted truncate">{libro.nombreAutor}</p>
+                </div>
+            </div>
+        </Link>
+    )
 
     return (
         <div>
-            <h1 className="text-2xl font-bold text-amber-400 mb-6">Catálogo</h1>
-
-            <form onSubmit={handleBuscar} className="mb-6 flex gap-2">
-                <input
-                    type="text"
-                    placeholder="Buscar por título..."
-                    value={busqueda}
-                    onChange={(e) => setBusqueda(e.target.value)}
-                    className="flex-1 bg-gray-800 border border-gray-700 rounded px-3 py-2 text-gray-100 focus:border-amber-500 focus:outline-none"
-                />
-                <button type="submit" className="bg-amber-500 hover:bg-amber-600 text-gray-900 font-bold px-4 py-2 rounded">
-                    Buscar
-                </button>
-            </form>
-
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                {libros.map((libro) => (
-                    <Link key={libro.idlibro} to={`/libro/${libro.idlibro}`} className="group">
-                        <div className="bg-gray-900 rounded-lg border border-gray-800 hover:border-amber-500/40 overflow-hidden">
-                            {libro.portada ? (
-                                <img src={libro.portada} alt={libro.titulo} className="w-full h-48 object-cover" />
-                            ) : (
-                                <div className="w-full h-48 bg-gray-800 flex items-center justify-center text-gray-500 text-sm">
-                                    Sin portada
-                                </div>
-                            )}
-                            <div className="p-2">
-                                <p className="text-sm text-gray-200 truncate group-hover:text-amber-400">{libro.titulo}</p>
-                                <p className="text-xs text-gray-500 truncate">{libro.nombreAutor}</p>
+            <h1 className="text-2xl font-bold text-dark-text mb-8 tracking-tight">Libros</h1>
+            {buscando ? (
+                <div>
+                    <h2 className="text-lg font-semibold text-dark-muted mb-4">Resultados para "{queryInicial}"</h2>
+                    {resultadosBusqueda.length === 0 && !cargando ? (
+                        <p className="text-dark-muted">No se encontraron libros</p>
+                    ) : (
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                            {resultadosBusqueda.map((libro) => <LibroCard key={libro.idlibro} libro={libro} />)}
+                        </div>
+                    )}
+                </div>
+            ) : (
+                <>
+                    {populares.length > 0 && (
+                        <div className="mb-10">
+                            <h2 className="text-lg font-semibold text-dark-text mb-4">Populares</h2>
+                            <div className="flex gap-4 overflow-x-auto pb-2">
+                                {populares.map((libro) => <LibroCard key={libro.idlibro} libro={libro} />)}
                             </div>
                         </div>
-                    </Link>
-                ))}
-            </div>
-
-            {hayMas && !cargando && (
-                <div className="flex justify-center mt-6">
-                    <button onClick={cargarMas}
-                            className="bg-gray-800 hover:bg-gray-700 text-amber-400 font-medium px-6 py-2 rounded">
-                        Cargar más libros
-                    </button>
-                </div>
-            )}
-
-            {cargando && (
-                <p className="text-gray-400 text-center mt-6">Cargando...</p>
-            )}
-
-            {!hayMas && libros.length > 0 && !cargando && (
-                <p className="text-gray-500 text-center mt-6">No hay más libros</p>
-            )}
-
-            {libros.length === 0 && !cargando && (
-                <p className="text-gray-500 text-center mt-10">No se encontraron libros</p>
+                    )}
+                    {cargando ? <p className="text-dark-muted">Cargando catálogo...</p> : (
+                        generos.slice(0, 10).map((genero) => {
+                            const libros = librosPorGenero[genero] || []
+                            if (libros.length === 0) return null
+                            return (
+                                <div key={genero} className="mb-10">
+                                    <h2 className="text-lg font-semibold text-dark-text mb-4 capitalize">{genero}</h2>
+                                    <div className="flex gap-4 overflow-x-auto pb-2">
+                                        {libros.map((libro) => <LibroCard key={libro.idlibro} libro={libro} />)}
+                                    </div>
+                                </div>
+                            )
+                        })
+                    )}
+                </>
             )}
         </div>
     )

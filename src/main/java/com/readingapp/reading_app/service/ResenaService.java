@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -153,6 +154,12 @@ public class ResenaService {
                 .orElseThrow(() -> new EntityNotFoundException("Reseña no encontrada con id: " + id));
     }
 
+    public List<ResenaDTO.Response> obtenerResenasDeSeguidos(Long idusuario, Pageable pageable) {
+        return resenaRepository.findResenasDeSeguidos(idusuario, pageable).stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
     private ResenaDTO.Response toResponse(Resena resena) {
         return ResenaDTO.Response.builder()
                 .idresena(resena.getIdresena())
@@ -169,6 +176,14 @@ public class ResenaService {
                 .idlibro(resena.getLibro().getIdlibro())
                 .tituloLibro(resena.getLibro().getTitulo())
                 .numLikes(resena.getLikes() != null ? resena.getLikes().size() : 0)
+                .portadaLibro(resena.getLibro().getPortada())
+                .avatarUsuario(resena.getUsuario().getAvatar())
                 .build();
+    }
+
+    public List<ResenaDTO.Response> obtenerLikesPorUsuario(Long idusuario) {
+        return resenaRepository.findResenasLikeadasPorUsuario(idusuario).stream()
+                .map(this::toResponse)
+                .toList();
     }
 }

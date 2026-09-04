@@ -63,6 +63,22 @@ public class LibroController {
         return ResponseEntity.noContent().build();
     }
 
+    @GetMapping("/generos")
+    public ResponseEntity<List<String>> obtenerGeneros() {
+        return ResponseEntity.ok(libroService.obtenerGeneros());
+    }
+
+    @GetMapping("/populares")
+    public ResponseEntity<List<LibroDTO.Response>> obtenerPopulares(@PageableDefault(size = 12) Pageable pageable) {
+        return ResponseEntity.ok(libroService.obtenerPopulares(pageable));
+    }
+
+    @GetMapping("/populares-amigos/{idusuario}")
+    public ResponseEntity<List<LibroDTO.Response>> obtenerPopularesEntreSeguidos(
+            @PathVariable Long idusuario, @PageableDefault(size = 12) Pageable pageable) {
+        return ResponseEntity.ok(libroService.obtenerPopularesEntreSeguidos(idusuario, pageable));
+    }
+
     // === FAVORITOS ===
 
     @PostMapping("/{libroId}/favorito/{usuarioId}")
