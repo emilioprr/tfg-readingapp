@@ -2,11 +2,14 @@ package com.readingapp.reading_app.controller;
 
 import com.readingapp.reading_app.config.SecurityUtils;
 import com.readingapp.reading_app.dto.ResenaDTO;
+import com.readingapp.reading_app.model.Resena;
 import com.readingapp.reading_app.service.ResenaService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -67,6 +70,12 @@ public class ResenaController {
         return ResponseEntity.noContent().build();
     }
 
+    @GetMapping("/seguidos/{idusuario}")
+    public ResponseEntity<List<ResenaDTO.Response>> obtenerResenasDeSeguidos(
+            @PathVariable Long idusuario, @PageableDefault(size = 10) Pageable pageable) {
+        return ResponseEntity.ok(resenaService.obtenerResenasDeSeguidos(idusuario, pageable));
+    }
+
     // === LIKES ===
 
     @PostMapping("/{resenaId}/like/{usuarioId}")
@@ -81,5 +90,11 @@ public class ResenaController {
         SecurityUtils.validarUsuario(usuarioId);
         resenaService.quitarLike(resenaId, usuarioId);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/likes/{idusuario}")
+    public ResponseEntity<List<ResenaDTO.Response>> obtenerLikes(@PathVariable Long idusuario) {
+        SecurityUtils.validarUsuario(idusuario);
+        return ResponseEntity.ok(resenaService.obtenerLikesPorUsuario(idusuario));
     }
 }

@@ -170,6 +170,8 @@ public class SeguimientoService {
                 .tituloLibro(seguimiento.getLibro().getTitulo())
                 .totalPaginas(totalPaginas)
                 .porcentaje(porcentaje)
+                .portadaLibro(seguimiento.getLibro().getPortada())
+                .nombreAutor(seguimiento.getLibro().getAutor().getNombre())
                 .build();
     }
 }

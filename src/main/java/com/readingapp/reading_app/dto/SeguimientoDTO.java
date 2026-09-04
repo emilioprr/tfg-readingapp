@@ -29,5 +29,7 @@ public class SeguimientoDTO {
         private String tituloLibro;
         private Integer totalPaginas;
         private Double porcentaje;
+        private String portadaLibro;
+        private String nombreAutor;
     }
 }

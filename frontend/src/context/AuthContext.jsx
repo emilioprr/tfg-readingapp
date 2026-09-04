@@ -23,6 +23,7 @@ export function AuthProvider({ children }) {
         localStorage.removeItem('token')
         localStorage.removeItem('usuario')
         setUsuario(null)
+        window.location.href = '/landing'
     }
 
     return (
