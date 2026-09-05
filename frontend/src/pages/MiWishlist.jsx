@@ -40,16 +40,8 @@ export default function MiWishlist() {
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
                     {libros.map((libro) => (
                         <Link key={libro.idlibro} to={`/libro/${libro.idlibro}`} className="group">
-                            <div className="bg-dark-card rounded-xl overflow-hidden hover:bg-dark-elevated transition-colors">
-                                {libro.portada ? (
-                                    <img src={libro.portada} alt={libro.titulo} className="w-full h-48 object-cover" />
-                                ) : (
-                                    <div className="w-full h-48 bg-dark-elevated flex items-center justify-center text-dark-muted text-sm">Sin portada</div>
-                                )}
-                                <div className="p-2">
-                                    <p className="text-sm text-dark-text truncate group-hover:text-terra transition-colors">{libro.titulo}</p>
-                                    <p className="text-xs text-dark-muted truncate">{libro.nombreAutor}</p>
-                                </div>
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-x-4 gap-y-6">
+                                {libros.map((libro) => <LibroCard key={libro.idlibro} libro={libro} className="w-full" />)}
                             </div>
                         </Link>
                     ))}

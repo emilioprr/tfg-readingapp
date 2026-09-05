@@ -30,4 +30,12 @@ public interface ResenaRepository extends JpaRepository<Resena, Long> {
     List<Resena> findResenasDeSeguidos(@Param("idusuario") Long idusuario, Pageable pageable);
     @Query("SELECT r FROM Resena r JOIN r.likes u WHERE u.idusuario = :idusuario ORDER BY r.fechaCreacion DESC")
     List<Resena> findResenasLikeadasPorUsuario(@Param("idusuario") Long idusuario);
+    @Query("SELECT r.puntuacion, COUNT(r) FROM Resena r WHERE r.libro.idlibro = :idlibro AND r.esPublica = true GROUP BY r.puntuacion ORDER BY r.puntuacion")
+    List<Object[]> findDistribucionByLibro(@Param("idlibro") Long idlibro);
+
+    @Query("SELECT AVG(r.ritmo) FROM Resena r WHERE r.libro.idlibro = :idlibro AND r.esPublica = true AND r.ritmo IS NOT NULL")
+    Double findRitmoMedioByLibro(@Param("idlibro") Long idlibro);
+
+    @Query("SELECT e, COUNT(e) FROM Resena r JOIN r.etiquetas e WHERE r.libro.idlibro = :idlibro AND r.esPublica = true GROUP BY e ORDER BY COUNT(e) DESC")
+    List<Object[]> findEtiquetasPopularesByLibro(@Param("idlibro") Long idlibro);
 }

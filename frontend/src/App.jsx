@@ -26,6 +26,7 @@ import MiWishlist from './pages/MiWishlist'
 import MisLikes from './pages/MisLikes'
 import Busqueda from './pages/Busqueda'
 import Listas from './pages/Listas'
+import ResenaDetalle from './pages/ResenaDetalle'
 
 
 function App() {
@@ -60,6 +61,7 @@ function App() {
                         <Route path="/mi-wishlist" element={<MiWishlist />} />
                         <Route path="/mis-likes" element={<MisLikes />} />
                         <Route path="/listas" element={<Listas />} />
+                        <Route path="/resena/:id" element={<ResenaDetalle />} />
                     </Route>
                 </Routes>
             </BrowserRouter>

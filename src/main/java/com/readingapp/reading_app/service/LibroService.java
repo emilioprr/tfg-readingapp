@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -164,6 +165,28 @@ public class LibroService {
                 .toList();
     }
 
+    private Map<String, Long> calcularDistribucion(Long idlibro) {
+        Map<String, Long> dist = new java.util.LinkedHashMap<>();
+        for (double d = 0.5; d <= 5.0; d += 0.5) {
+            dist.put(String.valueOf(d), 0L);
+        }
+        List<Object[]> rows = resenaRepository.findDistribucionByLibro(idlibro);
+        for (Object[] row : rows) {
+            String key = row[0].toString();
+            if (key.endsWith(".0")) key = key.substring(0, key.length() - 2) + ".0";
+            long count = ((Number) row[1]).longValue();
+            dist.put(key, count);
+        }
+        return dist;
+    }
+
+    private List<String> calcularEtiquetasPopulares(Long idlibro) {
+        return resenaRepository.findEtiquetasPopularesByLibro(idlibro).stream()
+                .limit(5)
+                .map(row -> row[0].toString())
+                .toList();
+    }
+
     // === HELPERS ===
 
     public Libro buscarPorId(Long id) {
@@ -189,6 +212,9 @@ public class LibroService {
                 .idautor(libro.getAutor().getIdautor())
                 .notaMedia(media != null ? Math.round(media * 20.0) / 10.0 : null)
                 .numResenas((int) count)
+                .ritmoMedio(resenaRepository.findRitmoMedioByLibro(libro.getIdlibro()))
+                .distribucionNotas(calcularDistribucion(libro.getIdlibro()))
+                .etiquetasPopulares(calcularEtiquetasPopulares(libro.getIdlibro()))
                 .build();
     }
 }

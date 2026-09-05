@@ -3,6 +3,9 @@ package com.readingapp.reading_app.dto;
 import jakarta.validation.constraints.*;
 import lombok.*;
 
+import java.util.List;
+import java.util.Map;
+
 public class LibroDTO {
 
     @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
@@ -46,5 +49,8 @@ public class LibroDTO {
         private Long idautor;
         private Double notaMedia;
         private Integer numResenas;
+        private Double ritmoMedio;
+        private Map<String, Long> distribucionNotas;
+        private List<String> etiquetasPopulares;
     }
 }
