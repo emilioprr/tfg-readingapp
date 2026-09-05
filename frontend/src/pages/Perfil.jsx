@@ -35,16 +35,17 @@ export default function Perfil() {
     }
 
     const cargarFavoritos = async () => {
-        try { const res = await api.get(`/libros/favoritos/${perfilId}`); setFavoritos(res.data || []) }
-        catch (err) { console.error('Error:', err) }
+        try {
+            const res = await api.get(`/libros/favoritos/${perfilId}`)
+            const datos = res.data || []
+            datos.sort((a, b) => a.idlibro - b.idlibro)
+            setFavoritos(datos)
+        } catch (err) { console.error('Error:', err) }
     }
 
     const cargarLecturasRecientes = async () => {
         try {
-            const endpoint = esMio
-                ? `/seguimientos/usuario/${perfilId}/estado/LEIDO`
-                : `/seguimientos/usuario/${perfilId}/estado/LEIDO`
-            const res = await api.get(endpoint)
+            const res = await api.get(`/seguimientos/usuario/${perfilId}/estado/LEIDO`)
             setLecturasRecientes(res.data || [])
         } catch (err) { console.error('Error:', err) }
     }
@@ -71,6 +72,15 @@ export default function Perfil() {
             setSiguiendo(!siguiendo)
             cargarPerfil()
         } catch (err) { alert(err.response?.data?.mensaje || 'Error') }
+    }
+
+    const quitarFavorito = async (idlibro) => {
+        try {
+            await api.delete(`/libros/${idlibro}/favorito/${perfilId}`)
+            cargarFavoritos()
+        } catch (err) {
+            alert(err.response?.data?.mensaje || 'Error')
+        }
     }
 
     if (loading) return <p className="text-dark-muted">Cargando...</p>
@@ -131,28 +141,33 @@ export default function Perfil() {
             {/* Libros Favoritos */}
             <div className="mb-12">
                 <h2 className="text-lg font-semibold text-dark-text mb-5">Libros Favoritos</h2>
-                <div className="grid grid-cols-5 gap-4">
+                <div className="grid grid-cols-5 gap-x-4 gap-y-6">
                     {favoritosSlots.map((libro, i) => (
                         <div key={libro ? libro.idlibro : `empty-${i}`}>
                             {libro ? (
-                                <Link to={`/libro/${libro.idlibro}`} className="group block">
-                                    <div className="bg-dark-card rounded-xl overflow-hidden hover:bg-dark-elevated transition-colors">
+                                <div className="group relative">
+                                    <Link to={`/libro/${libro.idlibro}`} className="block">
                                         {libro.portada ? (
-                                            <img src={libro.portada} alt={libro.titulo} className="w-full h-44 object-cover" />
+                                            <img src={libro.portada} alt={libro.titulo}
+                                                 className="w-full h-56 object-cover rounded-sm shadow-md group-hover:shadow-xl transition-shadow" />
                                         ) : (
-                                            <div className="w-full h-44 bg-dark-elevated flex items-center justify-center text-dark-muted text-sm">
+                                            <div className="w-full h-56 bg-dark-elevated rounded-sm flex items-center justify-center text-dark-muted text-sm shadow-md">
                                                 Sin portada
                                             </div>
                                         )}
-                                        <div className="p-2">
-                                            <p className="text-xs text-dark-text truncate group-hover:text-terra transition-colors">{libro.titulo}</p>
-                                            <p className="text-xs text-dark-muted truncate">{libro.nombreAutor}</p>
-                                        </div>
-                                    </div>
-                                </Link>
+                                        <p className="text-xs text-dark-text truncate mt-2 group-hover:text-terra transition-colors">{libro.titulo}</p>
+                                        <p className="text-xs text-dark-muted truncate">{libro.nombreAutor}</p>
+                                    </Link>
+                                    {esMio && (
+                                        <button onClick={() => quitarFavorito(libro.idlibro)}
+                                                className="absolute top-1 right-1 bg-black/60 text-red-400 hover:text-red-300 rounded-full w-6 h-6 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity">
+                                            ✕
+                                        </button>
+                                    )}
+                                </div>
                             ) : esMio ? (
                                 <Link to="/catalogo" className="block">
-                                    <div className="border-2 border-dashed border-dark-border rounded-xl h-[13.5rem] flex flex-col items-center justify-center hover:border-terra/40 transition-colors group cursor-pointer">
+                                    <div className="border-2 border-dashed border-dark-border h-56 flex flex-col items-center justify-center hover:border-terra/40 transition-colors group cursor-pointer">
                                         <div className="w-10 h-10 rounded-full border-2 border-dashed border-dark-border group-hover:border-terra/40 flex items-center justify-center mb-2 transition-colors">
                                             <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-dark-muted group-hover:text-terra transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                                                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
@@ -160,10 +175,16 @@ export default function Perfil() {
                                         </div>
                                         <span className="text-xs text-dark-muted group-hover:text-terra transition-colors">Añadir</span>
                                     </div>
+                                    <p className="text-xs text-transparent mt-2">-</p>
+                                    <p className="text-xs text-transparent">-</p>
                                 </Link>
                             ) : (
-                                <div className="border-2 border-dashed border-dark-border/30 rounded-xl h-[13.5rem] flex items-center justify-center">
-                                    <span className="text-xs text-dark-muted/30">Vacío</span>
+                                <div>
+                                    <div className="border-2 border-dashed border-dark-border/30 h-56 flex items-center justify-center">
+                                        <span className="text-xs text-dark-muted/30">Vacío</span>
+                                    </div>
+                                    <p className="text-xs text-transparent mt-2">-</p>
+                                    <p className="text-xs text-transparent">-</p>
                                 </div>
                             )}
                         </div>
@@ -181,22 +202,19 @@ export default function Perfil() {
                         </p>
                     </div>
                 ) : (
-                    <div className="flex gap-4 overflow-x-auto pb-2">
+                    <div className="flex gap-5 overflow-x-auto pb-2">
                         {lecturasRecientes.map((s) => (
-                            <Link key={s.idseguimiento} to={`/libro/${s.idlibro}`} className="group flex-shrink-0 w-36">
-                                <div className="bg-dark-card rounded-xl overflow-hidden hover:bg-dark-elevated transition-colors">
-                                    {s.portadaLibro ? (
-                                        <img src={s.portadaLibro} alt={s.tituloLibro} className="w-full h-48 object-cover" />
-                                    ) : (
-                                        <div className="w-full h-48 bg-dark-elevated flex items-center justify-center text-dark-muted text-sm">
-                                            Sin portada
-                                        </div>
-                                    )}
-                                    <div className="p-2">
-                                        <p className="text-sm text-dark-text truncate group-hover:text-terra transition-colors">{s.tituloLibro}</p>
-                                        <p className="text-xs text-dark-muted mt-0.5">{s.fecha}</p>
+                            <Link key={s.idseguimiento} to={`/libro/${s.idlibro}`} className="group flex-shrink-0 w-40">
+                                {s.portadaLibro ? (
+                                    <img src={s.portadaLibro} alt={s.tituloLibro}
+                                         className="w-full h-56 object-cover shadow-md group-hover:shadow-xl transition-shadow" />
+                                ) : (
+                                    <div className="w-full h-56 bg-dark-elevated flex items-center justify-center text-dark-muted text-sm shadow-md">
+                                        Sin portada
                                     </div>
-                                </div>
+                                )}
+                                <p className="text-sm text-dark-text truncate mt-2 group-hover:text-terra transition-colors">{s.tituloLibro}</p>
+                                <p className="text-xs text-dark-muted">{s.fecha}</p>
                             </Link>
                         ))}
                     </div>
@@ -227,9 +245,10 @@ export default function Perfil() {
                             <div key={r.idresena} className="bg-dark-card rounded-xl p-5 flex gap-4 hover:bg-dark-elevated transition-colors">
                                 <Link to={`/libro/${r.idlibro}`} className="flex-shrink-0">
                                     {r.portadaLibro ? (
-                                        <img src={r.portadaLibro} alt={r.tituloLibro} className="w-14 h-20 object-cover rounded-lg" />
+                                        <img src={r.portadaLibro} alt={r.tituloLibro}
+                                             className="w-14 h-20 object-cover" />
                                     ) : (
-                                        <div className="w-14 h-20 bg-dark-elevated rounded-lg flex items-center justify-center text-dark-muted text-xs">
+                                        <div className="w-14 h-20 bg-dark-elevated flex items-center justify-center text-dark-muted text-xs">
                                             Sin portada
                                         </div>
                                     )}
@@ -265,7 +284,7 @@ export default function Perfil() {
                 )}
             </div>
 
-            {/* Listas — solo en perfil propio */}
+            {/* Listas — solo perfil propio */}
             {esMio && (
                 <div className="mb-12">
                     <div className="flex items-center justify-between mb-5">

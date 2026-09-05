@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import LibroCard from '../components/LibroCard'
 import api from '../api/axios'
 
 export default function Busqueda() {
@@ -11,35 +12,79 @@ export default function Busqueda() {
     const [tab, setTab] = useState('libros')
     const [resultados, setResultados] = useState([])
     const [loading, setLoading] = useState(false)
+    const [pagina, setPagina] = useState(0)
+    const [hayMas, setHayMas] = useState(true)
+    const [cargandoMas, setCargandoMas] = useState(false)
+
+    const paginaRef = useRef(0)
+    const hayMasRef = useRef(true)
+    const cargandoMasRef = useRef(false)
 
     useEffect(() => {
-        if (query) buscar()
+        if (query) {
+            setResultados([])
+            setPagina(0)
+            paginaRef.current = 0
+            hayMasRef.current = true
+            setHayMas(true)
+            buscar(0, true)
+        }
     }, [query, tab])
 
-    const buscar = async () => {
-        setLoading(true)
+    useEffect(() => {
+        if (tab !== 'libros') return
+        const handleScroll = () => {
+            if (cargandoMasRef.current || !hayMasRef.current) return
+            const { scrollTop, scrollHeight, clientHeight } = document.documentElement
+            if (scrollTop + clientHeight >= scrollHeight - 300) {
+                buscar(paginaRef.current + 1, false)
+            }
+        }
+        window.addEventListener('scroll', handleScroll)
+        return () => window.removeEventListener('scroll', handleScroll)
+    }, [tab, query])
+
+    const buscar = async (pag = 0, reset = false) => {
+        if (reset) setLoading(true)
+        else { setCargandoMas(true); cargandoMasRef.current = true }
+
         try {
             let res
+            const size = 24
             if (tab === 'libros') {
-                res = await api.get(`/libros/buscar?titulo=${query}&size=50`)
+                res = await api.get(`/libros/buscar?titulo=${query}&page=${pag}&size=${size}`)
+                const datos = res.data.content || res.data || []
+                if (reset) setResultados(datos)
+                else setResultados(prev => [...prev, ...datos])
+                paginaRef.current = pag
+                setPagina(pag)
+                hayMasRef.current = datos.length === size
+                setHayMas(datos.length === size)
             } else if (tab === 'autores') {
                 res = await api.get(`/autores/buscar?nombre=${query}`)
+                setResultados(res.data.content || res.data || [])
+                hayMasRef.current = false
+                setHayMas(false)
             } else {
                 res = await api.get(`/usuarios/buscar?nombre=${query}`)
+                setResultados(res.data.content || res.data || [])
+                hayMasRef.current = false
+                setHayMas(false)
             }
-            setResultados(res.data.content || res.data || [])
         } catch (err) {
             console.error('Error buscando:', err)
-            setResultados([])
+            if (reset) setResultados([])
         } finally {
             setLoading(false)
+            setCargandoMas(false)
+            cargandoMasRef.current = false
         }
     }
 
     const seguir = async (idSeguido) => {
         try {
             await api.post(`/usuarios/${usuario.id}/seguir/${idSeguido}`)
-            buscar()
+            buscar(0, true)
         } catch (err) {
             alert(err.response?.data?.mensaje || 'Error')
         }
@@ -61,7 +106,6 @@ export default function Busqueda() {
                 </h1>
             </div>
 
-            {/* Tabs */}
             <div className="flex gap-2 mb-8 border-b border-dark-border">
                 {tabs.map((t) => (
                     <button key={t.key} onClick={() => setTab(t.key)}
@@ -85,37 +129,22 @@ export default function Busqueda() {
                 </div>
             ) : (
                 <>
-                    {/* Libros */}
                     {tab === 'libros' && (
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                            {resultados.map((libro) => (
-                                <Link key={libro.idlibro} to={`/libro/${libro.idlibro}`} className="group">
-                                    <div className="bg-dark-card rounded-xl overflow-hidden hover:bg-dark-elevated transition-colors">
-                                        {libro.portada ? (
-                                            <img src={libro.portada} alt={libro.titulo} className="w-full h-48 object-cover" />
-                                        ) : (
-                                            <div className="w-full h-48 bg-dark-elevated flex items-center justify-center text-dark-muted text-sm">
-                                                Sin portada
-                                            </div>
-                                        )}
-                                        <div className="p-3">
-                                            <p className="text-sm text-dark-text truncate group-hover:text-terra transition-colors">
-                                                {libro.titulo}
-                                            </p>
-                                            <p className="text-xs text-dark-muted truncate mt-0.5">{libro.nombreAutor}</p>
-                                            {libro.genero && (
-                                                <span className="inline-block text-xs bg-dark-elevated text-dark-muted px-2 py-0.5 rounded mt-1.5">
-                          {libro.genero}
-                        </span>
-                                            )}
-                                        </div>
-                                    </div>
-                                </Link>
-                            ))}
+                        <div>
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-x-4 gap-y-6">
+                                {resultados.map((libro) => (
+                                    <LibroCard key={libro.idlibro} libro={libro} className="w-full" />
+                                ))}
+                            </div>
+                            {cargandoMas && (
+                                <p className="text-dark-muted text-center mt-6">Cargando más libros...</p>
+                            )}
+                            {!hayMas && resultados.length > 0 && (
+                                <p className="text-dark-muted text-center mt-6 text-sm">No hay más resultados</p>
+                            )}
                         </div>
                     )}
 
-                    {/* Autores */}
                     {tab === 'autores' && (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             {resultados.map((autor) => (
@@ -140,7 +169,6 @@ export default function Busqueda() {
                         </div>
                     )}
 
-                    {/* Usuarios */}
                     {tab === 'usuarios' && (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             {resultados.map((u) => (
