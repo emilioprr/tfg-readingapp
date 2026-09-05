@@ -22,7 +22,7 @@ public class OpenLibraryService {
     private final AutorRepository autorRepository;
     private final LibroRepository libroRepository;
 
-    private static final String SEARCH_URL = "https://openlibrary.org/search.json?q={query}&limit={limit}&fields=key,title,author_name,first_publish_year,number_of_pages_median,cover_i,isbn,subject";
+    private static final String SEARCH_BASE = "https://openlibrary.org/search.json";
     private static final String AUTHOR_SEARCH_URL = "https://openlibrary.org/search/authors.json?q={nombre}&limit=1";
     private static final String AUTHOR_URL = "https://openlibrary.org/authors/{key}.json";
     private static final String COVER_URL = "https://covers.openlibrary.org/b/id/{coverId}-L.jpg";
@@ -30,15 +30,17 @@ public class OpenLibraryService {
 
     // === BÚSQUEDA E IMPORTACIÓN DE LIBROS ===
 
-    /*Busca libros en Open Library por título e importa los que no existen. Devuelve obras únicas (no ediciones duplicadas).*/
     @Transactional
-    public int importarPorTitulo(String titulo, int cantidad) {
+    public int importarPorTitulo(String titulo, int cantidad, int offset) {
         int importados = 0;
 
         try {
-            Map<String, Object> response = restTemplate.getForObject(
-                    SEARCH_URL, Map.class, titulo, cantidad
-            );
+            String url = SEARCH_BASE + "?q=" + java.net.URLEncoder.encode(titulo, java.nio.charset.StandardCharsets.UTF_8)
+                    + "&limit=" + cantidad
+                    + "&offset=" + offset
+                    + "&fields=key,title,author_name,first_publish_year,number_of_pages_median,cover_i,isbn,subject";
+
+            Map<String, Object> response = restTemplate.getForObject(url, Map.class);
 
             if (response == null || (int) response.getOrDefault("numFound", 0) == 0) {
                 log.info("No se encontraron resultados en Open Library para '{}'", titulo);
@@ -53,13 +55,13 @@ public class OpenLibraryService {
                     if (guardarLibroDesdeOpenLibrary(doc)) {
                         importados++;
                     }
-                    Thread.sleep(200);
+                    Thread.sleep(100);
                 } catch (Exception e) {
                     log.warn("Error al procesar libro de Open Library: {}", e.getMessage());
                 }
             }
 
-            log.info("Importación desde Open Library completada: {} libros importados para '{}'", importados, titulo);
+            log.info("Open Library: {} importados para '{}' (offset {})", importados, titulo, offset);
 
         } catch (Exception e) {
             log.error("Error en la petición a Open Library: {}", e.getMessage());
@@ -67,6 +69,12 @@ public class OpenLibraryService {
 
         return importados;
     }
+
+    @Transactional
+    public int importarPorTitulo(String titulo, int cantidad) {
+        return importarPorTitulo(titulo, cantidad, 0);
+    }
+
 
     private boolean guardarLibroDesdeOpenLibrary(Map<String, Object> doc) {
         String titulo = (String) doc.get("title");

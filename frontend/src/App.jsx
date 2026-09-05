@@ -27,6 +27,8 @@ import MisLikes from './pages/MisLikes'
 import Busqueda from './pages/Busqueda'
 import Listas from './pages/Listas'
 import ResenaDetalle from './pages/ResenaDetalle'
+import Calendario from './pages/Calendario'
+import Timer from './pages/Timer'
 
 
 function App() {
@@ -62,6 +64,8 @@ function App() {
                         <Route path="/mis-likes" element={<MisLikes />} />
                         <Route path="/listas" element={<Listas />} />
                         <Route path="/resena/:id" element={<ResenaDetalle />} />
+                        <Route path="/calendario" element={<Calendario />} />
+                        <Route path="/timer" element={<Timer />} />
                     </Route>
                 </Routes>
             </BrowserRouter>
