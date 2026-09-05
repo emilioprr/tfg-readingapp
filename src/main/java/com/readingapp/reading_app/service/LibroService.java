@@ -66,23 +66,25 @@ public class LibroService {
                 .toList();
     }
 
-    /*Busca libros por título en la BD local. Si no encuentra resultados, busca en OpenLibrary, importa 10 resultados y los devuelve.*/
     @Transactional
     public Page<LibroDTO.Response> buscarPorTitulo(String titulo, Pageable pageable) {
         Page<Libro> resultados = libroRepository.findByTituloContainingIgnoreCase(titulo, pageable);
 
-        if (resultados.isEmpty()) {
-            // No hay resultados locales, buscar en OpenLibrary e importar
-            int importados = openLibraryService.importarPorTitulo(titulo, 20);
+        if (resultados.getTotalElements() < pageable.getPageSize()) {
+            int offset = 0;
+            int intentos = 0;
+            int maxIntentos = 5;
 
-            if (importados > 0) {
-                // Volver a buscar en la BD con los libros recién importados
+            while (resultados.getTotalElements() < pageable.getPageSize() && intentos < maxIntentos) {
+                int importados = openLibraryService.importarPorTitulo(titulo, 20, offset);
+                if (importados == 0) break;
+                offset += 20;
+                intentos++;
                 resultados = libroRepository.findByTituloContainingIgnoreCase(titulo, pageable);
             }
         }
 
         return resultados.map(this::toResponse);
-
     }
 
     public List<LibroDTO.Response> buscarPorGenero(String genero, Pageable pageable) {

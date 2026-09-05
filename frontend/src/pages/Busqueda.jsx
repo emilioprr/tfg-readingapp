@@ -31,42 +31,32 @@ export default function Busqueda() {
         }
     }, [query, tab])
 
-    useEffect(() => {
-        if (tab !== 'libros') return
-        const handleScroll = () => {
-            if (cargandoMasRef.current || !hayMasRef.current) return
-            const { scrollTop, scrollHeight, clientHeight } = document.documentElement
-            if (scrollTop + clientHeight >= scrollHeight - 300) {
-                buscar(paginaRef.current + 1, false)
-            }
-        }
-        window.addEventListener('scroll', handleScroll)
-        return () => window.removeEventListener('scroll', handleScroll)
-    }, [tab, query])
-
     const buscar = async (pag = 0, reset = false) => {
+        if (cargandoMasRef.current) return
         if (reset) setLoading(true)
         else { setCargandoMas(true); cargandoMasRef.current = true }
 
         try {
-            let res
             const size = 24
             if (tab === 'libros') {
-                res = await api.get(`/libros/buscar?titulo=${query}&page=${pag}&size=${size}`)
+                const res = await api.get(`/libros/buscar?titulo=${query}&page=${pag}&size=${size}`)
                 const datos = res.data.content || res.data || []
                 if (reset) setResultados(datos)
-                else setResultados(prev => [...prev, ...datos])
+                else setResultados(prev => {
+                    const ids = new Set(prev.map(l => l.idlibro))
+                    return [...prev, ...datos.filter(l => !ids.has(l.idlibro))]
+                })
                 paginaRef.current = pag
                 setPagina(pag)
                 hayMasRef.current = datos.length === size
                 setHayMas(datos.length === size)
             } else if (tab === 'autores') {
-                res = await api.get(`/autores/buscar?nombre=${query}`)
+                const res = await api.get(`/autores/buscar?nombre=${query}`)
                 setResultados(res.data.content || res.data || [])
                 hayMasRef.current = false
                 setHayMas(false)
             } else {
-                res = await api.get(`/usuarios/buscar?nombre=${query}`)
+                const res = await api.get(`/usuarios/buscar?nombre=${query}`)
                 setResultados(res.data.content || res.data || [])
                 hayMasRef.current = false
                 setHayMas(false)
@@ -79,6 +69,11 @@ export default function Busqueda() {
             setCargandoMas(false)
             cargandoMasRef.current = false
         }
+    }
+
+    const cargarMas = () => {
+        if (cargandoMasRef.current || !hayMasRef.current) return
+        buscar(paginaRef.current + 1, false)
     }
 
     const seguir = async (idSeguido) => {
@@ -136,11 +131,18 @@ export default function Busqueda() {
                                     <LibroCard key={libro.idlibro} libro={libro} className="w-full" />
                                 ))}
                             </div>
-                            {cargandoMas && (
-                                <p className="text-dark-muted text-center mt-6">Cargando más libros...</p>
+
+                            {hayMas && (
+                                <div className="flex justify-center mt-8">
+                                    <button onClick={cargarMas} disabled={cargandoMas}
+                                            className="bg-dark-card hover:bg-dark-elevated text-dark-text font-medium px-6 py-2.5 rounded-xl transition-colors disabled:opacity-50">
+                                        {cargandoMas ? 'Cargando...' : 'Cargar más'}
+                                    </button>
+                                </div>
                             )}
+
                             {!hayMas && resultados.length > 0 && (
-                                <p className="text-dark-muted text-center mt-6 text-sm">No hay más resultados</p>
+                                <p className="text-dark-muted text-center mt-8 text-sm">No hay más resultados</p>
                             )}
                         </div>
                     )}
