@@ -25,6 +25,14 @@ public class UsuarioService {
 
     @Transactional
     public UsuarioDTO.Response registrar(UsuarioDTO.RegistroRequest request) {
+        if (request.getNombre().contains(" ")) {
+            throw new IllegalArgumentException("El nombre no puede contener espacios");
+        }
+
+        if (usuarioRepository.existsByNombre(request.getNombre())) {
+            throw new IllegalArgumentException("Ya existe un usuario con ese nombre");
+        }
+
         if (usuarioRepository.existsByEmail(request.getEmail())) {
             throw new IllegalArgumentException("Ya existe un usuario con ese email");
         }
@@ -75,7 +83,15 @@ public class UsuarioService {
     public UsuarioDTO.Response actualizar(Long id, UsuarioDTO.UpdateRequest request) {
         Usuario usuario = buscarPorId(id);
 
-        if (request.getNombre() != null) usuario.setNombre(request.getNombre());
+        if (request.getNombre() != null) {
+            if (request.getNombre().contains(" ")) {
+                throw new IllegalArgumentException("El nombre no puede contener espacios");
+            }
+            if (!request.getNombre().equals(usuario.getNombre()) && usuarioRepository.existsByNombre(request.getNombre())) {
+                throw new IllegalArgumentException("Ya existe un usuario con ese nombre");
+            }
+            usuario.setNombre(request.getNombre());
+        }
         if (request.getBiografia() != null) usuario.setBiografia(request.getBiografia());
         if (request.getAvatar() != null) usuario.setAvatar(request.getAvatar());
 

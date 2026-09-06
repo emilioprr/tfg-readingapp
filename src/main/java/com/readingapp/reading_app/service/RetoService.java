@@ -168,14 +168,14 @@ public class RetoService {
         participante = participanteRetoRepository.save(participante);
 
         if (reto.getModalidad() == ModalidadReto.COLABORATIVO) {
-            // Comprobar progreso colectivo
             int progresoTotal = participanteRetoRepository.sumProgresoByReto(idreto);
-            if (progresoTotal >= reto.getMeta()) {
+            int metaReal = reto.getTipo().name().equals("HORAS") ? reto.getMeta() * 60 : reto.getMeta();
+            if (progresoTotal >= metaReal) {
                 completarRetoColaborativo(reto);
             }
         } else {
-            // Individual: comprobar solo este participante
-            if (nuevoProgreso >= reto.getMeta()) {
+            int metaReal = reto.getTipo().name().equals("HORAS") ? reto.getMeta() * 60 : reto.getMeta();
+            if (nuevoProgreso >= metaReal) {
                 completarParticipante(participante, reto);
             }
         }
@@ -270,7 +270,7 @@ public class RetoService {
                     idusuario,
                     inicio.atStartOfDay(),
                     fin.plusDays(1).atStartOfDay()
-            ) / 60;
+            );
             case LIBROS -> seguimientoRepository
                     .countByUsuarioIdusuarioAndEstadoAndFechaBetween(idusuario, EstadoLectura.LEIDO, inicio, fin).intValue();
             case LIBROS_AUTOR -> seguimientoRepository
@@ -321,14 +321,15 @@ public class RetoService {
 
     private RetoDTO.ParticipanteResponse toParticipanteResponse(ParticipanteReto p, Integer meta) {
         Reto reto = p.getReto();
-        double porcentaje = meta > 0 ? Math.min(100.0, (p.getProgreso() * 100.0) / meta) : 0;
+        int metaReal = reto.getTipo().name().equals("HORAS") ? meta * 60 : meta;
+        double porcentaje = metaReal > 0 ? Math.min(100.0, (p.getProgreso() * 100.0) / metaReal) : 0;
         return RetoDTO.ParticipanteResponse.builder()
                 .idparticipante(p.getIdparticipante())
                 .idreto(reto.getIdreto())
                 .tituloReto(reto.getTitulo())
                 .tipoReto(reto.getTipo())
                 .modalidadReto(reto.getModalidad())
-                .meta(meta)
+                .meta(metaReal)
                 .idusuario(p.getUsuario().getIdusuario())
                 .nombreUsuario(p.getUsuario().getNombre())
                 .progreso(p.getProgreso())
@@ -338,6 +339,7 @@ public class RetoService {
                 .porcentaje(Math.round(porcentaje * 10.0) / 10.0)
                 .build();
     }
+
     private RetoDTO.LogroResponse toLogroResponse(ParticipanteReto p) {
         Reto reto = p.getReto();
         return RetoDTO.LogroResponse.builder()

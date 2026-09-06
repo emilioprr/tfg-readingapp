@@ -201,22 +201,24 @@ export default function LibroDetalle() {
                                                 </svg>
                                                 Añadir a Wishlist
                                             </button>
-                                            <button onClick={() => { setMostrarListas(!mostrarListas); }}
-                                                    className="w-full text-left px-4 py-2.5 text-dark-text hover:bg-dark-card text-sm transition-colors flex items-center gap-2">
-                                                <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-dark-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-                                                </svg>
-                                                Añadir a lista
-                                            </button>
-                                            {mostrarListas && listasNormales.length > 0 && (
-                                                <div className="border-t border-dark-border">
-                                                    {listasNormales.map((lista) => (
-                                                        <button key={lista.idlista} onClick={() => agregarALista(lista.idlista)}
-                                                                className="w-full text-left px-6 py-2 text-dark-muted hover:bg-dark-card text-xs transition-colors">
-                                                            {lista.nombre}
-                                                        </button>
-                                                    ))}
-                                                </div>
+                                            {listasNormales.length > 0 ? (
+                                                listasNormales.map((lista) => (
+                                                    <button key={lista.idlista} onClick={() => agregarALista(lista.idlista)}
+                                                            className="w-full text-left px-4 py-2.5 text-dark-text hover:bg-dark-card text-sm transition-colors flex items-center gap-2">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-dark-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                                                        </svg>
+                                                        {lista.nombre}
+                                                    </button>
+                                                ))
+                                            ) : (
+                                                <Link to="/crear-lista" onClick={() => setMenuAbierto(false)}
+                                                      className="w-full text-left px-4 py-2.5 text-dark-muted hover:bg-dark-card text-sm transition-colors flex items-center gap-2">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-dark-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                                                    </svg>
+                                                    Crear lista
+                                                </Link>
                                             )}
                                             {estadoLibro === 'LEYENDO' && (
                                                 <button onClick={() => navigate('/')}
