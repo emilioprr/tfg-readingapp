@@ -11,7 +11,6 @@ import AutorDetalle from './pages/AutorDetalle'
 import Notificaciones from './pages/Notificaciones'
 import Retos from './pages/Retos'
 import CrearResena from './pages/CrearResena'
-import RegistrarSeguimiento from './pages/RegistrarSeguimiento'
 import ListaDetalle from './pages/ListaDetalle'
 import CrearLista from './pages/CrearLista'
 import Recomendaciones from './pages/Recomendaciones'
@@ -47,7 +46,6 @@ function App() {
                         <Route path="/notificaciones" element={<Notificaciones />} />
                         <Route path="/retos" element={<Retos />} />
                         <Route path="/libro/:idlibro/resena" element={<CrearResena />} />
-                        <Route path="/libro/:idlibro/seguimiento" element={<RegistrarSeguimiento />} />
                         <Route path="/lista/:id" element={<ListaDetalle />} />
                         <Route path="/crear-lista" element={<CrearLista />} />
                         <Route path="/buscar" element={<Busqueda />} />

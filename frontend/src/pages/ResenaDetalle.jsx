@@ -21,6 +21,20 @@ export default function ResenaDetalle() {
         finally { setLoading(false) }
     }
 
+    useEffect(() => {
+        if (usuario && resena && resena.idusuario !== usuario.id) {
+            comprobarLike()
+        }
+    }, [resena?.idresena])
+
+    const comprobarLike = async () => {
+        try {
+            const res = await api.get(`/resenas/likes/${usuario.id}`)
+            const likes = res.data.content || res.data || []
+            setLiked(likes.some(r => r.idresena === parseInt(id)))
+        } catch (err) { console.error('Error:', err) }
+    }
+
     const toggleLike = async () => {
         try {
             if (liked) {
