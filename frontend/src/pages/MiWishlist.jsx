@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import LibroCard from '../components/LibroCard'
 import api from '../api/axios'
 
 export default function MiWishlist() {
@@ -29,7 +30,7 @@ export default function MiWishlist() {
     if (loading) return <p className="text-dark-muted">Cargando...</p>
 
     return (
-        <div>
+        <div className="max-w-4xl mx-auto">
             <h1 className="text-2xl font-bold text-dark-text mb-6 tracking-tight">Mi Wishlist</h1>
             {libros.length === 0 ? (
                 <div className="text-center py-10 bg-dark-card rounded-2xl">
@@ -37,13 +38,9 @@ export default function MiWishlist() {
                     <Link to="/catalogo" className="text-terra hover:text-terra-hover text-sm transition-colors">Explorar libros</Link>
                 </div>
             ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-x-4 gap-y-6">
                     {libros.map((libro) => (
-                        <Link key={libro.idlibro} to={`/libro/${libro.idlibro}`} className="group">
-                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-x-4 gap-y-6">
-                                {libros.map((libro) => <LibroCard key={libro.idlibro} libro={libro} className="w-full" />)}
-                            </div>
-                        </Link>
+                        <LibroCard key={libro.idlibro} libro={libro} className="w-full" />
                     ))}
                 </div>
             )}

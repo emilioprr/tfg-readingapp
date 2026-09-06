@@ -82,9 +82,11 @@ export default function Inicio() {
                     idusuario: usuario.id,
                     idlibro: libroActual.idlibro,
                 })
+                cargarRetos()
                 navigate(`/libro/${libroActual.idlibro}/resena`)
             } else {
                 cargarLeyendo()
+                cargarRetos()
             }
         } catch (err) {
             setErrorProgreso(err.response?.data?.mensaje || 'Error al actualizar')
@@ -186,6 +188,13 @@ export default function Inicio() {
                                                 <p className="text-dark-muted text-sm">{libroActual.nombreAutor || ''}</p>
                                             </div>
 
+                                            <Link to={`/libro/${libroActual.idlibro}/anotaciones`}
+                                                  className="text-dark-muted hover:text-terra transition-colors p-1" title="Nueva anotación">
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                                                </svg>
+                                            </Link>
+
                                             <div className="relative">
                                                 <button onClick={() => setMenuAbierto(!menuAbierto)}
                                                         className="text-dark-muted hover:text-dark-text transition-colors p-1">
@@ -226,38 +235,35 @@ export default function Inicio() {
                                         </div>
 
                                         {editandoProgreso ? (
-                                            <div className="mt-3">
-                                                <div className="flex items-center gap-2">
-                                                    <span className="text-dark-muted text-sm">Página</span>
-                                                    <input
-                                                        type="number"
-                                                        value={nuevaPagina}
-                                                        onChange={(e) => setNuevaPagina(e.target.value)}
-                                                        onKeyDown={handleKeyDown}
-                                                        autoFocus
-                                                        min={libroActual.numPagina + 1}
-                                                        max={libroActual.totalPaginas || undefined}
-                                                        placeholder={`${libroActual.numPagina + 1}`}
-                                                        className="w-20 bg-dark-elevated border border-dark-border rounded-lg px-2 py-1 text-dark-text text-sm focus:border-terra focus:outline-none transition-colors"
-                                                    />
-                                                    <span className="text-dark-muted text-sm">de {libroActual.totalPaginas || '?'}</span>
-                                                    <button onClick={actualizarProgreso}
-                                                            className="bg-terra hover:bg-terra-hover text-white font-semibold px-3 py-1 rounded-lg text-sm transition-colors">
-                                                        OK
-                                                    </button>
-                                                    <button onClick={() => { setEditandoProgreso(false); setNuevaPagina(''); setErrorProgreso('') }}
-                                                            className="text-dark-muted hover:text-dark-text text-sm transition-colors">
-                                                        ✕
-                                                    </button>
-                                                </div>
+                                            <div className="flex items-center gap-2 mt-3">
+                                                <span className="text-dark-muted text-sm">Página</span>
+                                                <input
+                                                    type="number"
+                                                    value={nuevaPagina}
+                                                    onChange={(e) => setNuevaPagina(e.target.value)}
+                                                    onKeyDown={handleKeyDown}
+                                                    autoFocus
+                                                    min={libroActual.numPagina + 1}
+                                                    max={libroActual.totalPaginas || undefined}
+                                                    className="w-20 bg-dark-elevated border border-dark-border rounded-lg px-2 py-1 text-dark-text text-sm focus:border-terra focus:outline-none transition-colors"
+                                                />
+                                                <span className="text-dark-muted text-sm">de {libroActual.totalPaginas || '?'}</span>
+                                                <button onClick={actualizarProgreso}
+                                                        className="bg-terra hover:bg-terra-hover text-white font-semibold px-3 py-1 rounded-lg text-sm transition-colors">
+                                                    OK
+                                                </button>
+                                                <button onClick={() => { setEditandoProgreso(false); setNuevaPagina(''); setErrorProgreso('') }}
+                                                        className="text-dark-muted hover:text-dark-text text-sm transition-colors">
+                                                    ✕
+                                                </button>
                                                 {errorProgreso && <p className="text-red-400 text-xs mt-1">{errorProgreso}</p>}
                                             </div>
                                         ) : (
                                             <div className="flex items-center justify-between mt-3">
-                        <span className="text-dark-muted text-sm">
-                          Pág. {libroActual.numPagina}{libroActual.totalPaginas ? ` de ${libroActual.totalPaginas}` : ''}
-                        </span>
-                                                <button onClick={() => setEditandoProgreso(true)}
+                                                    <span className="text-dark-muted text-sm">
+                                                      Pág. {libroActual.numPagina}{libroActual.totalPaginas ? ` de ${libroActual.totalPaginas}` : ''}
+                                                    </span>
+                                                <button onClick={() => { setEditandoProgreso(true); setNuevaPagina(String(libroActual.numPagina + 1)) }}
                                                         className="bg-terra hover:bg-terra-hover text-white font-semibold px-4 py-1.5 rounded-lg text-sm transition-colors">
                                                     Actualizar
                                                 </button>
@@ -326,7 +332,9 @@ export default function Inicio() {
                                         </svg>
                                         <div className="absolute inset-0 flex flex-col items-center justify-center">
                                             <span className="text-terra font-bold text-lg">{retoActual.porcentaje || 0}%</span>
-                                            <span className="text-dark-muted text-xs">{retoActual.progreso}/{retoActual.meta}</span>
+                                            <span className="text-dark-muted text-xs">
+                                                {retoActual.progreso}/{retoActual.meta}{(retoActual.tipoReto || retoActual.tipo) === 'HORAS' ? ' min' : ''}
+                                            </span>
                                         </div>
                                     </div>
                                 </div>

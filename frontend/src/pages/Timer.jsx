@@ -71,6 +71,12 @@ export default function Timer() {
         return unidadTiempo === 'horas' ? objetivoMinutos * 60 : objetivoMinutos
     }
 
+    const getMinutosLeidos = () => {
+        return modo === 'objetivo'
+            ? getTotalMinutosObjetivo() - Math.ceil(segundos / 60)
+            : Math.floor(segundosRef.current / 60)
+    }
+
     const iniciar = () => {
         if (!libroSeleccionado) return
         setActivo(true)
@@ -99,8 +105,7 @@ export default function Timer() {
                 setSegundos(segundosRef.current)
                 if (segundosRef.current <= 0) {
                     clearInterval(intervalRef.current)
-                    setActivo(false)
-                    setSesionTerminada(true)
+                    terminar()
                 }
             } else {
                 segundosRef.current += 1
@@ -131,20 +136,18 @@ export default function Timer() {
         segundosRef.current = 0
     }
 
-    const terminar = () => {
+    const terminar = async () => {
         if (intervalRef.current) clearInterval(intervalRef.current)
         setActivo(false)
         setPausado(false)
-        setSesionTerminada(true)
-    }
 
-    const guardarSesion = async () => {
         const minutosLeidos = modo === 'objetivo'
             ? getTotalMinutosObjetivo() - Math.ceil(segundos / 60)
             : Math.floor(segundosRef.current / 60)
 
         if (minutosLeidos < 1) {
-            alert('La sesión debe durar al menos 1 minuto')
+            setSesionTerminada(true)
+            setGuardado(false)
             return
         }
 
@@ -155,9 +158,12 @@ export default function Timer() {
                 idlibro: libroSeleccionado.idlibro,
                 duracionMinutos: minutosLeidos,
             })
+            setSesionTerminada(true)
             setGuardado(true)
         } catch (err) {
             alert(err.response?.data?.mensaje || 'Error al guardar')
+            setSesionTerminada(true)
+            setGuardado(false)
         } finally {
             setGuardando(false)
         }
@@ -179,19 +185,12 @@ export default function Timer() {
         return 0
     }
 
-    const getMinutosLeidos = () => {
-        return modo === 'objetivo'
-            ? getTotalMinutosObjetivo() - Math.ceil(segundos / 60)
-            : Math.floor(segundosRef.current / 60)
-    }
-
     return (
         <div className="max-w-xl mx-auto">
             <h1 className="text-2xl font-bold text-dark-text tracking-tight mb-8 text-center">Sesión de lectura</h1>
 
             {!activo && !sesionTerminada && (
                 <div className="space-y-6">
-                    {/* Selección de libro */}
                     <div className="bg-dark-card rounded-2xl p-6">
                         <h3 className="text-sm font-medium text-dark-muted mb-3">¿Qué vas a leer?</h3>
                         {leyendo.length === 0 ? (
@@ -223,7 +222,6 @@ export default function Timer() {
                         )}
                     </div>
 
-                    {/* Modo del timer */}
                     <div className="bg-dark-card rounded-2xl p-6">
                         <h3 className="text-sm font-medium text-dark-muted mb-3">Modo</h3>
                         <div className="flex gap-3 mb-4">
@@ -268,7 +266,6 @@ export default function Timer() {
                         )}
                     </div>
 
-                    {/* Botón iniciar */}
                     <button onClick={iniciar} disabled={!libroSeleccionado}
                             className="w-full bg-terra hover:bg-terra-hover text-white font-semibold py-3 rounded-xl text-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
                         Iniciar sesión
@@ -276,10 +273,8 @@ export default function Timer() {
                 </div>
             )}
 
-            {/* Timer activo */}
             {(activo || sesionTerminada) && (
                 <div className="text-center">
-                    {/* Libro seleccionado */}
                     <div className="flex items-center justify-center gap-4 mb-10">
                         {libroSeleccionado.portadaLibro ? (
                             <img src={libroSeleccionado.portadaLibro} alt={libroSeleccionado.tituloLibro}
@@ -293,7 +288,6 @@ export default function Timer() {
                         </div>
                     </div>
 
-                    {/* Reloj circular */}
                     <div className="relative w-64 h-64 mx-auto mb-8">
                         <svg className="w-64 h-64 -rotate-90" viewBox="0 0 200 200">
                             <circle cx="100" cy="100" r="90" fill="none" stroke="#2a2a2a" strokeWidth="4" />
@@ -308,16 +302,15 @@ export default function Timer() {
               <span className="text-5xl font-bold text-dark-text tracking-wider font-mono">
                 {formatTiempo(segundos)}
               </span>
-                            {modo === 'objetivo' && !sesionTerminada && (
+                            {modo === 'objetivo' && activo && !sesionTerminada && (
                                 <span className="text-dark-muted text-sm mt-2">restante</span>
                             )}
-                            {sesionTerminada && (
-                                <span className="text-terra text-sm mt-2 font-medium">Sesión completada</span>
+                            {guardando && (
+                                <span className="text-dark-muted text-sm mt-2">Guardando...</span>
                             )}
                         </div>
                     </div>
 
-                    {/* Aviso de pausa por tab */}
                     {pausadoPorTab && (
                         <div className="bg-terra/10 border border-terra/30 rounded-xl px-4 py-3 mb-6">
                             <p className="text-terra text-sm font-medium">Temporizador en pausa: has salido de la página</p>
@@ -325,7 +318,6 @@ export default function Timer() {
                         </div>
                     )}
 
-                    {/* Controles */}
                     {activo && !sesionTerminada && (
                         <div className="flex items-center justify-center gap-4">
                             {pausado ? (
@@ -358,38 +350,23 @@ export default function Timer() {
                         </div>
                     )}
 
-                    {/* Sesión terminada */}
-                    {sesionTerminada && !guardado && (
+                    {sesionTerminada && (
                         <div className="space-y-4">
-                            <div className="bg-dark-card rounded-2xl p-6">
-                                <p className="text-dark-text font-medium mb-1">Sesión finalizada</p>
-                                <p className="text-dark-muted text-sm">
-                                    Has leído durante {getMinutosLeidos()} minutos
-                                </p>
-                            </div>
-                            <div className="flex gap-3 justify-center">
-                                <button onClick={guardarSesion} disabled={guardando}
-                                        className="bg-terra hover:bg-terra-hover text-white font-semibold px-8 py-3 rounded-xl transition-colors disabled:opacity-50">
-                                    {guardando ? 'Guardando...' : 'Guardar sesión'}
-                                </button>
-                                <button onClick={resetear}
-                                        className="bg-dark-elevated hover:bg-dark-border text-dark-text font-semibold px-6 py-3 rounded-xl transition-colors">
-                                    Descartar
-                                </button>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Guardado exitoso */}
-                    {guardado && (
-                        <div className="space-y-4">
-                            <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-2xl p-6">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="w-10 h-10 text-emerald-400 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                                </svg>
-                                <p className="text-emerald-400 font-medium">Sesión guardada</p>
-                                <p className="text-dark-muted text-sm mt-1">Tu progreso se ha actualizado</p>
-                            </div>
+                            {guardado ? (
+                                <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-2xl p-6">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="w-10 h-10 text-emerald-400 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                    <p className="text-emerald-400 font-medium">Sesión guardada</p>
+                                    <p className="text-dark-muted text-sm mt-1">
+                                        {getMinutosLeidos()} minutos registrados
+                                    </p>
+                                </div>
+                            ) : (
+                                <div className="bg-dark-card rounded-2xl p-6">
+                                    <p className="text-dark-muted text-sm">La sesión fue demasiado corta para registrar</p>
+                                </div>
+                            )}
                             <div className="flex gap-3 justify-center">
                                 <button onClick={resetear}
                                         className="bg-terra hover:bg-terra-hover text-white font-semibold px-6 py-3 rounded-xl transition-colors">

@@ -85,7 +85,9 @@ export default function Retos() {
                                     <div className="bg-dark-border rounded-full h-2">
                                         <div className="bg-terra h-2 rounded-full transition-all" style={{ width: `${Math.min(100, p.porcentaje)}%` }} />
                                     </div>
-                                    <p className="text-sm text-dark-muted mt-1">{p.progreso}/{p.meta} · {p.porcentaje}%</p>
+                                    <p className="text-sm text-dark-muted mt-1">
+                                        {p.progreso}/{p.meta}{p.tipoReto === 'HORAS' ? ' min' : ''} · {p.porcentaje}%
+                                    </p>
                                 </div>
                             </div>
                         ))}
