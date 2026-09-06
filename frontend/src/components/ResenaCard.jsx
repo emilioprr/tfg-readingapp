@@ -1,16 +1,30 @@
-import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import Estrellas from './Estrellas'
 import api from '../api/axios'
 
 export default function ResenaCard({ resena: resenaInicial, mostrarLibro = true, mostrarUsuario = true }) {
     const { usuario } = useAuth()
+    const navigate = useNavigate()
     const [resena, setResena] = useState(resenaInicial)
     const [liked, setLiked] = useState(false)
 
+    useEffect(() => {
+        if (usuario && resenaInicial.idusuario !== usuario.id) {
+            comprobarLike()
+        }
+    }, [resenaInicial.idresena])
+
+    const comprobarLike = async () => {
+        try {
+            const res = await api.get(`/resenas/likes/${usuario.id}`)
+            const likes = res.data.content || res.data || []
+            setLiked(likes.some(r => r.idresena === resenaInicial.idresena))
+        } catch (err) { console.error('Error:', err) }
+    }
+
     const toggleLike = async (e) => {
-        e.preventDefault()
         e.stopPropagation()
         if (!usuario || resena.idusuario === usuario.id) return
         try {
@@ -26,12 +40,17 @@ export default function ResenaCard({ resena: resenaInicial, mostrarLibro = true,
         } catch (err) { console.error('Error:', err) }
     }
 
+    const irADetalle = () => {
+        navigate(`/resena/${resena.idresena}`)
+    }
+
     return (
-        <div className="bg-dark-card rounded-xl p-5 hover:bg-dark-elevated transition-colors">
+        <div onClick={irADetalle}
+             className="bg-dark-card rounded-xl p-5 hover:bg-dark-elevated transition-colors cursor-pointer">
             <div className="flex gap-4">
-                {/* Portada */}
                 {mostrarLibro && (
-                    <Link to={`/libro/${resena.idlibro}`} className="flex-shrink-0">
+                    <div className="flex-shrink-0"
+                         onClick={(e) => { e.stopPropagation(); navigate(`/libro/${resena.idlibro}`) }}>
                         {resena.portadaLibro ? (
                             <img src={resena.portadaLibro} alt={resena.tituloLibro} className="w-14 h-20 object-cover rounded-sm" />
                         ) : (
@@ -39,11 +58,10 @@ export default function ResenaCard({ resena: resenaInicial, mostrarLibro = true,
                                 Sin portada
                             </div>
                         )}
-                    </Link>
+                    </div>
                 )}
 
                 <div className="flex-1 min-w-0">
-                    {/* Usuario y fecha */}
                     {mostrarUsuario && (
                         <div className="flex items-center gap-2 mb-1">
                             {resena.avatarUsuario ? (
@@ -53,38 +71,32 @@ export default function ResenaCard({ resena: resenaInicial, mostrarLibro = true,
                                     {resena.nombreUsuario?.charAt(0).toUpperCase()}
                                 </div>
                             )}
-                            <Link to={`/usuario/${resena.idusuario}`}
-                                  className="text-dark-text text-sm font-medium hover:text-terra transition-colors truncate">
-                                {resena.nombreUsuario}
-                            </Link>
+                            <span onClick={(e) => { e.stopPropagation(); navigate(`/usuario/${resena.idusuario}`) }}
+                                  className="text-dark-text text-sm font-medium hover:text-terra transition-colors truncate cursor-pointer">
+                {resena.nombreUsuario}
+              </span>
                             <span className="text-dark-muted text-xs flex-shrink-0">
                 {new Date(resena.fechaCreacion).toLocaleDateString()}
               </span>
                         </div>
                     )}
 
-                    {/* Título del libro */}
                     {mostrarLibro && (
-                        <Link to={`/resena/${resena.idresena}`}
-                              className="text-terra font-medium text-sm hover:text-terra-hover transition-colors block truncate mb-1">
-                            {resena.tituloLibro}
-                        </Link>
+                        <span onClick={(e) => { e.stopPropagation(); navigate(`/libro/${resena.idlibro}`) }}
+                              className="text-terra font-medium text-sm hover:text-terra-hover transition-colors block truncate mb-1 cursor-pointer">
+              {resena.tituloLibro}
+            </span>
                     )}
 
-                    {/* Estrellas */}
                     <Estrellas puntuacion={resena.puntuacion} />
 
-                    {/* Texto */}
                     {resena.texto && !resena.tieneSpoiler && (
-                        <Link to={`/resena/${resena.idresena}`}>
-                            <p className="text-dark-text/70 text-xs mt-2 line-clamp-2 hover:text-dark-text/90 transition-colors">{resena.texto}</p>
-                        </Link>
+                        <p className="text-dark-text/70 text-xs mt-2 line-clamp-2">{resena.texto}</p>
                     )}
                     {resena.tieneSpoiler && (
                         <p className="text-dark-muted text-xs mt-2 italic">Contiene spoilers</p>
                     )}
 
-                    {/* Etiquetas */}
                     {resena.etiquetas?.length > 0 && (
                         <div className="flex gap-1.5 mt-2 flex-wrap">
                             {resena.etiquetas.slice(0, 3).map((et) => (
@@ -93,7 +105,6 @@ export default function ResenaCard({ resena: resenaInicial, mostrarLibro = true,
                         </div>
                     )}
 
-                    {/* Like */}
                     <div className="flex items-center gap-3 mt-3">
                         <button onClick={toggleLike}
                                 className="flex items-center gap-1 transition-colors"
