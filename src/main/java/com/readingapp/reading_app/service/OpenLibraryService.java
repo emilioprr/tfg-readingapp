@@ -30,6 +30,71 @@ public class OpenLibraryService {
 
     // === BÚSQUEDA E IMPORTACIÓN DE LIBROS ===
 
+    private static final Map<String, String> GENERO_MAP = Map.ofEntries(
+            Map.entry("fiction", "Ficción"),
+            Map.entry("fantasy", "Fantasía"),
+            Map.entry("science fiction", "Ciencia ficción"),
+            Map.entry("romance", "Romance"),
+            Map.entry("mystery", "Misterio"),
+            Map.entry("thriller", "Thriller"),
+            Map.entry("horror", "Terror"),
+            Map.entry("adventure", "Aventura"),
+            Map.entry("historical fiction", "Ficción histórica"),
+            Map.entry("biography", "Biografía"),
+            Map.entry("autobiography", "Biografía"),
+            Map.entry("history", "Historia"),
+            Map.entry("philosophy", "Filosofía"),
+            Map.entry("psychology", "Psicología"),
+            Map.entry("self-help", "Autoayuda"),
+            Map.entry("poetry", "Poesía"),
+            Map.entry("drama", "Drama"),
+            Map.entry("comedy", "Comedia"),
+            Map.entry("children", "Infantil"),
+            Map.entry("young adult", "Juvenil"),
+            Map.entry("young adult fiction", "Juvenil"),
+            Map.entry("children's fiction", "Infantil"),
+            Map.entry("juvenile fiction", "Infantil"),
+            Map.entry("science", "Ciencia"),
+            Map.entry("art", "Arte"),
+            Map.entry("music", "Música"),
+            Map.entry("cooking", "Cocina"),
+            Map.entry("travel", "Viajes"),
+            Map.entry("religion", "Religión"),
+            Map.entry("politics", "Política"),
+            Map.entry("economics", "Economía"),
+            Map.entry("education", "Educación"),
+            Map.entry("comics", "Cómic"),
+            Map.entry("graphic novels", "Novela gráfica"),
+            Map.entry("crime", "Policiaco"),
+            Map.entry("detective", "Policiaco"),
+            Map.entry("suspense", "Suspense"),
+            Map.entry("war", "Bélico"),
+            Map.entry("sports", "Deportes"),
+            Map.entry("nature", "Naturaleza"),
+            Map.entry("technology", "Tecnología"),
+            Map.entry("nonfiction", "No ficción"),
+            Map.entry("non-fiction", "No ficción"),
+            Map.entry("literary fiction", "Ficción literaria"),
+            Map.entry("classic literature", "Clásico"),
+            Map.entry("classics", "Clásico")
+    );
+
+    private String mapearGenero(List<String> subjects) {
+        if (subjects == null || subjects.isEmpty()) return "Ficción";
+
+        for (String subject : subjects) {
+            String lower = subject.toLowerCase().trim();
+            // Coincidencia exacta
+            if (GENERO_MAP.containsKey(lower)) return GENERO_MAP.get(lower);
+            // Coincidencia parcial
+            for (Map.Entry<String, String> entry : GENERO_MAP.entrySet()) {
+                if (lower.contains(entry.getKey())) return entry.getValue();
+            }
+        }
+
+        return "Ficción";
+    }
+
     @Transactional
     public int importarPorTitulo(String titulo, int cantidad, int offset) {
         int importados = 0;
@@ -123,13 +188,9 @@ public class OpenLibraryService {
             portada = COVER_URL.replace("{coverId}", String.valueOf(coverId));
         }
 
-        // Obtener género (primer subject)
+// Obtener género (mapear subjects a género estándar)
         List<String> subjects = (List<String>) doc.get("subject");
-        String genero = null;
-        if (subjects != null && !subjects.isEmpty()) {
-            genero = subjects.get(0);
-            if (genero.length() > 100) genero = genero.substring(0, 100);
-        }
+        String genero = mapearGenero(subjects);
 
         Libro libro = Libro.builder()
                 .idapiexterna(idExterno)
