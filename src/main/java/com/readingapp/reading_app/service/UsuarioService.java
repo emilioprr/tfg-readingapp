@@ -106,6 +106,11 @@ public class UsuarioService {
         }
         Usuario seguidor = buscarPorId(seguidorId);
         Usuario seguido = buscarPorId(seguidoId);
+
+        if (seguidor.getSeguidos().contains(seguido)) {
+            throw new IllegalArgumentException("Ya sigues a este usuario");
+        }
+
         seguidor.getSeguidos().add(seguido);
         seguido.setSeguidores(seguido.getSeguidores() + 1);
         usuarioRepository.save(seguidor);
@@ -123,12 +128,17 @@ public class UsuarioService {
     public void dejarDeSeguirUsuario(Long seguidorId, Long seguidoId) {
         Usuario seguidor = buscarPorId(seguidorId);
         Usuario seguido = buscarPorId(seguidoId);
+
+        if (!seguidor.getSeguidos().contains(seguido)) {
+            throw new IllegalArgumentException("No sigues a este usuario");
+        }
+
         seguidor.getSeguidos().remove(seguido);
         seguido.setSeguidores(Math.max(0, seguido.getSeguidores() - 1));
         usuarioRepository.save(seguidor);
         usuarioRepository.save(seguido);
     }
-
+    
     public List<UsuarioDTO.Response> obtenerSeguidos(Long id) {
         Usuario usuario = buscarPorId(id);
         return usuario.getSeguidos().stream()

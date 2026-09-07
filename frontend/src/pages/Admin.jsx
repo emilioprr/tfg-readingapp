@@ -35,6 +35,20 @@ export default function Admin() {
         finally { setCargando(false) }
     }
 
+    const handleCargarPopulares = async () => {
+        setError('')
+        setResultado('')
+        setCargando(true)
+        try {
+            const res = await api.post('/carga/populares?cantidad=200&idioma=es')
+            setResultado(`Importados ${res.data.importados} libros populares`)
+        } catch (err) {
+            setError(err.response?.data?.mensaje || 'Error en la carga')
+        } finally {
+            setCargando(false)
+        }
+    }
+
     return (
         <div className="max-w-2xl mx-auto">
             <h1 className="text-2xl font-bold text-dark-text mb-6 tracking-tight">Panel de administración</h1>
@@ -71,6 +85,14 @@ export default function Admin() {
                     <button type="submit" disabled={cargando}
                             className="bg-terra hover:bg-terra-hover text-white font-semibold px-6 py-2.5 rounded-lg transition-colors disabled:opacity-50">
                         {cargando ? 'Cargando...' : 'Iniciar carga masiva'}</button>
+                    <div className="border-t border-dark-border pt-4 mt-4">
+                        <h3 className="text-sm font-medium text-dark-muted mb-3">Carga rápida de populares</h3>
+                        <p className="text-dark-muted text-xs mb-3">Importa los libros más relevantes de Google Books en español.</p>
+                        <button onClick={handleCargarPopulares} disabled={cargando}
+                                className="bg-terra hover:bg-terra-hover text-white font-semibold px-6 py-2.5 rounded-lg transition-colors disabled:opacity-50">
+                            {cargando ? 'Cargando...' : 'Importar 200 populares'}
+                        </button>
+                    </div>
                 </form>
             </div>
         </div>
