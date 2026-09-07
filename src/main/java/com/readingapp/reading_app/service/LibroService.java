@@ -26,8 +26,8 @@ public class LibroService {
     private final AutorRepository autorRepository;
     private final UsuarioRepository usuarioRepository;
     private final NotificacionService notificacionService;
-    private final OpenLibraryService openLibraryService;
     private final ResenaRepository resenaRepository;
+    private final GoogleBooksService googleBooksService;
 
     @Transactional
     public LibroDTO.Response crear(LibroDTO.CreateRequest request) {
@@ -70,16 +70,9 @@ public class LibroService {
     public Page<LibroDTO.Response> buscarPorTitulo(String titulo, Pageable pageable) {
         Page<Libro> resultados = libroRepository.findByTituloContainingIgnoreCase(titulo, pageable);
 
-        if (resultados.getTotalElements() < pageable.getPageSize()) {
-            int offset = 0;
-            int intentos = 0;
-            int maxIntentos = 5;
-
-            while (resultados.getTotalElements() < pageable.getPageSize() && intentos < maxIntentos) {
-                int importados = openLibraryService.importarPorTitulo(titulo, 20, offset);
-                if (importados == 0) break;
-                offset += 20;
-                intentos++;
+        if (resultados.getTotalElements() < pageable.getPageSize() && pageable.getPageNumber() == 0) {
+            int importados = googleBooksService.importarPorTitulo(titulo, 20);
+            if (importados > 0) {
                 resultados = libroRepository.findByTituloContainingIgnoreCase(titulo, pageable);
             }
         }

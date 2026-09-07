@@ -34,5 +34,10 @@ public interface LibroRepository extends JpaRepository<Libro, Long> {
             "(SELECT s FROM Usuario u JOIN u.seguidos s WHERE u.idusuario = :idusuario) " +
             "GROUP BY r.libro ORDER BY MAX(r.fechaCreacion) DESC")
     List<Libro> findLibrosPopularesEntreSeguidos(@Param("idusuario") Long idusuario, Pageable pageable);
+
+    @Query(value = "SELECT COUNT(*) > 0 FROM libro l JOIN autor a ON l.idautor = a.idautor " +
+            "WHERE LOWER(unaccent(l.titulo)) = LOWER(unaccent(:titulo)) " +
+            "AND LOWER(unaccent(a.nombre)) = LOWER(unaccent(:nombreAutor))", nativeQuery = true)
+    boolean existsByTituloYAutorNormalizado(@Param("titulo") String titulo, @Param("nombreAutor") String nombreAutor);
 }
 

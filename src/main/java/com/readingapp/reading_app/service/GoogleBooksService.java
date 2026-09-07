@@ -21,6 +21,7 @@ public class GoogleBooksService {
     private final RestTemplate restTemplate;
     private final AutorRepository autorRepository;
     private final LibroRepository libroRepository;
+    private final OpenLibraryService openLibraryService;
 
     @Value("${google.books.api.key}")
     private String apiKey;
@@ -112,20 +113,87 @@ public class GoogleBooksService {
         }
     }
 
+    @Transactional
+    public int importarPorTitulo(String titulo, int cantidad) {
+        int importados = 0;
+        try {
+            String url = "https://www.googleapis.com/books/v1/volumes?q={query}&maxResults={maxResults}&langRestrict=es&orderBy=relevance";
+            Map<String, Object> response = restTemplate.getForObject(url, Map.class, titulo, Math.min(cantidad, 40));
+
+            if (response == null || !response.containsKey("items")) return 0;
+
+            List<Map<String, Object>> items = (List<Map<String, Object>>) response.get("items");
+            for (Map<String, Object> item : items) {
+                try {
+                    if (guardarLibro(item)) importados++;
+                } catch (Exception e) {
+                    log.warn("Error al procesar libro: {}", e.getMessage());
+                }
+            }
+        } catch (Exception e) {
+            log.error("Error buscando en Google Books: {}", e.getMessage());
+        }
+        return importados;
+    }
+
+    @Transactional
+    public int importarPopulares(int cantidad, String idioma) {
+        int importados = 0;
+        int maxPorPagina = 40;
+
+        for (int startIndex = 0; startIndex < cantidad; startIndex += maxPorPagina) {
+            int resultados = Math.min(maxPorPagina, cantidad - startIndex);
+            try {
+                String url = "https://www.googleapis.com/books/v1/volumes?q={query}&startIndex={startIndex}&maxResults={maxResults}&langRestrict={lang}&orderBy=relevance";
+                Map<String, Object> response = restTemplate.getForObject(url, Map.class, "a", startIndex, resultados, idioma);
+                log.info("Google Books response: totalItems={}", response != null ? response.get("totalItems") : "null");
+                if (response == null || !response.containsKey("items")) break;
+
+                List<Map<String, Object>> items = (List<Map<String, Object>>) response.get("items");
+                for (Map<String, Object> item : items) {
+                    try {
+                        if (guardarLibro(item)) importados++;
+                    } catch (Exception e) {
+                        log.warn("Error al procesar libro: {}", e.getMessage());
+                    }
+                }
+                Thread.sleep(500);
+            } catch (Exception e) {
+                log.error("Error importando populares: {}", e.getMessage());
+                break;
+            }
+        }
+        log.info("Importados {} libros populares", importados);
+        return importados;
+    }
+
     private boolean guardarLibro(Map<String, Object> item) {
         Map<String, Object> volumeInfo = (Map<String, Object>) item.get("volumeInfo");
         if (volumeInfo == null) return false;
-
+        log.info("Intentando guardar: {}", volumeInfo.get("title"));
         String titulo = (String) volumeInfo.get("title");
         if (titulo == null) return false;
 
-        // Verificar duplicado por ID externo
         String idExterno = (String) item.get("id");
+
         if (idExterno != null && libroRepository.existsByIdapiexterna(idExterno)) {
             return false;
         }
 
-        // Obtener ISBN
+        List<String> autores = (List<String>) volumeInfo.get("authors");
+        String nombreAutor = (autores != null && !autores.isEmpty()) ? autores.get(0) : "Desconocido";
+
+        // Verificar duplicado por título + autor
+        if (libroRepository.existsByTituloYAutorNormalizado(titulo, nombreAutor)) {
+            return false;
+        }
+
+        Autor autor = obtenerOCrearAutor(nombreAutor);
+
+        String sinopsis = (String) volumeInfo.get("description");
+        Integer paginas = volumeInfo.get("pageCount") != null ? ((Number) volumeInfo.get("pageCount")).intValue() : null;
+        String fechaPublicacion = (String) volumeInfo.get("publishedDate");
+        Integer anio = extraerAnio(fechaPublicacion);
         String isbn = extraerIsbn(volumeInfo);
 
         // Verificar duplicado por ISBN
@@ -133,29 +201,15 @@ public class GoogleBooksService {
             return false;
         }
 
-        // Obtener o crear autor
-        List<String> autores = (List<String>) volumeInfo.get("authors");
-        String nombreAutor = (autores != null && !autores.isEmpty()) ? autores.get(0).trim() : "Desconocido";
-        Autor autor = obtenerOCrearAutor(nombreAutor);
-
-        // Obtener datos del libro
-        String sinopsis = (String) volumeInfo.get("description");
-        Integer paginas = volumeInfo.get("pageCount") != null ? ((Number) volumeInfo.get("pageCount")).intValue() : null;
-        String fechaPublicacion = (String) volumeInfo.get("publishedDate");
-        Integer anio = extraerAnio(fechaPublicacion);
-
-        // Obtener portada
         String portada = null;
         Map<String, Object> imageLinks = (Map<String, Object>) volumeInfo.get("imageLinks");
         if (imageLinks != null) {
             portada = (String) imageLinks.getOrDefault("thumbnail", imageLinks.get("smallThumbnail"));
         }
 
-        // Obtener género
         List<String> categorias = (List<String>) volumeInfo.get("categories");
-        String genero = (categorias != null && !categorias.isEmpty()) ? categorias.get(0) : null;
+        String genero = (categorias != null && !categorias.isEmpty()) ? categorias.get(0) : "Ficción";
 
-        // Crear y guardar libro
         Libro libro = Libro.builder()
                 .idapiexterna(idExterno)
                 .titulo(titulo)
@@ -173,24 +227,22 @@ public class GoogleBooksService {
     }
 
     private Autor obtenerOCrearAutor(String nombre) {
-        // Normalizar nombre: quitar espacios extra
         String nombreNormalizado = nombre.trim().replaceAll("\\s+", " ");
 
-        List<Autor> existentes = autorRepository.findByNombreContainingIgnoreCase(nombreNormalizado);
-
-        // Buscar coincidencia exacta (ignorando mayúsculas)
-        for (Autor a : existentes) {
-            if (a.getNombre().trim().equalsIgnoreCase(nombreNormalizado)) {
-                return a;
-            }
-        }
-
-        // Crear nuevo autor
-        Autor autor = Autor.builder()
-                .nombre(nombreNormalizado)
-                .seguidores(0)
-                .build();
-        return autorRepository.save(autor);
+        return autorRepository.findByNombreNormalizado(nombreNormalizado)
+                .orElseGet(() -> {
+                    Autor autor = Autor.builder()
+                            .nombre(nombreNormalizado)
+                            .seguidores(0)
+                            .build();
+                    autor = autorRepository.save(autor);
+                    try {
+                        openLibraryService.enriquecerAutor(autor);
+                    } catch (Exception e) {
+                        log.warn("No se pudo enriquecer autor {}: {}", nombreNormalizado, e.getMessage());
+                    }
+                    return autor;
+                });
     }
 
     private Integer extraerAnio(String fecha) {

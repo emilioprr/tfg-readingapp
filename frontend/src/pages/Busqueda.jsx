@@ -8,13 +8,15 @@ export default function Busqueda() {
     const [searchParams] = useSearchParams()
     const query = searchParams.get('q') || ''
     const { usuario } = useAuth()
-
+    const [seguidos, setSeguidos] = useState([])
     const [tab, setTab] = useState('libros')
     const [resultados, setResultados] = useState([])
     const [loading, setLoading] = useState(false)
     const [pagina, setPagina] = useState(0)
     const [hayMas, setHayMas] = useState(true)
     const [cargandoMas, setCargandoMas] = useState(false)
+    const [importando, setImportando] = useState(false)
+    const [yaImporto, setYaImporto] = useState(false)
 
     const paginaRef = useRef(0)
     const hayMasRef = useRef(true)
@@ -27,7 +29,9 @@ export default function Busqueda() {
             paginaRef.current = 0
             hayMasRef.current = true
             setHayMas(true)
+            setYaImporto(false)
             buscar(0, true)
+            if (usuario) cargarSeguidos()
         }
     }, [query, tab])
 
@@ -41,11 +45,18 @@ export default function Busqueda() {
             if (tab === 'libros') {
                 const res = await api.get(`/libros/buscar?titulo=${query}&page=${pag}&size=${size}`)
                 const datos = res.data.content || res.data || []
-                if (reset) setResultados(datos)
-                else setResultados(prev => {
-                    const ids = new Set(prev.map(l => l.idlibro))
-                    return [...prev, ...datos.filter(l => !ids.has(l.idlibro))]
-                })
+                if (reset) {
+                    setResultados(datos)
+                    // Si pocos resultados y no hemos importado aún, importar en segundo plano
+                    if (datos.length < size && !yaImporto) {
+                        importarEnSegundoPlano(datos)
+                    }
+                } else {
+                    setResultados(prev => {
+                        const ids = new Set(prev.map(l => l.idlibro))
+                        return [...prev, ...datos.filter(l => !ids.has(l.idlibro))]
+                    })
+                }
                 paginaRef.current = pag
                 setPagina(pag)
                 hayMasRef.current = datos.length === size
@@ -71,6 +82,23 @@ export default function Busqueda() {
         }
     }
 
+    const importarEnSegundoPlano = async (resultadosActuales) => {
+        setImportando(true)
+        try {
+            const res = await api.post(`/libros/importar?titulo=${query}`)
+            const importados = res.data || 0
+            setYaImporto(true)
+            if (importados > 0) {
+                const res2 = await api.get(`/libros/buscar?titulo=${query}&page=0&size=24`)
+                const nuevos = res2.data.content || res2.data || []
+                setResultados(nuevos)
+                hayMasRef.current = nuevos.length === 24
+                setHayMas(nuevos.length === 24)
+            }
+        } catch (err) { console.error('Error importando:', err) }
+        finally { setImportando(false) }
+    }
+
     const cargarMas = () => {
         if (cargandoMasRef.current || !hayMasRef.current) return
         buscar(paginaRef.current + 1, false)
@@ -79,10 +107,27 @@ export default function Busqueda() {
     const seguir = async (idSeguido) => {
         try {
             await api.post(`/usuarios/${usuario.id}/seguir/${idSeguido}`)
-            buscar(0, true)
+            setSeguidos(prev => [...prev, idSeguido])
         } catch (err) {
             alert(err.response?.data?.mensaje || 'Error')
         }
+    }
+
+    const dejarDeSeguir = async (idSeguido) => {
+        try {
+            await api.delete(`/usuarios/${usuario.id}/seguir/${idSeguido}`)
+            setSeguidos(prev => prev.filter(id => id !== idSeguido))
+        } catch (err) {
+            alert(err.response?.data?.mensaje || 'Error')
+        }
+    }
+
+    const cargarSeguidos = async () => {
+        if (!usuario) return
+        try {
+            const res = await api.get(`/usuarios/${usuario.id}/seguidos`)
+            setSeguidos((res.data || []).map(u => u.idusuario))
+        } catch (err) { console.error('Error:', err) }
     }
 
     const tabs = [
@@ -117,7 +162,7 @@ export default function Busqueda() {
 
             {loading ? (
                 <p className="text-dark-muted">Buscando...</p>
-            ) : resultados.length === 0 ? (
+            ) : resultados.length === 0 && !importando ? (
                 <div className="text-center py-16 bg-dark-card rounded-2xl">
                     <p className="text-dark-muted mb-2">No se encontraron resultados</p>
                     <p className="text-dark-muted text-sm">Prueba con otros términos</p>
@@ -132,7 +177,11 @@ export default function Busqueda() {
                                 ))}
                             </div>
 
-                            {hayMas && (
+                            {importando && (
+                                <p className="text-dark-muted text-center mt-6 text-sm">Buscando más libros en Internet...</p>
+                            )}
+
+                            {hayMas && !importando && (
                                 <div className="flex justify-center mt-8">
                                     <button onClick={cargarMas} disabled={cargandoMas}
                                             className="bg-dark-card hover:bg-dark-elevated text-dark-text font-medium px-6 py-2.5 rounded-xl transition-colors disabled:opacity-50">
@@ -141,7 +190,7 @@ export default function Busqueda() {
                                 </div>
                             )}
 
-                            {!hayMas && resultados.length > 0 && (
+                            {!hayMas && !importando && resultados.length > 0 && (
                                 <p className="text-dark-muted text-center mt-8 text-sm">No hay más resultados</p>
                             )}
                         </div>
@@ -190,10 +239,17 @@ export default function Busqueda() {
                                         </div>
                                     </Link>
                                     {usuario && u.idusuario !== usuario.id && (
-                                        <button onClick={() => seguir(u.idusuario)}
-                                                className="bg-terra hover:bg-terra-hover text-white font-semibold px-4 py-1.5 rounded-lg text-sm transition-colors flex-shrink-0 ml-4">
-                                            Seguir
-                                        </button>
+                                        seguidos.includes(u.idusuario) ? (
+                                            <button onClick={() => dejarDeSeguir(u.idusuario)}
+                                                    className="border border-dark-border text-dark-text hover:border-red-400 hover:text-red-400 font-semibold px-4 py-1.5 rounded-lg text-sm transition-colors flex-shrink-0 ml-4">
+                                                Siguiendo
+                                            </button>
+                                        ) : (
+                                            <button onClick={() => seguir(u.idusuario)}
+                                                    className="bg-terra hover:bg-terra-hover text-white font-semibold px-4 py-1.5 rounded-lg text-sm transition-colors flex-shrink-0 ml-4">
+                                                Seguir
+                                            </button>
+                                        )
                                     )}
                                 </div>
                             ))}

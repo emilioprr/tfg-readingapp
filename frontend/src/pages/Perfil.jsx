@@ -25,6 +25,7 @@ export default function Perfil() {
             cargarLecturasRecientes()
             cargarResenas()
             cargarListas()
+            comprobarSiguiendo()
         }
     }, [perfilId])
 
@@ -81,6 +82,15 @@ export default function Perfil() {
         } catch (err) {
             alert(err.response?.data?.mensaje || 'Error')
         }
+    }
+
+    const comprobarSiguiendo = async () => {
+        if (!usuario || esMio) return
+        try {
+            const res = await api.get(`/usuarios/${usuario.id}/seguidos`)
+            const seguidos = res.data || []
+            setSiguiendo(seguidos.some(u => u.idusuario === perfilId))
+        } catch (err) { console.error('Error:', err) }
     }
 
     if (loading) return <p className="text-dark-muted">Cargando...</p>
