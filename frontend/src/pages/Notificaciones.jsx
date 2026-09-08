@@ -29,20 +29,29 @@ export default function Notificaciones() {
     const handleClick = (n) => {
         if (!n.leida) marcarLeida(n.idnotificacion)
 
-        if (n.tipo === 'NUEVO_SEGUIDOR' && n.idusuarioOrigen) {
-            navigate(`/usuario/${n.idusuarioOrigen}`)
-        } else if (n.tipo === 'NUEVA_RESENA' && n.idresena) {
-            navigate(`/resena/${n.idresena}`)
-        } else if (n.tipo === 'RECOMENDACION' && n.idlibro) {
-            navigate(`/libro/${n.idlibro}`)
-        } else if (n.tipo === 'LIKE_RESENA' && n.idresena) {
-            navigate(`/resena/${n.idresena}`)
-        } else if (n.tipo === 'RETO_COMPLETADO' && n.idreto) {
-            navigate(`/retos`)
-        } else if (n.idlibro) {
-            navigate(`/libro/${n.idlibro}`)
-        } else if (n.idusuarioOrigen) {
-            navigate(`/usuario/${n.idusuarioOrigen}`)
+        switch (n.tipo) {
+            case 'NUEVO_SEGUIDOR':
+                if (n.idusuarioOrigen) navigate(`/usuario/${n.idusuarioOrigen}`)
+                break
+            case 'NUEVA_RESENA_SEGUIDO':
+                if (n.idresena) navigate(`/resena/${n.idresena}`)
+                else if (n.idlibro) navigate(`/libro/${n.idlibro}`)
+                break
+            case 'LIKE_RESENA':
+                if (n.idresena) navigate(`/resena/${n.idresena}`)
+                break
+            case 'NUEVA_RECOMENDACION':
+                if (n.idlibro) navigate(`/libro/${n.idlibro}`)
+                break
+            case 'RETO_CUMPLIDO':
+                navigate('/retos')
+                break
+            case 'NUEVO_LIBRO_AUTOR':
+                if (n.idlibro) navigate(`/libro/${n.idlibro}`)
+                break
+            default:
+                if (n.idlibro) navigate(`/libro/${n.idlibro}`)
+                else if (n.idusuarioOrigen) navigate(`/usuario/${n.idusuarioOrigen}`)
         }
     }
 
@@ -68,11 +77,11 @@ export default function Notificaciones() {
                                     )}
                                     {' '}
                                     {n.tipo === 'NUEVO_SEGUIDOR' && 'ha empezado a seguirte'}
-                                    {n.tipo === 'NUEVA_RESENA' && <>ha reseñado <span className="text-terra font-medium">{n.tituloLibro}</span></>}
-                                    {n.tipo === 'RECOMENDACION' && <>te ha recomendado <span className="text-terra font-medium">{n.tituloLibro}</span></>}
+                                    {n.tipo === 'NUEVA_RESENA_SEGUIDO' && <>ha reseñado <span className="text-terra font-medium">{n.tituloLibro}</span></>}
+                                    {n.tipo === 'NUEVA_RECOMENDACION' && <>te ha recomendado <span className="text-terra font-medium">{n.tituloLibro}</span></>}
                                     {n.tipo === 'LIKE_RESENA' && 'le ha gustado tu reseña'}
-                                    {n.tipo === 'RETO_COMPLETADO' && n.mensaje}
-                                    {!['NUEVO_SEGUIDOR', 'NUEVA_RESENA', 'RECOMENDACION', 'LIKE_RESENA', 'RETO_COMPLETADO'].includes(n.tipo) && n.mensaje}
+                                    {n.tipo === 'RETO_CUMPLIDO' && 'has completado un reto'}
+                                    {n.tipo === 'NUEVO_LIBRO_AUTOR' && <>nuevo libro: <span className="text-terra font-medium">{n.tituloLibro}</span></>}
                                 </p>
                                 {!n.leida && <span className="w-2 h-2 bg-terra rounded-full flex-shrink-0 ml-2" />}
                             </div>
