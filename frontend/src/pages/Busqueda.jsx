@@ -16,8 +16,6 @@ export default function Busqueda() {
     const [hayMas, setHayMas] = useState(true)
     const [cargandoMas, setCargandoMas] = useState(false)
     const [importando, setImportando] = useState(false)
-    const [yaImporto, setYaImporto] = useState(false)
-
     const paginaRef = useRef(0)
     const hayMasRef = useRef(true)
     const cargandoMasRef = useRef(false)
@@ -29,7 +27,6 @@ export default function Busqueda() {
             paginaRef.current = 0
             hayMasRef.current = true
             setHayMas(true)
-            setYaImporto(false)
             buscar(0, true)
             if (usuario) cargarSeguidos()
         }
@@ -47,9 +44,9 @@ export default function Busqueda() {
                 const datos = res.data.content || res.data || []
                 if (reset) {
                     setResultados(datos)
-                    // Si pocos resultados y no hemos importado aún, importar en segundo plano
-                    if (datos.length < size && !yaImporto) {
-                        importarEnSegundoPlano(datos)
+                    // Si pocos resultados, importar en segundo plano y refrescar
+                    if (datos.length < size) {
+                        importarYRefrescar()
                     }
                 } else {
                     setResultados(prev => {
@@ -82,21 +79,20 @@ export default function Busqueda() {
         }
     }
 
-    const importarEnSegundoPlano = async (resultadosActuales) => {
+    const importarYRefrescar = async () => {
         setImportando(true)
         try {
-            const res = await api.post(`/libros/importar?titulo=${query}`)
-            const importados = res.data || 0
-            setYaImporto(true)
-            if (importados > 0) {
-                const res2 = await api.get(`/libros/buscar?titulo=${query}&page=0&size=24`)
-                const nuevos = res2.data.content || res2.data || []
-                setResultados(nuevos)
-                hayMasRef.current = nuevos.length === 24
-                setHayMas(nuevos.length === 24)
-            }
-        } catch (err) { console.error('Error importando:', err) }
-        finally { setImportando(false) }
+            await api.get(`/libros/buscar/importar?titulo=${query}`)
+            const res = await api.get(`/libros/buscar?titulo=${query}&page=0&size=24`)
+            const nuevos = res.data.content || res.data || []
+            setResultados(nuevos)
+            hayMasRef.current = nuevos.length === 24
+            setHayMas(nuevos.length === 24)
+        } catch (err) {
+            // Si falla, no pasa nada
+        } finally {
+            setImportando(false)
+        }
     }
 
     const cargarMas = () => {
@@ -167,6 +163,8 @@ export default function Busqueda() {
                     <p className="text-dark-muted mb-2">No se encontraron resultados</p>
                     <p className="text-dark-muted text-sm">Prueba con otros términos</p>
                 </div>
+            ) : resultados.length === 0 && importando ? (
+                <p className="text-dark-muted">Buscando libros en Internet...</p>
             ) : (
                 <>
                     {tab === 'libros' && (
@@ -177,11 +175,7 @@ export default function Busqueda() {
                                 ))}
                             </div>
 
-                            {importando && (
-                                <p className="text-dark-muted text-center mt-6 text-sm">Buscando más libros en Internet...</p>
-                            )}
-
-                            {hayMas && !importando && (
+                            {hayMas && (
                                 <div className="flex justify-center mt-8">
                                     <button onClick={cargarMas} disabled={cargandoMas}
                                             className="bg-dark-card hover:bg-dark-elevated text-dark-text font-medium px-6 py-2.5 rounded-xl transition-colors disabled:opacity-50">
@@ -190,7 +184,7 @@ export default function Busqueda() {
                                 </div>
                             )}
 
-                            {!hayMas && !importando && resultados.length > 0 && (
+                            {!hayMas && resultados.length > 0 && (
                                 <p className="text-dark-muted text-center mt-8 text-sm">No hay más resultados</p>
                             )}
                         </div>

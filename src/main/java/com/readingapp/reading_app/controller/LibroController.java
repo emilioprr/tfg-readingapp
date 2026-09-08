@@ -2,6 +2,7 @@ package com.readingapp.reading_app.controller;
 
 import com.readingapp.reading_app.config.SecurityUtils;
 import com.readingapp.reading_app.dto.LibroDTO;
+import com.readingapp.reading_app.service.GoogleBooksService;
 import com.readingapp.reading_app.service.LibroService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +21,7 @@ import java.util.List;
 public class LibroController {
 
     private final LibroService libroService;
+    private final GoogleBooksService googleBooksService;
 
     @PostMapping
     public ResponseEntity<LibroDTO.Response> crear(@Valid @RequestBody LibroDTO.CreateRequest request) {
@@ -77,6 +79,12 @@ public class LibroController {
     public ResponseEntity<List<LibroDTO.Response>> obtenerPopularesEntreSeguidos(
             @PathVariable Long idusuario, @PageableDefault(size = 12) Pageable pageable) {
         return ResponseEntity.ok(libroService.obtenerPopularesEntreSeguidos(idusuario, pageable));
+    }
+
+    @GetMapping("/buscar/importar")
+    public ResponseEntity<Integer> importarBusqueda(@RequestParam String titulo) {
+        int importados = googleBooksService.importarPorTitulo(titulo, 20);
+        return ResponseEntity.ok(importados);
     }
 
     // === FAVORITOS ===
