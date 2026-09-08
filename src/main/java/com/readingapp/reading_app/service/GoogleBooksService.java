@@ -28,7 +28,6 @@ public class GoogleBooksService {
 
     private static final String GOOGLE_BOOKS_URL = "https://www.googleapis.com/books/v1/volumes?q={query}&startIndex={startIndex}&maxResults={maxResults}&langRestrict={lang}&key={key}";
 
-    @Transactional
     public int importarPorCategoria(String query, int cantidad, String idioma) {
         int importados = 0;
         int maxResultsPorPagina = 40;
@@ -72,7 +71,6 @@ public class GoogleBooksService {
         return importados;
     }
 
-    @Transactional
     public Map<String, Integer> importarMultiplesCategorias(List<String> categorias, int cantidadPorCategoria, String idioma) {
         Map<String, Integer> resultado = new LinkedHashMap<>();
 
@@ -113,13 +111,12 @@ public class GoogleBooksService {
         }
     }
 
-    @Transactional
     public int importarPorTitulo(String titulo, int cantidad) {
         int importados = 0;
         try {
-            String url = "https://www.googleapis.com/books/v1/volumes?q={query}&maxResults={maxResults}&langRestrict=es&orderBy=relevance";
-            Map<String, Object> response = restTemplate.getForObject(url, Map.class, titulo, Math.min(cantidad, 40));
-
+            Map<String, Object> response = restTemplate.getForObject(
+                    GOOGLE_BOOKS_URL, Map.class, titulo, 0, Math.min(cantidad, 40), "es", apiKey
+            );
             if (response == null || !response.containsKey("items")) return 0;
 
             List<Map<String, Object>> items = (List<Map<String, Object>>) response.get("items");
@@ -136,55 +133,103 @@ public class GoogleBooksService {
         return importados;
     }
 
-    @Transactional
-    public int importarPopulares(int cantidad, String idioma) {
-        int importados = 0;
-        int maxPorPagina = 40;
 
-        for (int startIndex = 0; startIndex < cantidad; startIndex += maxPorPagina) {
-            int resultados = Math.min(maxPorPagina, cantidad - startIndex);
+    public int importarPopulares(int cantidad, String idioma) {
+        String[] librosPopulares = {
+                "Harry Potter", "El señor de los anillos", "Cien años de soledad",
+                "1984 Orwell", "Don Quijote", "El principito",
+                "Juego de tronos", "Los juegos del hambre", "Divergente",
+                "Percy Jackson", "Crepúsculo", "Maze Runner",
+                "El código Da Vinci", "La sombra del viento", "La chica del tren",
+                "It Stephen King", "El resplandor", "Drácula",
+                "Orgullo y prejuicio", "Jane Eyre", "Cumbres borrascosas",
+                "Sapiens Harari", "Hábitos atómicos", "El poder del ahora",
+                "El alquimista Coelho", "La ladrona de libros", "El nombre del viento",
+                "Dune Herbert", "Fundación Asimov", "Fahrenheit 451",
+                "Crimen y castigo", "El gran Gatsby", "Matar a un ruiseñor",
+                "Rebelión en la granja", "Un mundo feliz", "El retrato de Dorian Gray",
+                "Crónica de una muerte anunciada", "El amor en los tiempos del cólera",
+                "La casa de los espíritus", "Como agua para chocolate",
+                "Rayuela Cortázar", "Pedro Páramo", "El túnel Sabato",
+                "Los pilares de la tierra", "El médico Noah Gordon",
+                "El nombre de la rosa", "El perfume Süskind",
+                "Bajo la misma estrella", "Yo antes de ti", "Normal People",
+                "Eleanor Oliphant", "Un hombre llamado Ove",
+                "Las ventajas de ser invisible", "Ready Player One",
+                "El marciano Andy Weir", "Proyecto Hail Mary",
+                "Cazadores de sombras", "Trono de cristal",
+                "La selección Kiera Cass", "Caraval",
+                "Donde los árboles cantan", "Marina Ruiz Zafón",
+                "El prisionero del cielo", "El juego del ángel",
+                "La catedral del mar", "Patria Fernando Aramburu",
+                "La ciudad y los perros", "Conversación en La Catedral",
+                "Ficciones Borges", "El Aleph Borges",
+                "Ensayo sobre la ceguera", "Las intermitencias de la muerte",
+                "Tokio Blues Murakami", "Kafka en la orilla",
+                "Norwegian Wood", "1Q84 Murakami",
+                "El extranjero Camus", "La peste Camus",
+                "El lobo estepario", "Demian Hermann Hesse", "Siddhartha",
+                "Frankenstein Mary Shelley", "El llamado de Cthulhu",
+                "Coraline Neil Gaiman", "American Gods",
+                "Good Omens", "El oceano al final del camino",
+                "Ender's Game", "Neuromante Gibson",
+                "2001 odisea del espacio", "Solaris Stanislaw Lem",
+                "El problema de los tres cuerpos", "El bosque oscuro Liu Cixin",
+                "Padre rico padre pobre", "El monje que vendió su Ferrari",
+                "Los 7 hábitos", "Pensar rápido pensar despacio",
+                "El sutil arte", "Inteligencia emocional Goleman",
+                "Diario de Ana Frank", "Steve Jobs Walter Isaacson"
+        };
+
+        int importados = 0;
+        for (String titulo : librosPopulares) {
             try {
-                String url = "https://www.googleapis.com/books/v1/volumes?q={query}&startIndex={startIndex}&maxResults={maxResults}&langRestrict={lang}&orderBy=relevance";
-                Map<String, Object> response = restTemplate.getForObject(url, Map.class, "a", startIndex, resultados, idioma);
-                log.info("Google Books response: totalItems={}", response != null ? response.get("totalItems") : "null");
-                if (response == null || !response.containsKey("items")) break;
+                Map<String, Object> response = restTemplate.getForObject(
+                        GOOGLE_BOOKS_URL, Map.class, titulo, 0, 1, idioma, apiKey
+                );
+
+                if (response == null || !response.containsKey("items")) continue;
 
                 List<Map<String, Object>> items = (List<Map<String, Object>>) response.get("items");
-                for (Map<String, Object> item : items) {
-                    try {
-                        if (guardarLibro(item)) importados++;
-                    } catch (Exception e) {
-                        log.warn("Error al procesar libro: {}", e.getMessage());
-                    }
+                if (!items.isEmpty()) {
+                    if (guardarLibro(items.get(0))) importados++;
                 }
-                Thread.sleep(500);
+                Thread.sleep(300);
             } catch (Exception e) {
-                log.error("Error importando populares: {}", e.getMessage());
-                break;
+                log.warn("Error importando '{}': {}", titulo, e.getMessage());
             }
         }
         log.info("Importados {} libros populares", importados);
         return importados;
     }
 
+
     private boolean guardarLibro(Map<String, Object> item) {
         Map<String, Object> volumeInfo = (Map<String, Object>) item.get("volumeInfo");
         if (volumeInfo == null) return false;
-        log.info("Intentando guardar: {}", volumeInfo.get("title"));
+
         String titulo = (String) volumeInfo.get("title");
         if (titulo == null) return false;
 
-        String idExterno = (String) item.get("id");
+        log.info("Intentando guardar: {}", titulo);
 
+        String idExterno = (String) item.get("id");
         if (idExterno != null && libroRepository.existsByIdapiexterna(idExterno)) {
+            log.info("Rechazado por ID externo: {}", titulo);
             return false;
         }
 
         List<String> autores = (List<String>) volumeInfo.get("authors");
         String nombreAutor = (autores != null && !autores.isEmpty()) ? autores.get(0) : "Desconocido";
 
-        // Verificar duplicado por título + autor
         if (libroRepository.existsByTituloYAutorNormalizado(titulo, nombreAutor)) {
+            log.info("Rechazado por título+autor duplicado: {}", titulo);
+            return false;
+        }
+
+        String isbn = extraerIsbn(volumeInfo);
+        if (isbn != null && libroRepository.existsByIsbn(isbn)) {
+            log.info("Rechazado por ISBN duplicado: {}", titulo);
             return false;
         }
 
@@ -194,12 +239,6 @@ public class GoogleBooksService {
         Integer paginas = volumeInfo.get("pageCount") != null ? ((Number) volumeInfo.get("pageCount")).intValue() : null;
         String fechaPublicacion = (String) volumeInfo.get("publishedDate");
         Integer anio = extraerAnio(fechaPublicacion);
-        String isbn = extraerIsbn(volumeInfo);
-
-        // Verificar duplicado por ISBN
-        if (isbn != null && libroRepository.existsByIsbn(isbn)) {
-            return false;
-        }
 
         String portada = null;
         Map<String, Object> imageLinks = (Map<String, Object>) volumeInfo.get("imageLinks");
@@ -223,6 +262,7 @@ public class GoogleBooksService {
                 .build();
 
         libroRepository.save(libro);
+        log.info("GUARDADO OK: '{}' de '{}'", titulo, autor.getNombre());
         return true;
     }
 

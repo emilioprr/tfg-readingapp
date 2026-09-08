@@ -138,7 +138,7 @@ public class UsuarioService {
         usuarioRepository.save(seguidor);
         usuarioRepository.save(seguido);
     }
-    
+
     public List<UsuarioDTO.Response> obtenerSeguidos(Long id) {
         Usuario usuario = buscarPorId(id);
         return usuario.getSeguidos().stream()

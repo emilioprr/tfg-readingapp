@@ -11,9 +11,10 @@ import java.util.List;
 
 @Repository
 public interface LibroRepository extends JpaRepository<Libro, Long> {
-    @Query("SELECT l FROM Libro l WHERE LOWER(l.titulo) LIKE LOWER(CONCAT('%', :titulo, '%')) " +
+    @Query("SELECT l FROM Libro l WHERE (LOWER(l.titulo) LIKE LOWER(CONCAT('%', :texto, '%')) " +
+            "OR LOWER(l.autor.nombre) LIKE LOWER(CONCAT('%', :texto, '%'))) " +
             "AND l.idlibro = (SELECT MIN(l2.idlibro) FROM Libro l2 WHERE l2.titulo = l.titulo AND l2.autor = l.autor)")
-    Page<Libro> findByTituloContainingIgnoreCase(@Param("titulo") String titulo, Pageable pageable);
+    Page<Libro> findByTituloContainingIgnoreCase(@Param("texto") String texto, Pageable pageable);
     List<Libro> findByTituloContainingIgnoreCase(String titulo);
     List<Libro> findByGeneroIgnoreCase(String genero, Pageable pageable);
     List<Libro> findByAutorIdautor(Long idautor, Pageable pageable);

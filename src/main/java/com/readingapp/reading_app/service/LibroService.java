@@ -66,18 +66,9 @@ public class LibroService {
                 .toList();
     }
 
-    @Transactional
     public Page<LibroDTO.Response> buscarPorTitulo(String titulo, Pageable pageable) {
-        Page<Libro> resultados = libroRepository.findByTituloContainingIgnoreCase(titulo, pageable);
-
-        if (resultados.getTotalElements() < pageable.getPageSize() && pageable.getPageNumber() == 0) {
-            int importados = googleBooksService.importarPorTitulo(titulo, 20);
-            if (importados > 0) {
-                resultados = libroRepository.findByTituloContainingIgnoreCase(titulo, pageable);
-            }
-        }
-
-        return resultados.map(this::toResponse);
+        return libroRepository.findByTituloContainingIgnoreCase(titulo, pageable)
+                .map(this::toResponse);
     }
 
     public List<LibroDTO.Response> buscarPorGenero(String genero, Pageable pageable) {
