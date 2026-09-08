@@ -25,4 +25,9 @@ public class AuthController {
     public ResponseEntity<AuthDTO.AuthResponse> registro(@Valid @RequestBody UsuarioDTO.RegistroRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(authService.registro(request));
     }
+
+    @GetMapping("/health")
+    public ResponseEntity<String> health() {
+        return ResponseEntity.ok("OK");
+    }
 }
