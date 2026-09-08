@@ -14,9 +14,15 @@ export default function Registro() {
         e.preventDefault()
         setError('')
         try {
-            await api.post('/auth/registro', { nombre, email, password })
-            setExito(true)
-            setTimeout(() => navigate('/login'), 2000)
+            const res = await api.post('/auth/registro', { nombre, email, password })
+            localStorage.setItem('token', res.data.token)
+            localStorage.setItem('usuario', JSON.stringify({
+                id: res.data.idusuario,
+                nombre: res.data.nombre,
+                email: res.data.email,
+                rol: res.data.rol
+            }))
+            window.location.href = '/'
         } catch (err) {
             setError(err.response?.data?.mensaje || 'Error al registrarse')
         }
