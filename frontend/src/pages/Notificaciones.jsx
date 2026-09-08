@@ -72,16 +72,19 @@ export default function Notificaciones() {
                              className={`p-4 rounded-xl cursor-pointer transition-colors ${n.leida ? 'bg-dark-card text-dark-muted hover:bg-dark-elevated' : 'bg-dark-elevated text-dark-text border-l-2 border-terra hover:bg-dark-border'}`}>
                             <div className="flex items-center justify-between">
                                 <p>
-                                    {n.nombreUsuarioOrigen && (
-                                        <span className="text-terra font-medium">{n.nombreUsuarioOrigen}</span>
+                                    {n.tipo === 'NUEVO_SEGUIDOR' && n.nombreUsuarioOrigen ? (
+                                        <><span className="text-terra font-medium">{n.nombreUsuarioOrigen}</span> ha empezado a seguirte</>
+                                    ) : n.tipo === 'NUEVA_RESENA_SEGUIDO' && n.nombreUsuarioOrigen && n.tituloLibro ? (
+                                        <><span className="text-terra font-medium">{n.nombreUsuarioOrigen}</span> ha reseñado <span className="text-terra font-medium">{n.tituloLibro}</span></>
+                                    ) : n.tipo === 'NUEVA_RECOMENDACION' && n.nombreUsuarioOrigen && n.tituloLibro ? (
+                                        <><span className="text-terra font-medium">{n.nombreUsuarioOrigen}</span> te ha recomendado <span className="text-terra font-medium">{n.tituloLibro}</span></>
+                                    ) : n.tipo === 'LIKE_RESENA' && n.nombreUsuarioOrigen ? (
+                                        <><span className="text-terra font-medium">{n.nombreUsuarioOrigen}</span> le ha gustado tu reseña</>
+                                    ) : n.tipo === 'NUEVO_LIBRO_AUTOR' && n.tituloLibro ? (
+                                        <>Nuevo libro: <span className="text-terra font-medium">{n.tituloLibro}</span></>
+                                    ) : (
+                                        n.mensaje
                                     )}
-                                    {' '}
-                                    {n.tipo === 'NUEVO_SEGUIDOR' && 'ha empezado a seguirte'}
-                                    {n.tipo === 'NUEVA_RESENA_SEGUIDO' && <>ha reseñado <span className="text-terra font-medium">{n.tituloLibro}</span></>}
-                                    {n.tipo === 'NUEVA_RECOMENDACION' && <>te ha recomendado <span className="text-terra font-medium">{n.tituloLibro}</span></>}
-                                    {n.tipo === 'LIKE_RESENA' && 'le ha gustado tu reseña'}
-                                    {n.tipo === 'RETO_CUMPLIDO' && 'has completado un reto'}
-                                    {n.tipo === 'NUEVO_LIBRO_AUTOR' && <>nuevo libro: <span className="text-terra font-medium">{n.tituloLibro}</span></>}
                                 </p>
                                 {!n.leida && <span className="w-2 h-2 bg-terra rounded-full flex-shrink-0 ml-2" />}
                             </div>
