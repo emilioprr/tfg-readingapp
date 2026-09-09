@@ -38,27 +38,35 @@ export default function ListaDetalle() {
 
     return (
         <div>
-            <div className="flex items-center justify-between mb-8">
-                <div>
+            <div className="mb-8">
+                <div className="flex items-start justify-between">
                     <h1 className="text-2xl font-bold text-dark-text tracking-tight">{lista.nombre}</h1>
-                    {lista.descripcion && <p className="text-dark-muted mt-1">{lista.descripcion}</p>}
-                    <div className="flex gap-3 mt-3 text-xs">
-                        {lista.esPublica ? (
-                            <span className="bg-emerald-500/20 text-emerald-400 px-2 py-1 rounded-full">Pública</span>
-                        ) : (
-                            <span className="bg-dark-elevated text-dark-muted px-2 py-1 rounded-full">Privada</span>
+                    <div className="flex items-center gap-3">
+                        {esMia && (
+                            <Link to="/catalogo"
+                                  className="text-sm bg-terra hover:bg-terra-hover text-white font-semibold px-4 py-1.5 rounded-lg transition-colors">
+                                + Añadir libro
+                            </Link>
                         )}
-                        {lista.esAutomatica && (
-                            <span className="bg-terra/20 text-terra px-2 py-1 rounded-full">Automática</span>
+                        {esMia && !lista.esAutomatica && (
+                            <button onClick={eliminarLista} className="text-red-400 hover:text-red-300 text-sm transition-colors">
+                                Eliminar lista
+                            </button>
                         )}
-                        <span className="text-dark-muted">{libros.length} libros</span>
                     </div>
                 </div>
-                {esMia && !lista.esAutomatica && (
-                    <button onClick={eliminarLista} className="text-red-400 hover:text-red-300 text-sm transition-colors">
-                        Eliminar lista
-                    </button>
-                )}
+                {lista.descripcion && <p className="text-dark-muted mt-1">{lista.descripcion}</p>}
+                <div className="flex gap-3 mt-3 text-xs">
+                    {lista.esPublica ? (
+                        <span className="bg-emerald-500/20 text-emerald-400 px-2 py-1 rounded-full">Pública</span>
+                    ) : (
+                        <span className="bg-dark-elevated text-dark-muted px-2 py-1 rounded-full">Privada</span>
+                    )}
+                    {lista.esAutomatica && (
+                        <span className="bg-terra/20 text-terra px-2 py-1 rounded-full">Automática</span>
+                    )}
+                    <span className="text-dark-muted">{libros.length} libros</span>
+                </div>
             </div>
 
             {libros.length === 0 ? (

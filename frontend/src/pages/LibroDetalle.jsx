@@ -16,8 +16,8 @@ export default function LibroDetalle() {
     const [mostrarConfirmacion, setMostrarConfirmacion] = useState(false)
     const [menuAbierto, setMenuAbierto] = useState(false)
     const [listas, setListas] = useState([])
-    const [mostrarListas, setMostrarListas] = useState(false)
     const [loading, setLoading] = useState(true)
+    const [anotacionesPublicas, setAnotacionesPublicas] = useState([])
 
     useEffect(() => {
         cargarLibro()
@@ -25,6 +25,7 @@ export default function LibroDetalle() {
         cargarEstado()
         cargarFavoritos()
         cargarListas()
+        cargarAnotaciones()
     }, [id, usuario])
 
     const cargarLibro = async () => {
@@ -63,6 +64,13 @@ export default function LibroDetalle() {
         catch (err) { console.error('Error:', err) }
     }
 
+    const cargarAnotaciones = async () => {
+        try {
+            const res = await api.get(`/anotaciones/libro/${id}/publicas`)
+            setAnotacionesPublicas(res.data.content || res.data || [])
+        } catch (err) { console.error('Error:', err) }
+    }
+
     const toggleFavorito = async () => {
         try {
             if (esFavorito) {
@@ -86,6 +94,7 @@ export default function LibroDetalle() {
             await api.post('/seguimientos', { estado: 'LEYENDO', idusuario: usuario.id, idlibro: parseInt(id) })
             setEstadoLibro('LEYENDO')
         } catch (err) { alert(err.response?.data?.mensaje || 'Error') }
+        navigate('/')
     }
 
     const agregarALista = async (idlista) => {
@@ -163,15 +172,14 @@ export default function LibroDetalle() {
                         {usuario && (
                             <div className="flex items-center gap-3 flex-shrink-0">
                                 {/* Favorito */}
-                                <button onClick={toggleFavorito} title={esFavorito ? 'Quitar de favoritos' : 'Añadir a favoritos'}
-                                        className="transition-colors">
+                                <button onClick={toggleFavorito} className="transition-colors" title={esFavorito ? 'Quitar de favoritos' : 'Añadir a favoritos'}>
                                     {esFavorito ? (
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-red-500" viewBox="0 0 24 24" fill="currentColor">
-                                            <path d="M11.645 20.91l-.007-.003-.022-.012a15.247 15.247 0 01-.383-.218 25.18 25.18 0 01-4.244-3.17C4.688 15.36 2.25 12.174 2.25 8.25 2.25 5.322 4.714 3 7.688 3A5.5 5.5 0 0112 5.052 5.5 5.5 0 0116.313 3c2.973 0 5.437 2.322 5.437 5.25 0 3.925-2.438 7.111-4.739 9.256a25.175 25.175 0 01-4.244 3.17 15.247 15.247 0 01-.383.219l-.022.012-.007.004-.003.001a.752.752 0 01-.704 0l-.003-.001z" />
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-yellow-400" viewBox="0 0 24 24" fill="currentColor">
+                                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
                                         </svg>
                                     ) : (
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-dark-muted hover:text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-dark-muted hover:text-yellow-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
                                         </svg>
                                     )}
                                 </button>
@@ -188,8 +196,8 @@ export default function LibroDetalle() {
                                 <div className="relative">
                                     <button onClick={() => setMenuAbierto(!menuAbierto)} title="Más opciones"
                                             className="text-dark-muted hover:text-dark-text transition-colors">
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 5v.01M12 12v.01M12 19v.01" />
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
                                         </svg>
                                     </button>
                                     {menuAbierto && (
@@ -330,7 +338,8 @@ export default function LibroDetalle() {
                 ) : (
                     <div className="space-y-4">
                         {resenas.map((r) => (
-                            <div key={r.idresena} className="bg-dark-card p-5 rounded-xl">
+                            <div key={r.idresena} onClick={() => navigate(`/resena/${r.idresena}`)}
+                                 className="bg-dark-card p-5 rounded-xl hover:bg-dark-elevated transition-colors cursor-pointer">
                                 <div className="flex items-center justify-between mb-2">
                                     <div className="flex items-center gap-2">
                                         {r.avatarUsuario ? (
@@ -340,9 +349,10 @@ export default function LibroDetalle() {
                                                 {r.nombreUsuario?.charAt(0).toUpperCase()}
                                             </div>
                                         )}
-                                        <Link to={`/usuario/${r.idusuario}`} className="text-dark-text text-sm font-medium hover:text-terra transition-colors">
-                                            {r.nombreUsuario}
-                                        </Link>
+                                        <span onClick={(e) => { e.stopPropagation(); navigate(`/usuario/${r.idusuario}`) }}
+                                              className="text-dark-text text-sm font-medium hover:text-terra transition-colors cursor-pointer">
+                    {r.nombreUsuario}
+                </span>
                                         <span className="text-dark-muted text-xs">{new Date(r.fechaCreacion).toLocaleDateString()}</span>
                                     </div>
                                     <Estrellas puntuacion={r.puntuacion} />
@@ -364,6 +374,33 @@ export default function LibroDetalle() {
                     </div>
                 )}
             </div>
+
+            {/* Anotaciones públicas */}
+            {anotacionesPublicas.length > 0 && (
+                <div className="mt-10">
+                    <h2 className="text-lg font-semibold text-dark-text mb-4">Anotaciones de lectores</h2>
+                    <div className="space-y-3">
+                        {anotacionesPublicas.map((a) => (
+                            <div key={a.idanotacion} className="bg-dark-card p-4 rounded-xl">
+                                <div className="flex items-center gap-2 mb-2">
+                        <span onClick={() => navigate(`/usuario/${a.idusuario}`)}
+                              className="text-dark-text text-sm font-medium hover:text-terra transition-colors cursor-pointer">
+                            {a.nombreUsuario}
+                        </span>
+                                    <span className="text-dark-muted text-xs">{new Date(a.fecha).toLocaleDateString()}</span>
+                                    {(a.parte || a.numPagina) && (
+                                        <span className="text-dark-muted text-xs">
+                                · {a.parte}{a.parte && a.numPagina ? ' · ' : ''}{a.numPagina ? `Pág. ${a.numPagina}` : ''}
+                            </span>
+                                    )}
+                                </div>
+                                {a.titulo && <p className="text-dark-text font-medium text-sm mb-1">{a.titulo}</p>}
+                                <p className="text-dark-text/70 text-sm">{a.texto}</p>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
 
             {/* Modal confirmación empezar a leer */}
             {mostrarConfirmacion && (

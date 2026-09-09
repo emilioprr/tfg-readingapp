@@ -20,7 +20,6 @@ function ListaCard({ lista }) {
     return (
         <Link to={`/lista/${lista.idlista}`}
               className="bg-dark-card rounded-xl overflow-hidden hover:bg-dark-elevated transition-colors group">
-            {/* Preview de portadas */}
             <div className="h-32 relative overflow-hidden">
                 {libros.length > 0 ? (
                     <div className={`grid h-full ${
@@ -49,7 +48,6 @@ function ListaCard({ lista }) {
                 )}
             </div>
 
-            {/* Info */}
             <div className="p-4">
                 <p className="text-terra font-medium group-hover:text-terra-hover transition-colors">{lista.nombre}</p>
                 {lista.descripcion && (
@@ -67,18 +65,23 @@ export default function Listas() {
     const { usuario } = useAuth()
     const [publicas, setPublicas] = useState([])
     const [misListas, setMisListas] = useState([])
+    const [listasAmigos, setListasAmigos] = useState([])
     const [tab, setTab] = useState('explorar')
     const [loading, setLoading] = useState(true)
 
     useEffect(() => {
         cargarPublicas()
-        if (usuario) cargarMisListas()
+        if (usuario) {
+            cargarMisListas()
+            cargarListasAmigos()
+        }
     }, [usuario])
 
     const cargarPublicas = async () => {
         try {
             const res = await api.get('/listas/publicas')
-            setPublicas(res.data.content || res.data || [])
+            const todas = res.data.content || res.data || []
+            setPublicas(todas.filter(l => !l.esAutomatica && (!usuario || l.idusuario !== usuario.id)))
         } catch (err) { console.error('Error:', err) }
         finally { setLoading(false) }
     }
@@ -90,8 +93,27 @@ export default function Listas() {
         } catch (err) { console.error('Error:', err) }
     }
 
+    const cargarListasAmigos = async () => {
+        try {
+            const res = await api.get(`/usuarios/${usuario.id}/seguidos`)
+            const seguidos = res.data || []
+            const todasListas = []
+            for (const seguido of seguidos) {
+                try {
+                    const resListas = await api.get(`/listas/usuario/${seguido.idusuario}`)
+                    const listas = (resListas.data.content || resListas.data || [])
+                        .filter(l => l.esPublica)
+                        .map(l => ({ ...l, nombreUsuario: seguido.nombre }))
+                    todasListas.push(...listas)
+                } catch (err) { /* ignorar */ }
+            }
+            setListasAmigos(todasListas)
+        } catch (err) { console.error('Error:', err) }
+    }
+
     const tabs = [
         { key: 'explorar', label: 'Explorar' },
+        ...(usuario ? [{ key: 'amigos', label: 'Listas de amigos' }] : []),
         ...(usuario ? [{ key: 'mis-listas', label: 'Mis listas' }] : []),
     ]
 
@@ -134,6 +156,22 @@ export default function Listas() {
                     ) : (
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
                             {publicas.map((lista) => (
+                                <ListaCard key={lista.idlista} lista={lista} />
+                            ))}
+                        </div>
+                    )}
+                </>
+            )}
+
+            {tab === 'amigos' && (
+                <>
+                    {listasAmigos.length === 0 ? (
+                        <div className="text-center py-16 bg-dark-card rounded-2xl">
+                            <p className="text-dark-muted">Tus amigos no tienen listas públicas</p>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
+                            {listasAmigos.map((lista) => (
                                 <ListaCard key={lista.idlista} lista={lista} />
                             ))}
                         </div>

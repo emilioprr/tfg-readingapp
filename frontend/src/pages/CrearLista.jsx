@@ -16,7 +16,7 @@ export default function CrearLista() {
         if (!nombre.trim()) { setError('El nombre es obligatorio'); return }
         try {
             await api.post(`/listas/usuario/${usuario.id}`, { nombre, descripcion, esPublica })
-            navigate('/perfil')
+            navigate('/listas')
         } catch (err) { setError(err.response?.data?.mensaje || 'Error al crear la lista') }
     }
 

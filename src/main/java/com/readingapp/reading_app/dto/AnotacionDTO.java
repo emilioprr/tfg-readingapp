@@ -42,5 +42,6 @@ public class AnotacionDTO {
         private String nombreUsuario;
         private Long idlibro;
         private String tituloLibro;
+        private String portadaLibro;
     }
 }

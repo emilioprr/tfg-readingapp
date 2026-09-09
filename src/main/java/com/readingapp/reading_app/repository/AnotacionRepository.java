@@ -13,5 +13,6 @@ public interface AnotacionRepository extends JpaRepository<Anotacion, Long> {
     List<Anotacion> findByLibroIdlibro(Long idlibro, Pageable pageable);
     List<Anotacion> findByUsuarioIdusuarioAndLibroIdlibro(Long idusuario, Long idlibro);
     List<Anotacion> findByUsuarioIdusuarioAndTipo(Long idusuario, TipoAnotacion tipo, Pageable pageable);
+    List<Anotacion> findByLibroIdlibroAndEsPublicaTrue(Long idlibro, Pageable pageable);
 }
 

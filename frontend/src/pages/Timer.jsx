@@ -6,9 +6,6 @@ import api from '../api/axios'
 export default function Timer() {
     const { usuario } = useAuth()
 
-    const [leyendo, setLeyendo] = useState([])
-    const [libroSeleccionado, setLibroSeleccionado] = useState(null)
-
     const [modo, setModo] = useState('libre')
     const [objetivoMinutos, setObjetivoMinutos] = useState(30)
     const [unidadTiempo, setUnidadTiempo] = useState('minutos')
@@ -23,10 +20,6 @@ export default function Timer() {
 
     const intervalRef = useRef(null)
     const segundosRef = useRef(0)
-
-    useEffect(() => {
-        if (usuario) cargarLeyendo()
-    }, [usuario])
 
     useEffect(() => {
         const handleVisibility = () => {
@@ -58,15 +51,6 @@ export default function Timer() {
         return () => { if (intervalRef.current) clearInterval(intervalRef.current) }
     }, [])
 
-    const cargarLeyendo = async () => {
-        try {
-            const res = await api.get(`/seguimientos/usuario/${usuario.id}/estado/LEYENDO`)
-            const datos = res.data || []
-            datos.sort((a, b) => b.idseguimiento - a.idseguimiento)
-            setLeyendo(datos)
-        } catch (err) { console.error('Error:', err) }
-    }
-
     const getTotalMinutosObjetivo = () => {
         return unidadTiempo === 'horas' ? objetivoMinutos * 60 : objetivoMinutos
     }
@@ -78,7 +62,6 @@ export default function Timer() {
     }
 
     const iniciar = () => {
-        if (!libroSeleccionado) return
         setActivo(true)
         setPausado(false)
         setPausadoPorTab(false)
@@ -155,7 +138,6 @@ export default function Timer() {
         try {
             await api.post('/sesiones-lectura', {
                 idusuario: usuario.id,
-                idlibro: libroSeleccionado.idlibro,
                 duracionMinutos: minutosLeidos,
             })
             setSesionTerminada(true)
@@ -187,41 +169,13 @@ export default function Timer() {
 
     return (
         <div className="max-w-xl mx-auto">
-            <h1 className="text-2xl font-bold text-dark-text tracking-tight mb-8 text-center">Sesión de lectura</h1>
+            <h1 className="text-2xl font-bold text-dark-text tracking-tight mb-2 text-center">Sesión de lectura</h1>
+            <p className="text-dark-muted text-sm text-center mb-8">
+                Cronometra tus sesiones de lectura. El tiempo se registra automáticamente al terminar y cuenta para tus retos de horas. Si cambias de pestaña, el temporizador se pausa para garantizar un registro real.
+            </p>
 
             {!activo && !sesionTerminada && (
                 <div className="space-y-6">
-                    <div className="bg-dark-card rounded-2xl p-6">
-                        <h3 className="text-sm font-medium text-dark-muted mb-3">¿Qué vas a leer?</h3>
-                        {leyendo.length === 0 ? (
-                            <div className="text-center py-4">
-                                <p className="text-dark-muted text-sm mb-2">No estás leyendo ningún libro</p>
-                                <Link to="/catalogo" className="text-terra hover:text-terra-hover text-sm transition-colors">Explorar libros</Link>
-                            </div>
-                        ) : (
-                            <div className="space-y-2">
-                                {leyendo.map((s) => (
-                                    <button key={s.idlibro} onClick={() => setLibroSeleccionado(s)}
-                                            className={`w-full flex items-center gap-3 p-3 rounded-xl text-left transition-colors ${
-                                                libroSeleccionado?.idlibro === s.idlibro
-                                                    ? 'bg-terra/20 border border-terra/40'
-                                                    : 'bg-dark-elevated hover:bg-dark-border'
-                                            }`}>
-                                        {s.portadaLibro ? (
-                                            <img src={s.portadaLibro} alt={s.tituloLibro} className="w-10 h-14 object-cover rounded-sm" />
-                                        ) : (
-                                            <div className="w-10 h-14 bg-dark-card rounded-sm flex items-center justify-center text-dark-muted text-xs">📖</div>
-                                        )}
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-dark-text text-sm font-medium truncate">{s.tituloLibro}</p>
-                                            <p className="text-dark-muted text-xs">{s.porcentaje || 0}% completado</p>
-                                        </div>
-                                    </button>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-
                     <div className="bg-dark-card rounded-2xl p-6">
                         <h3 className="text-sm font-medium text-dark-muted mb-3">Modo</h3>
                         <div className="flex gap-3 mb-4">
@@ -266,8 +220,8 @@ export default function Timer() {
                         )}
                     </div>
 
-                    <button onClick={iniciar} disabled={!libroSeleccionado}
-                            className="w-full bg-terra hover:bg-terra-hover text-white font-semibold py-3 rounded-xl text-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
+                    <button onClick={iniciar}
+                            className="w-full bg-terra hover:bg-terra-hover text-white font-semibold py-3 rounded-xl text-lg transition-colors">
                         Iniciar sesión
                     </button>
                 </div>
@@ -275,19 +229,6 @@ export default function Timer() {
 
             {(activo || sesionTerminada) && (
                 <div className="text-center">
-                    <div className="flex items-center justify-center gap-4 mb-10">
-                        {libroSeleccionado.portadaLibro ? (
-                            <img src={libroSeleccionado.portadaLibro} alt={libroSeleccionado.tituloLibro}
-                                 className="w-14 h-20 object-cover rounded-sm shadow-lg" />
-                        ) : (
-                            <div className="w-14 h-20 bg-dark-elevated rounded-sm flex items-center justify-center text-dark-muted">📖</div>
-                        )}
-                        <div className="text-left">
-                            <p className="text-dark-text font-medium">{libroSeleccionado.tituloLibro}</p>
-                            <p className="text-dark-muted text-sm">{libroSeleccionado.nombreAutor}</p>
-                        </div>
-                    </div>
-
                     <div className="relative w-64 h-64 mx-auto mb-8">
                         <svg className="w-64 h-64 -rotate-90" viewBox="0 0 200 200">
                             <circle cx="100" cy="100" r="90" fill="none" stroke="#2a2a2a" strokeWidth="4" />

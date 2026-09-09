@@ -9,7 +9,6 @@ public class SesionLecturaDTO {
     public static class CreateRequest {
         @NotNull(message = "El usuario es obligatorio")
         private Long idusuario;
-        @NotNull(message = "El libro es obligatorio")
         private Long idlibro;
         @NotNull @Min(1)
         private Integer duracionMinutos;

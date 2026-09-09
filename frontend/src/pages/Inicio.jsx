@@ -15,12 +15,12 @@ export default function Inicio() {
     const [resenasSeguidos, setResenasSeguidos] = useState([])
     const [popularesAmigos, setPopularesAmigos] = useState([])
     const [loading, setLoading] = useState(true)
-
+    const [mostrarAbandonarModal, setMostrarAbandonarModal] = useState(false)
     const [editandoProgreso, setEditandoProgreso] = useState(false)
     const [nuevaPagina, setNuevaPagina] = useState('')
-    const [menuAbierto, setMenuAbierto] = useState(false)
     const [errorProgreso, setErrorProgreso] = useState('')
     const [mostrarFinalizarModal, setMostrarFinalizarModal] = useState(false)
+    const [mostrarAnotacionModal, setMostrarAnotacionModal] = useState(false)
 
     useEffect(() => {
         if (usuario) {
@@ -87,6 +87,7 @@ export default function Inicio() {
             } else {
                 cargarLeyendo()
                 cargarRetos()
+                setMostrarAnotacionModal(true)
             }
         } catch (err) {
             setErrorProgreso(err.response?.data?.mensaje || 'Error al actualizar')
@@ -101,7 +102,6 @@ export default function Inicio() {
                 idusuario: usuario.id,
                 idlibro: libroActual.idlibro,
             })
-            setMenuAbierto(false)
             navigate(`/libro/${libroActual.idlibro}/resena`)
         } catch (err) {
             alert(err.response?.data?.mensaje || 'Error')
@@ -116,7 +116,6 @@ export default function Inicio() {
                 idusuario: usuario.id,
                 idlibro: libroActual.idlibro,
             })
-            setMenuAbierto(false)
             if (leyendoIndex >= leyendo.length - 1) setLeyendoIndex(Math.max(0, leyendoIndex - 1))
             cargarLeyendo()
         } catch (err) {
@@ -195,31 +194,19 @@ export default function Inicio() {
                                                 </svg>
                                             </Link>
 
-                                            <div className="relative">
-                                                <button onClick={() => setMenuAbierto(!menuAbierto)}
-                                                        className="text-dark-muted hover:text-dark-text transition-colors p-1">
+                                            <div className="flex items-center gap-2">
+                                                <button onClick={() => setMostrarFinalizarModal(true)}
+                                                        className="text-emerald-400 hover:text-emerald-300 transition-colors p-1" title="Marcar como finalizado">
                                                     <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 5v.01M12 12v.01M12 19v.01" />
+                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                                                     </svg>
                                                 </button>
-                                                {menuAbierto && (
-                                                    <div className="absolute right-0 top-8 bg-dark-elevated border border-dark-border rounded-xl shadow-2xl w-44 overflow-hidden z-50">
-                                                        <button onClick={() => { setMenuAbierto(false); setMostrarFinalizarModal(true) }}
-                                                                className="w-full text-left px-4 py-2.5 text-dark-text hover:bg-dark-card text-sm transition-colors flex items-center gap-2">
-                                                            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                                                            </svg>
-                                                            Finalizado
-                                                        </button>
-                                                        <button onClick={marcarComoAbandonado}
-                                                                className="w-full text-left px-4 py-2.5 text-dark-text hover:bg-dark-card text-sm transition-colors flex items-center gap-2">
-                                                            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                                                            </svg>
-                                                            Abandonar
-                                                        </button>
-                                                    </div>
-                                                )}
+                                                <button onClick={() => setMostrarAbandonarModal(true)}
+                                                        className="text-red-400/60 hover:text-red-400 transition-colors p-1" title="Abandonar libro">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                                    </svg>
+                                                </button>
                                             </div>
                                         </div>
 
@@ -275,7 +262,7 @@ export default function Inicio() {
 
                             {leyendo.length > 1 && (
                                 <div className="flex items-center justify-center gap-3 mt-5 pt-4 border-t border-dark-border">
-                                    <button onClick={() => { setLeyendoIndex(i => i === 0 ? leyendo.length - 1 : i - 1); setEditandoProgreso(false); setMenuAbierto(false) }}
+                                    <button onClick={() => { setLeyendoIndex(i => i === 0 ? leyendo.length - 1 : i - 1); setEditandoProgreso(false)}}
                                             className="text-dark-muted hover:text-terra transition-colors">
                                         <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                                             <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
@@ -283,11 +270,11 @@ export default function Inicio() {
                                     </button>
                                     <div className="flex gap-1.5">
                                         {leyendo.map((_, i) => (
-                                            <button key={i} onClick={() => { setLeyendoIndex(i); setEditandoProgreso(false); setMenuAbierto(false) }}
+                                            <button key={i} onClick={() => { setLeyendoIndex(i); setEditandoProgreso(false)}}
                                                     className={`w-2 h-2 rounded-full transition-colors ${i === leyendoIndex ? 'bg-terra' : 'bg-dark-border hover:bg-dark-muted'}`} />
                                         ))}
                                     </div>
-                                    <button onClick={() => { setLeyendoIndex(i => i === leyendo.length - 1 ? 0 : i + 1); setEditandoProgreso(false); setMenuAbierto(false) }}
+                                    <button onClick={() => { setLeyendoIndex(i => i === leyendo.length - 1 ? 0 : i + 1); setEditandoProgreso(false)}}
                                             className="text-dark-muted hover:text-terra transition-colors">
                                         <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                                             <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
@@ -416,6 +403,44 @@ export default function Inicio() {
                             <button onClick={async () => { setMostrarFinalizarModal(false); await marcarComoLeido() }}
                                     className="bg-terra hover:bg-terra-hover text-white font-semibold px-4 py-2 rounded-lg transition-colors">
                                 Sí, finalizar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {mostrarAbandonarModal && (
+                <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50">
+                    <div className="bg-dark-card border border-dark-border rounded-2xl p-6 max-w-sm w-full mx-4">
+                        <h3 className="text-lg font-bold text-dark-text mb-2">¿Abandonar este libro?</h3>
+                        <p className="text-dark-muted mb-6">{leyendo[leyendoIndex]?.tituloLibro}</p>
+                        <div className="flex gap-3 justify-end">
+                            <button onClick={() => setMostrarAbandonarModal(false)}
+                                    className="px-4 py-2 text-dark-muted hover:text-dark-text transition-colors">
+                                Cancelar
+                            </button>
+                            <button onClick={async () => { setMostrarAbandonarModal(false); await marcarComoAbandonado() }}
+                                    className="bg-red-500 hover:bg-red-600 text-white font-semibold px-4 py-2 rounded-lg transition-colors">
+                                Sí, abandonar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {mostrarAnotacionModal && (
+                <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50">
+                    <div className="bg-dark-card border border-dark-border rounded-2xl p-6 max-w-sm w-full mx-4">
+                        <h3 className="text-lg font-bold text-dark-text mb-2">¿Quieres añadir una anotación?</h3>
+                        <p className="text-dark-muted text-sm mb-6">Puedes apuntar tus ideas o reflexiones sobre lo que acabas de leer.</p>
+                        <div className="flex gap-3 justify-end">
+                            <button onClick={() => setMostrarAnotacionModal(false)}
+                                    className="px-4 py-2 text-dark-muted hover:text-dark-text transition-colors">
+                                No, gracias
+                            </button>
+                            <button onClick={() => { setMostrarAnotacionModal(false); navigate(`/libro/${leyendo[leyendoIndex]?.idlibro}/anotaciones`) }}
+                                    className="bg-terra hover:bg-terra-hover text-white font-semibold px-4 py-2 rounded-lg transition-colors">
+                                Sí, anotar
                             </button>
                         </div>
                     </div>

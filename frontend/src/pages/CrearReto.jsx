@@ -11,30 +11,30 @@ export default function CrearReto() {
     const [tipo, setTipo] = useState('LIBROS')
     const [modalidad, setModalidad] = useState('PERSONAL')
     const [meta, setMeta] = useState('')
-    const [fechaInicio, setFechaInicio] = useState('')
     const [fechaFin, setFechaFin] = useState('')
     const [error, setError] = useState('')
 
     const handleSubmit = async (e) => {
         e.preventDefault(); setError('')
-        if (!titulo.trim() || !meta || !fechaInicio || !fechaFin) { setError('Completa todos los campos'); return }
+        if (!titulo.trim() || !meta || !fechaFin) { setError('Completa todos los campos'); return }
         try {
-            await api.post('/retos', { titulo, descripcion, tipo, modalidad, meta: parseInt(meta), fechaInicio, fechaFin, idCreador: usuario.id })
+            await api.post('/retos', { titulo, descripcion, tipo, modalidad, meta: parseInt(meta), fechaFin, idCreador: usuario.id })
             navigate('/retos')
         } catch (err) { setError(err.response?.data?.mensaje || 'Error al crear el reto') }
     }
 
     const tipos = [
-        { value: 'LIBROS', label: '📚 Libros', desc: 'Terminar X libros' },
-        { value: 'PAGINAS', label: '📄 Páginas', desc: 'Leer X páginas' },
-        { value: 'HORAS', label: '⏱ Horas', desc: 'Leer X horas' },
-        { value: 'LIBROS_AUTOR', label: '✍️ Por autor', desc: 'Leer X libros de un autor' },
+        { value: 'LIBROS', label: 'Libros', desc: 'Terminar X libros' },
+        { value: 'PAGINAS', label: 'Páginas', desc: 'Leer X páginas' },
+        { value: 'HORAS', label: 'Horas', desc: 'Leer X horas' },
     ]
     const modalidades = [
         { value: 'PERSONAL', label: 'Personal', desc: 'Solo para ti' },
         { value: 'COMPARTIDO', label: 'Compartido', desc: 'Otros pueden adoptarlo' },
     ]
-    const metaLabel = tipo === 'LIBROS' || tipo === 'LIBROS_AUTOR' ? 'libros' : tipo === 'PAGINAS' ? 'páginas' : 'horas'
+    const metaLabel = tipo === 'LIBROS' ? 'libros' : tipo === 'PAGINAS' ? 'páginas' : 'horas'
+
+    const hoy = new Date().toISOString().split('T')[0]
 
     return (
         <div className="max-w-lg mx-auto">
@@ -56,7 +56,7 @@ export default function CrearReto() {
                 </div>
                 <div>
                     <label className="block text-dark-muted text-sm mb-2">Tipo de reto</label>
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-3 gap-2">
                         {tipos.map((t) => (
                             <button key={t.value} type="button" onClick={() => setTipo(t.value)}
                                     className={`p-3 rounded-xl text-left text-sm transition-colors ${tipo === t.value ? 'bg-terra/20 border border-terra/40 text-terra' : 'bg-dark-elevated border border-dark-border text-dark-muted hover:text-dark-text'}`}>
@@ -81,17 +81,10 @@ export default function CrearReto() {
                     <input type="number" value={meta} onChange={(e) => setMeta(e.target.value)} min="1"
                            className="w-32 bg-dark-elevated border border-dark-border rounded-lg px-3 py-2 text-dark-text focus:border-terra focus:outline-none transition-colors" placeholder="Ej: 5" required />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                    <div>
-                        <label className="block text-dark-muted text-sm mb-1">Fecha inicio</label>
-                        <input type="date" value={fechaInicio} onChange={(e) => setFechaInicio(e.target.value)}
-                               className="w-full bg-dark-elevated border border-dark-border rounded-lg px-3 py-2 text-dark-text focus:border-terra focus:outline-none transition-colors" required />
-                    </div>
-                    <div>
-                        <label className="block text-dark-muted text-sm mb-1">Fecha fin</label>
-                        <input type="date" value={fechaFin} onChange={(e) => setFechaFin(e.target.value)}
-                               className="w-full bg-dark-elevated border border-dark-border rounded-lg px-3 py-2 text-dark-text focus:border-terra focus:outline-none transition-colors" required />
-                    </div>
+                <div>
+                    <label className="block text-dark-muted text-sm mb-1">Fecha límite</label>
+                    <input type="date" value={fechaFin} onChange={(e) => setFechaFin(e.target.value)} min={hoy}
+                           className="w-full bg-dark-elevated border border-dark-border rounded-lg px-3 py-2 text-dark-text focus:border-terra focus:outline-none transition-colors" required />
                 </div>
                 <button type="submit" className="w-full bg-terra hover:bg-terra-hover text-white font-semibold py-2.5 rounded-lg transition-colors">Crear reto</button>
             </form>

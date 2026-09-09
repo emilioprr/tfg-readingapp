@@ -112,6 +112,10 @@ public class AnotacionService {
         anotacionRepository.deleteById(id);
     }
 
+    public List<AnotacionDTO.Response> obtenerPublicasPorLibro(Long idlibro, Pageable pageable) {
+        return anotacionRepository.findByLibroIdlibroAndEsPublicaTrue(idlibro, pageable)
+                .stream().map(this::toResponse).toList();
+    }
     // === HELPERS ===
 
     private Anotacion buscarPorId(Long id) {
@@ -132,6 +136,7 @@ public class AnotacionService {
                 .nombreUsuario(anotacion.getUsuario().getNombre())
                 .idlibro(anotacion.getLibro().getIdlibro())
                 .tituloLibro(anotacion.getLibro().getTitulo())
+                .portadaLibro(anotacion.getLibro().getPortada())
                 .build();
     }
 }

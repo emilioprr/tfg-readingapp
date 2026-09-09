@@ -33,7 +33,6 @@ public class RetoService {
     private final SesionLecturaRepository sesionLecturaRepository;
     private final NotificacionService notificacionService;
 
-    @Transactional
     public RetoDTO.Response crear(RetoDTO.CreateRequest request) {
         if (request.getModalidad() == ModalidadReto.PREDEFINIDO
                 || request.getModalidad() == ModalidadReto.COLABORATIVO) {
@@ -41,7 +40,6 @@ public class RetoService {
         }
         Usuario creador = null;
 
-        // PERSONAL y COMPARTIDO requieren creador
         if (request.getModalidad() == ModalidadReto.PERSONAL
                 || request.getModalidad() == ModalidadReto.COMPARTIDO) {
             if (request.getIdCreador() == null) {
@@ -50,12 +48,13 @@ public class RetoService {
             creador = usuarioRepository.findById(request.getIdCreador())
                     .orElseThrow(() -> new EntityNotFoundException("Usuario no encontrado"));
         } else if (request.getIdCreador() != null) {
-            // PREDEFINIDO/COLABORATIVO pueden tener creador opcional (admin)
             creador = usuarioRepository.findById(request.getIdCreador()).orElse(null);
         }
 
-        if (request.getFechaFin().isBefore(request.getFechaInicio())) {
-            throw new IllegalArgumentException("La fecha de fin no puede ser anterior a la de inicio");
+        LocalDate fechaInicio = LocalDate.now();
+
+        if (request.getFechaFin().isBefore(fechaInicio)) {
+            throw new IllegalArgumentException("La fecha de fin no puede ser anterior a hoy");
         }
 
         Reto reto = Reto.builder()
@@ -64,23 +63,13 @@ public class RetoService {
                 .tipo(request.getTipo())
                 .modalidad(request.getModalidad())
                 .meta(request.getMeta())
-                .fechaInicio(request.getFechaInicio())
+                .fechaInicio(fechaInicio)
                 .fechaFin(request.getFechaFin())
                 .creador(creador)
                 .build();
 
-        if (request.getTipo() == TipoReto.LIBROS_AUTOR) {
-            if (request.getIdAutor() == null) {
-                throw new IllegalArgumentException("El reto LIBROS_AUTOR requiere un autor");
-            }
-            Autor autor = autorRepository.findById(request.getIdAutor())
-                    .orElseThrow(() -> new EntityNotFoundException("Autor no encontrado"));
-            reto.setAutor(autor);
-        }
-
         reto = retoRepository.save(reto);
 
-        // En PERSONAL, el creador se une automáticamente
         if (request.getModalidad() == ModalidadReto.PERSONAL && creador != null) {
             ParticipanteReto participante = ParticipanteReto.builder()
                     .reto(reto)
