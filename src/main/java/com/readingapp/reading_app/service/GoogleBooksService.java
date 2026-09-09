@@ -211,8 +211,6 @@ public class GoogleBooksService {
         String titulo = (String) volumeInfo.get("title");
         if (titulo == null) return false;
 
-        log.info("Intentando guardar: {}", titulo);
-
         String idExterno = (String) item.get("id");
         if (idExterno != null && libroRepository.existsByIdapiexterna(idExterno)) {
             log.info("Rechazado por ID externo: {}", titulo);

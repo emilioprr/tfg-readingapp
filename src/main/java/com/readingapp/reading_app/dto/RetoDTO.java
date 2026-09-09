@@ -21,12 +21,10 @@ public class RetoDTO {
         private ModalidadReto modalidad;
         @NotNull @Min(1)
         private Integer meta;
-        @NotNull
         private LocalDate fechaInicio;
         @NotNull
         private LocalDate fechaFin;
         private Long idCreador;  // null para PREDEFINIDO/COLABORATIVO
-        private Long idAutor;    // solo para LIBROS_AUTOR
     }
 
     @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
