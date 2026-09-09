@@ -11,9 +11,15 @@ import java.util.List;
 
 @Repository
 public interface LibroRepository extends JpaRepository<Libro, Long> {
-    @Query("SELECT l FROM Libro l WHERE (LOWER(l.titulo) LIKE LOWER(CONCAT('%', :texto, '%')) " +
-            "OR LOWER(l.autor.nombre) LIKE LOWER(CONCAT('%', :texto, '%'))) " +
-            "AND l.idlibro = (SELECT MIN(l2.idlibro) FROM Libro l2 WHERE l2.titulo = l.titulo AND l2.autor = l.autor)")
+    @Query(value = "SELECT l.* FROM libro l JOIN autor a ON l.idautor = a.idautor " +
+            "WHERE (LOWER(unaccent(l.titulo)) LIKE LOWER(unaccent(CONCAT('%', :texto, '%'))) " +
+            "OR LOWER(unaccent(a.nombre)) LIKE LOWER(unaccent(CONCAT('%', :texto, '%')))) " +
+            "AND l.idlibro = (SELECT MIN(l2.idlibro) FROM libro l2 WHERE l2.titulo = l.titulo AND l2.idautor = l.idautor)",
+            countQuery = "SELECT COUNT(*) FROM libro l JOIN autor a ON l.idautor = a.idautor " +
+                    "WHERE (LOWER(unaccent(l.titulo)) LIKE LOWER(unaccent(CONCAT('%', :texto, '%'))) " +
+                    "OR LOWER(unaccent(a.nombre)) LIKE LOWER(unaccent(CONCAT('%', :texto, '%')))) " +
+                    "AND l.idlibro = (SELECT MIN(l2.idlibro) FROM libro l2 WHERE l2.titulo = l.titulo AND l2.idautor = l.idautor)",
+            nativeQuery = true)
     Page<Libro> findByTituloContainingIgnoreCase(@Param("texto") String texto, Pageable pageable);
     List<Libro> findByTituloContainingIgnoreCase(String titulo);
     List<Libro> findByGeneroIgnoreCase(String genero, Pageable pageable);
