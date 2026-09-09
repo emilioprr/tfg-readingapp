@@ -49,9 +49,10 @@ export default function Busqueda() {
                 const datos = res.data.content || res.data || []
                 if (reset) {
                     setResultados(datos)
-                    // Si pocos resultados, importar en segundo plano y refrescar
+                    setLoading(false)
+                    // Si pocos resultados, importar y refrescar
                     if (datos.length < size) {
-                        importarYRefrescar()
+                        importarYRefrescar(datos.length)
                     }
                 } else {
                     setResultados(prev => {
@@ -78,23 +79,26 @@ export default function Busqueda() {
             console.error('Error buscando:', err)
             if (reset) setResultados([])
         } finally {
-            setLoading(false)
-            setCargandoMas(false)
-            cargandoMasRef.current = false
+            if (!reset) {
+                setCargandoMas(false)
+                cargandoMasRef.current = false
+            }
         }
     }
 
-    const importarYRefrescar = async () => {
+    const importarYRefrescar = async (resultadosActuales) => {
         setImportando(true)
         try {
             await api.get(`/libros/buscar/importar?titulo=${query}`)
             const res = await api.get(`/libros/buscar?titulo=${query}&page=0&size=24`)
             const nuevos = res.data.content || res.data || []
-            setResultados(nuevos)
-            hayMasRef.current = nuevos.length === 24
-            setHayMas(nuevos.length === 24)
+            if (nuevos.length > resultadosActuales) {
+                setResultados(nuevos)
+                hayMasRef.current = nuevos.length === 24
+                setHayMas(nuevos.length === 24)
+            }
         } catch (err) {
-            // Si falla, no pasa nada
+            // Si falla Google Books, no pasa nada
         } finally {
             setImportando(false)
         }

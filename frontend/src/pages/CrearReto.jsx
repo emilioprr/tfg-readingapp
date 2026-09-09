@@ -18,9 +18,11 @@ export default function CrearReto() {
         e.preventDefault(); setError('')
         if (!titulo.trim() || !meta || !fechaFin) { setError('Completa todos los campos'); return }
         try {
-            await api.post('/retos', { titulo, descripcion, tipo, modalidad, meta: parseInt(meta), fechaFin, idCreador: usuario.id })
+            const res = await api.post('/retos', { titulo, descripcion, tipo, modalidad, meta: parseInt(meta), fechaFin, idCreador: usuario.id })
             navigate('/retos')
-        } catch (err) { setError(err.response?.data?.mensaje || 'Error al crear el reto') }
+        } catch (err) {
+            setError(err.response?.data?.mensaje || err.response?.data?.error || 'Error al crear el reto')
+        }
     }
 
     const tipos = [
