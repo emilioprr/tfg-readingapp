@@ -25,8 +25,11 @@ public class SesionLecturaService {
     public SesionLecturaDTO.Response registrar(SesionLecturaDTO.CreateRequest request) {
         Usuario usuario = usuarioRepository.findById(request.getIdusuario())
                 .orElseThrow(() -> new EntityNotFoundException("Usuario no encontrado"));
-        Libro libro = libroRepository.findById(request.getIdlibro())
-                .orElseThrow(() -> new EntityNotFoundException("Libro no encontrado"));
+        Libro libro = null;
+        if (request.getIdlibro() != null) {
+            libro = libroRepository.findById(request.getIdlibro())
+                    .orElseThrow(() -> new EntityNotFoundException("Libro no encontrado"));
+        }
 
         LocalDateTime ahora = LocalDateTime.now();
 

@@ -35,6 +35,7 @@ export default function CrearAnotacion() {
             await api.post('/anotaciones', { texto, parte, tipo, esPublica, tieneSpoiler, idlibro: parseInt(idlibro), idusuario: usuario.id })
             setExito('Anotación guardada'); setTexto(''); setParte(''); cargarAnotaciones()
         } catch (err) { setError(err.response?.data?.mensaje || 'Error al crear anotación') }
+        navigate('/')
     }
 
     const eliminarAnotacion = async (id) => {
@@ -48,8 +49,11 @@ export default function CrearAnotacion() {
         <div className="max-w-3xl mx-auto">
             <div className="flex items-center justify-between mb-6">
                 <h1 className="text-2xl font-bold text-terra tracking-tight">Anotaciones</h1>
-                <button onClick={() => navigate(`/libro/${idlibro}`)} className="text-dark-muted hover:text-dark-text text-2xl transition-colors">✕</button>
+                <button onClick={() => navigate(`/`)} className="text-dark-muted hover:text-dark-text text-2xl transition-colors">✕</button>
             </div>
+            <p className="text-dark-muted text-sm mb-6">
+                Apunta reflexiones, citas o ideas sobre lo que estás leyendo. Puedes indicar el capítulo o la página para encontrarlas fácilmente después.
+            </p>
 
             <div className="flex gap-6 mb-8">
                 {libro.portada ? <img src={libro.portada} alt={libro.titulo} className="w-24 h-36 object-cover rounded-xl flex-shrink-0" />

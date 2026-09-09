@@ -65,4 +65,9 @@ public class AnotacionController {
         anotacionService.eliminar(id);
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping("/libro/{idlibro}/publicas")
+    public ResponseEntity<List<AnotacionDTO.Response>> obtenerPublicasPorLibro(@PathVariable Long idlibro, @PageableDefault(size = 20) Pageable pageable) {
+        return ResponseEntity.ok(anotacionService.obtenerPublicasPorLibro(idlibro, pageable));
+    }
 }
