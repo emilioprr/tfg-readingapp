@@ -28,14 +28,19 @@ export default function Busqueda() {
             hayMasRef.current = true
             setHayMas(true)
             buscar(0, true)
-            if (usuario) cargarSeguidos()
+            if (usuario && tab === 'usuarios') cargarSeguidos()
         }
     }, [query, tab])
 
     const buscar = async (pag = 0, reset = false) => {
         if (cargandoMasRef.current) return
-        if (reset) setLoading(true)
-        else { setCargandoMas(true); cargandoMasRef.current = true }
+        if (reset) {
+            setLoading(true)
+            setResultados([])
+        } else {
+            setCargandoMas(true)
+            cargandoMasRef.current = true
+        }
 
         try {
             const size = 24
