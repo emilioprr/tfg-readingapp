@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import api from '../api/axios'
 
@@ -10,13 +10,15 @@ export default function CrearLista() {
     const [descripcion, setDescripcion] = useState('')
     const [esPublica, setEsPublica] = useState(true)
     const [error, setError] = useState('')
+    const [searchParams] = useSearchParams()
+    const volver = searchParams.get('volver')
 
     const handleSubmit = async (e) => {
         e.preventDefault(); setError('')
         if (!nombre.trim()) { setError('El nombre es obligatorio'); return }
         try {
             await api.post(`/listas/usuario/${usuario.id}`, { nombre, descripcion, esPublica })
-            navigate('/listas')
+            navigate(volver || '/listas')
         } catch (err) { setError(err.response?.data?.mensaje || 'Error al crear la lista') }
     }
 
