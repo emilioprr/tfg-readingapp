@@ -1,5 +1,6 @@
 package com.readingapp.reading_app.service;
 
+import com.readingapp.reading_app.config.SecurityUtils;
 import com.readingapp.reading_app.dto.LibroDTO;
 import com.readingapp.reading_app.model.Autor;
 import com.readingapp.reading_app.model.Libro;
@@ -85,6 +86,7 @@ public class LibroService {
 
     @Transactional
     public LibroDTO.Response actualizar(Long id, LibroDTO.UpdateRequest request) {
+        SecurityUtils.validarAdmin();
         Libro libro = buscarPorId(id);
 
         if (request.getTitulo() != null) libro.setTitulo(request.getTitulo());

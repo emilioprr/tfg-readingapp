@@ -108,7 +108,7 @@ public class AnotacionService {
     public void eliminar(Long id) {
         Anotacion anotacion = anotacionRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Anotación no encontrada con id: " + id));
-        SecurityUtils.validarUsuario(anotacion.getUsuario().getIdusuario());
+        SecurityUtils.validarUsuarioOAdmin(anotacion.getUsuario().getIdusuario());
         anotacionRepository.deleteById(id);
     }
 

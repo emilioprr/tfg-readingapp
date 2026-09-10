@@ -78,7 +78,7 @@ public class ListaService {
     public void eliminar(Long id) {
         Lista lista = listaRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Lista no encontrada con id: " + id));
-        SecurityUtils.validarUsuario(lista.getUsuario().getIdusuario());
+        SecurityUtils.validarUsuarioOAdmin(lista.getUsuario().getIdusuario());
         if (lista.getEsAutomatica()) {
             throw new IllegalArgumentException("No se puede eliminar una lista automática");
         }

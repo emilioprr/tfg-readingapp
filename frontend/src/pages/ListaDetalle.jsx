@@ -48,7 +48,7 @@ export default function ListaDetalle() {
                                 + Añadir libro
                             </Link>
                         )}
-                        {esMia && !lista.esAutomatica && (
+                        {(esMia || (usuario && usuario.rol === 'ADMIN')) && !lista.esAutomatica && (
                             <button onClick={eliminarLista} className="text-red-400 hover:text-red-300 text-sm transition-colors">
                                 Eliminar lista
                             </button>
