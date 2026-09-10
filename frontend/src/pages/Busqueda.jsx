@@ -79,10 +79,9 @@ export default function Busqueda() {
             console.error('Error buscando:', err)
             if (reset) setResultados([])
         } finally {
-            if (!reset) {
-                setCargandoMas(false)
-                cargandoMasRef.current = false
-            }
+            setLoading(false)
+            setCargandoMas(false)
+            cargandoMasRef.current = false
         }
     }
 

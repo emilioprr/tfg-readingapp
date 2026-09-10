@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import Estrellas from '../components/Estrellas'
+import ResenaCard from '../components/ResenaCard'
 import api from '../api/axios'
 
 export default function LibroDetalle() {
@@ -161,6 +162,12 @@ export default function LibroDetalle() {
                             <Link to={`/autor/${libro.idautor}`} className="text-dark-muted hover:text-terra text-lg transition-colors">
                                 {libro.nombreAutor}
                             </Link>
+                            {usuario && usuario.rol === 'ADMIN' && (
+                                <Link to={`/libro/${id}/editar`}
+                                      className="text-dark-muted hover:text-terra transition-colors text-sm">
+                                    Editar libro
+                                </Link>
+                            )}
                             <div className="flex gap-3 mt-2 text-sm text-dark-muted">
                                 {libro.genero && <span className="bg-dark-elevated px-2.5 py-0.5 rounded">{libro.genero}</span>}
                                 {libro.anioPublicacion && <span>{libro.anioPublicacion}</span>}
@@ -338,60 +345,41 @@ export default function LibroDetalle() {
                 ) : (
                     <div className="space-y-4">
                         {resenas.map((r) => (
-                            <div key={r.idresena} onClick={() => navigate(`/resena/${r.idresena}`)}
-                                 className="bg-dark-card p-5 rounded-xl hover:bg-dark-elevated transition-colors cursor-pointer">
-                                <div className="flex items-center justify-between mb-2">
-                                    <div className="flex items-center gap-2">
-                                        {r.avatarUsuario ? (
-                                            <img src={r.avatarUsuario} alt={r.nombreUsuario} className="w-6 h-6 rounded-full object-cover" />
-                                        ) : (
-                                            <div className="w-6 h-6 bg-terra/20 rounded-full flex items-center justify-center text-terra text-xs font-bold">
-                                                {r.nombreUsuario?.charAt(0).toUpperCase()}
-                                            </div>
-                                        )}
-                                        <span onClick={(e) => { e.stopPropagation(); navigate(`/usuario/${r.idusuario}`) }}
-                                              className="text-dark-text text-sm font-medium hover:text-terra transition-colors cursor-pointer">
-                    {r.nombreUsuario}
-                </span>
-                                        <span className="text-dark-muted text-xs">{new Date(r.fechaCreacion).toLocaleDateString()}</span>
-                                    </div>
-                                    <Estrellas puntuacion={r.puntuacion} />
-                                </div>
-                                {r.tieneSpoiler ? (
-                                    <p className="text-dark-muted italic text-sm">Contiene spoilers</p>
-                                ) : r.texto && (
-                                    <p className="text-dark-text/80 text-sm">{r.texto}</p>
-                                )}
-                                {r.etiquetas?.length > 0 && (
-                                    <div className="flex gap-1.5 mt-3 flex-wrap">
-                                        {r.etiquetas.map((et) => (
-                                            <span key={et} className="text-xs bg-terra/10 text-terra px-2 py-0.5 rounded-full">{et}</span>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
+                            <ResenaCard key={r.idresena} resena={r} mostrarLibro={false} />
                         ))}
                     </div>
                 )}
             </div>
 
-            {/* Anotaciones públicas */}
             {anotacionesPublicas.length > 0 && (
                 <div className="mt-10">
                     <h2 className="text-lg font-semibold text-dark-text mb-4">Anotaciones de lectores</h2>
                     <div className="space-y-3">
                         {anotacionesPublicas.map((a) => (
                             <div key={a.idanotacion} className="bg-dark-card p-4 rounded-xl">
-                                <div className="flex items-center gap-2 mb-2">
-                        <span onClick={() => navigate(`/usuario/${a.idusuario}`)}
-                              className="text-dark-text text-sm font-medium hover:text-terra transition-colors cursor-pointer">
-                            {a.nombreUsuario}
-                        </span>
-                                    <span className="text-dark-muted text-xs">{new Date(a.fecha).toLocaleDateString()}</span>
-                                    {(a.parte || a.numPagina) && (
-                                        <span className="text-dark-muted text-xs">
-                                · {a.parte}{a.parte && a.numPagina ? ' · ' : ''}{a.numPagina ? `Pág. ${a.numPagina}` : ''}
+                                <div className="flex items-center justify-between mb-2">
+                                    <div className="flex items-center gap-2">
+                            <span onClick={() => navigate(`/usuario/${a.idusuario}`)}
+                                  className="text-dark-text text-sm font-medium hover:text-terra transition-colors cursor-pointer">
+                                {a.nombreUsuario}
                             </span>
+                                        <span className="text-dark-muted text-xs">{new Date(a.fecha).toLocaleDateString()}</span>
+                                        {(a.parte || a.numPagina) && (
+                                            <span className="text-dark-muted text-xs">
+                                    · {a.parte}{a.parte && a.numPagina ? ' · ' : ''}{a.numPagina ? `Pág. ${a.numPagina}` : ''}
+                                </span>
+                                        )}
+                                    </div>
+                                    {usuario && (usuario.id === a.idusuario || usuario.rol === 'ADMIN') && (
+                                        <button onClick={async (e) => {
+                                            e.stopPropagation()
+                                            if (!window.confirm('¿Eliminar esta anotación?')) return
+                                            try { await api.delete(`/anotaciones/${a.idanotacion}`); cargarAnotaciones() }
+                                            catch (err) { alert('Error al eliminar') }
+                                        }}
+                                                className="text-red-400/60 hover:text-red-400 text-xs transition-colors">
+                                            Eliminar
+                                        </button>
                                     )}
                                 </div>
                                 {a.titulo && <p className="text-dark-text font-medium text-sm mb-1">{a.titulo}</p>}

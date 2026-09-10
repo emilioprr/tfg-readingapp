@@ -10,6 +10,7 @@ export default function ResenaDetalle() {
     const [resena, setResena] = useState(null)
     const [liked, setLiked] = useState(false)
     const [loading, setLoading] = useState(true)
+    const [eliminada, setEliminada] = useState(false)
 
     useEffect(() => { cargarResena() }, [id])
 
@@ -22,12 +23,13 @@ export default function ResenaDetalle() {
     }
 
     useEffect(() => {
-        if (usuario && resena && resena.idusuario !== usuario.id) {
+        if (usuario && resena && resena.idusuario !== usuario.id && !eliminada) {
             comprobarLike()
         }
     }, [resena?.idresena])
 
     const comprobarLike = async () => {
+        if (eliminada) return
         try {
             const res = await api.get(`/resenas/likes/${usuario.id}`)
             const likes = res.data.content || res.data || []
@@ -51,6 +53,7 @@ export default function ResenaDetalle() {
 
     if (loading) return <p className="text-dark-muted">Cargando...</p>
     if (!resena) return <p className="text-red-400">Reseña no encontrada</p>
+    if (eliminada) return <p className="text-dark-muted">Reseña eliminada</p>
 
     const ritmoLabels = ['', 'Lento', 'Medio', 'Rápido']
 
@@ -154,11 +157,26 @@ export default function ResenaDetalle() {
                         </div>
                     )}
                 </div>
-                <div className="flex items-center gap-3 text-xs text-dark-muted">
+                <div className="flex items-center gap-3">
                     {resena.esPublica ? (
-                        <span className="bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full">Pública</span>
+                        <span className="text-xs bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full">Pública</span>
                     ) : (
-                        <span className="bg-dark-elevated px-2 py-0.5 rounded-full">Privada</span>
+                        <span className="text-xs bg-dark-elevated px-2 py-0.5 rounded-full">Privada</span>
+                    )}
+                    {usuario && (usuario.id === resena.idusuario || usuario.rol === 'ADMIN') && (
+                        <button onClick={async () => {
+                            if (!window.confirm('¿Eliminar esta reseña?')) return
+                            setEliminada(true)
+                            try {
+                                await api.delete(`/resenas/${id}`)
+                            } catch (err) {
+                                // Ignorar — puede ser que la reseña ya no exista
+                            }
+                            navigate('/', { replace: true })
+                        }}
+                                className="text-red-400/60 hover:text-red-400 text-sm transition-colors">
+                            Eliminar
+                        </button>
                     )}
                 </div>
             </div>

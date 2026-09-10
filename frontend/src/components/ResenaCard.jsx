@@ -44,6 +44,17 @@ export default function ResenaCard({ resena: resenaInicial, mostrarLibro = true,
         navigate(`/resena/${resena.idresena}`)
     }
 
+    const eliminarResena = async (e) => {
+        e.stopPropagation()
+        if (!window.confirm('¿Eliminar esta reseña?')) return
+        try {
+            await api.delete(`/resenas/${resena.idresena}`)
+            window.location.reload()
+        } catch (err) {
+            alert(err.response?.data?.mensaje || 'Error al eliminar')
+        }
+    }
+
     return (
         <div onClick={irADetalle}
              className="bg-dark-card rounded-xl p-5 hover:bg-dark-elevated transition-colors cursor-pointer">
@@ -120,6 +131,12 @@ export default function ResenaCard({ resena: resenaInicial, mostrarLibro = true,
                             )}
                             <span className={`text-xs ${liked ? 'text-red-500' : 'text-dark-muted'}`}>{resena.numLikes || 0}</span>
                         </button>
+                        {usuario && (usuario.id === resena.idusuario || usuario.rol === 'ADMIN') && (
+                            <button onClick={eliminarResena}
+                                    className="text-red-400/60 hover:text-red-400 text-xs transition-colors">
+                                Eliminar
+                            </button>
+                        )}
                     </div>
                 </div>
             </div>

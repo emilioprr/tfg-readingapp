@@ -122,8 +122,11 @@ public class ResenaService {
     @Transactional
     public void eliminar(Long id) {
         Resena resena = buscarPorId(id);
-        SecurityUtils.validarUsuario(resena.getUsuario().getIdusuario());
+        SecurityUtils.validarUsuarioOAdmin(resena.getUsuario().getIdusuario());
         notificacionRepository.deleteByResenaIdresena(id);
+        resena.getLikes().clear();
+        resena.getEtiquetas().clear();
+        resenaRepository.save(resena);
         resenaRepository.deleteById(id);
     }
 
