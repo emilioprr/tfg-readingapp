@@ -19,6 +19,7 @@ export default function LibroDetalle() {
     const [listas, setListas] = useState([])
     const [loading, setLoading] = useState(true)
     const [anotacionesPublicas, setAnotacionesPublicas] = useState([])
+    const [mensajeExito, setMensajeExito] = useState('')
 
     useEffect(() => {
         cargarLibro()
@@ -101,8 +102,8 @@ export default function LibroDetalle() {
     const agregarALista = async (idlista) => {
         try {
             await api.post(`/listas/${idlista}/libros/${id}`)
-            setMostrarListas(false)
-            setMenuAbierto(false)
+            setMensajeExito('Libro añadido a la lista')
+            setTimeout(() => setMensajeExito(''), 2000)
         } catch (err) { alert(err.response?.data?.mensaje || 'Error') }
     }
 
@@ -243,6 +244,9 @@ export default function LibroDetalle() {
                                                     </svg>
                                                     Actualizar progreso
                                                 </button>
+                                            )}
+                                            {mensajeExito && (
+                                                <p className="text-emerald-400 text-sm mt-2">{mensajeExito}</p>
                                             )}
                                         </div>
                                     )}
