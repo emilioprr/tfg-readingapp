@@ -15,11 +15,12 @@ export default function Inicio() {
     const [resenasSeguidos, setResenasSeguidos] = useState([])
     const [popularesAmigos, setPopularesAmigos] = useState([])
     const [loading, setLoading] = useState(true)
-    const [mostrarAbandonarModal, setMostrarAbandonarModal] = useState(false)
+    const [retoCumplido, setRetoCumplido] = useState(null)
     const [editandoProgreso, setEditandoProgreso] = useState(false)
     const [nuevaPagina, setNuevaPagina] = useState('')
     const [errorProgreso, setErrorProgreso] = useState('')
     const [mostrarFinalizarModal, setMostrarFinalizarModal] = useState(false)
+    const [mostrarAbandonarModal, setMostrarAbandonarModal] = useState(false)
     const [mostrarAnotacionModal, setMostrarAnotacionModal] = useState(false)
 
     useEffect(() => {
@@ -30,6 +31,19 @@ export default function Inicio() {
             cargarPopularesAmigos()
         }
     }, [usuario])
+
+    useEffect(() => {
+        if (retoIndex >= retosActivos.length) {
+            setRetoIndex(0)
+        }
+    }, [retosActivos])
+
+    useEffect(() => {
+        if (retoCumplido) {
+            const timer = setTimeout(() => setRetoCumplido(null), 5000)
+            return () => clearTimeout(timer)
+        }
+    }, [retoCumplido])
 
     const cargarLeyendo = async () => {
         try {
@@ -44,8 +58,11 @@ export default function Inicio() {
     const cargarRetos = async () => {
         try {
             const res = await api.get(`/retos/usuario/${usuario.id}/activos?size=10`)
-            setRetosActivos(res.data.content || res.data || [])
+            const nuevos = res.data.content || res.data || []
+            setRetosActivos(nuevos)
+            return nuevos
         } catch (err) { console.error('Error:', err) }
+        return []
     }
 
     const cargarResenasSeguidos = async () => {
@@ -85,8 +102,22 @@ export default function Inicio() {
                 cargarRetos()
                 navigate(`/libro/${libroActual.idlibro}/resena`)
             } else {
+                setEditandoProgreso(false)
+                setNuevaPagina('')
+                setErrorProgreso('')
                 cargarLeyendo()
                 cargarRetos()
+
+                try {
+                    const res = await api.get(`/notificaciones/usuario/${usuario.id}?size=5`)
+                    const notis = res.data.content || res.data || []
+                    const retoNotif = notis.find(n => !n.leida && n.tipo === 'RETO_CUMPLIDO')
+                    if (retoNotif) {
+                        setRetoCumplido(retoNotif.mensaje)
+                        await api.put(`/notificaciones/${retoNotif.idnotificacion}/leida`)
+                    }
+                } catch (err) { /* silencioso */ }
+
                 setMostrarAnotacionModal(true)
             }
         } catch (err) {
@@ -187,14 +218,13 @@ export default function Inicio() {
                                                 <p className="text-dark-muted text-sm">{libroActual.nombreAutor || ''}</p>
                                             </div>
 
-                                            <Link to={`/libro/${libroActual.idlibro}/anotaciones`}
-                                                  className="text-dark-muted hover:text-terra transition-colors p-1" title="Nueva anotación">
-                                                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-                                                </svg>
-                                            </Link>
-
                                             <div className="flex items-center gap-2">
+                                                <Link to={`/libro/${libroActual.idlibro}/anotaciones`}
+                                                      className="text-dark-muted hover:text-terra transition-colors p-1" title="Nueva anotación">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                                                    </svg>
+                                                </Link>
                                                 <button onClick={() => setMostrarFinalizarModal(true)}
                                                         className="text-emerald-400 hover:text-emerald-300 transition-colors p-1" title="Marcar como finalizado">
                                                     <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -222,34 +252,36 @@ export default function Inicio() {
                                         </div>
 
                                         {editandoProgreso ? (
-                                            <div className="flex items-center gap-2 mt-3">
-                                                <span className="text-dark-muted text-sm">Página</span>
-                                                <input
-                                                    type="number"
-                                                    value={nuevaPagina}
-                                                    onChange={(e) => setNuevaPagina(e.target.value)}
-                                                    onKeyDown={handleKeyDown}
-                                                    autoFocus
-                                                    min={libroActual.numPagina + 1}
-                                                    max={libroActual.totalPaginas || undefined}
-                                                    className="w-20 bg-dark-elevated border border-dark-border rounded-lg px-2 py-1 text-dark-text text-sm focus:border-terra focus:outline-none transition-colors"
-                                                />
-                                                <span className="text-dark-muted text-sm">de {libroActual.totalPaginas || '?'}</span>
-                                                <button onClick={actualizarProgreso}
-                                                        className="bg-terra hover:bg-terra-hover text-white font-semibold px-3 py-1 rounded-lg text-sm transition-colors">
-                                                    OK
-                                                </button>
-                                                <button onClick={() => { setEditandoProgreso(false); setNuevaPagina(''); setErrorProgreso('') }}
-                                                        className="text-dark-muted hover:text-dark-text text-sm transition-colors">
-                                                    ✕
-                                                </button>
+                                            <div className="mt-3">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-dark-muted text-sm">Página</span>
+                                                    <input
+                                                        type="number"
+                                                        value={nuevaPagina}
+                                                        onChange={(e) => setNuevaPagina(e.target.value)}
+                                                        onKeyDown={handleKeyDown}
+                                                        autoFocus
+                                                        min={libroActual.numPagina + 1}
+                                                        max={libroActual.totalPaginas || undefined}
+                                                        className="w-20 bg-dark-elevated border border-dark-border rounded-lg px-2 py-1 text-dark-text text-sm focus:border-terra focus:outline-none transition-colors"
+                                                    />
+                                                    <span className="text-dark-muted text-sm">de {libroActual.totalPaginas || '?'}</span>
+                                                    <button onClick={actualizarProgreso}
+                                                            className="bg-terra hover:bg-terra-hover text-white font-semibold px-3 py-1 rounded-lg text-sm transition-colors">
+                                                        OK
+                                                    </button>
+                                                    <button onClick={() => { setEditandoProgreso(false); setNuevaPagina(''); setErrorProgreso('') }}
+                                                            className="text-dark-muted hover:text-dark-text text-sm transition-colors">
+                                                        ✕
+                                                    </button>
+                                                </div>
                                                 {errorProgreso && <p className="text-red-400 text-xs mt-1">{errorProgreso}</p>}
                                             </div>
                                         ) : (
                                             <div className="flex items-center justify-between mt-3">
-                                                    <span className="text-dark-muted text-sm">
-                                                      Pág. {libroActual.numPagina}{libroActual.totalPaginas ? ` de ${libroActual.totalPaginas}` : ''}
-                                                    </span>
+                        <span className="text-dark-muted text-sm">
+                          Pág. {libroActual.numPagina}{libroActual.totalPaginas ? ` de ${libroActual.totalPaginas}` : ''}
+                        </span>
                                                 <button onClick={() => { setEditandoProgreso(true); setNuevaPagina(String(libroActual.numPagina + 1)) }}
                                                         className="bg-terra hover:bg-terra-hover text-white font-semibold px-4 py-1.5 rounded-lg text-sm transition-colors">
                                                     Actualizar
@@ -262,7 +294,7 @@ export default function Inicio() {
 
                             {leyendo.length > 1 && (
                                 <div className="flex items-center justify-center gap-3 mt-5 pt-4 border-t border-dark-border">
-                                    <button onClick={() => { setLeyendoIndex(i => i === 0 ? leyendo.length - 1 : i - 1); setEditandoProgreso(false)}}
+                                    <button onClick={() => { setLeyendoIndex(i => i === 0 ? leyendo.length - 1 : i - 1); setEditandoProgreso(false) }}
                                             className="text-dark-muted hover:text-terra transition-colors">
                                         <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                                             <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
@@ -270,11 +302,11 @@ export default function Inicio() {
                                     </button>
                                     <div className="flex gap-1.5">
                                         {leyendo.map((_, i) => (
-                                            <button key={i} onClick={() => { setLeyendoIndex(i); setEditandoProgreso(false)}}
+                                            <button key={i} onClick={() => { setLeyendoIndex(i); setEditandoProgreso(false) }}
                                                     className={`w-2 h-2 rounded-full transition-colors ${i === leyendoIndex ? 'bg-terra' : 'bg-dark-border hover:bg-dark-muted'}`} />
                                         ))}
                                     </div>
-                                    <button onClick={() => { setLeyendoIndex(i => i === leyendo.length - 1 ? 0 : i + 1); setEditandoProgreso(false)}}
+                                    <button onClick={() => { setLeyendoIndex(i => i === leyendo.length - 1 ? 0 : i + 1); setEditandoProgreso(false) }}
                                             className="text-dark-muted hover:text-terra transition-colors">
                                         <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                                             <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
@@ -293,7 +325,7 @@ export default function Inicio() {
                         <Link to="/retos" className="text-xs text-dark-muted hover:text-terra transition-colors">Ver todos</Link>
                     </div>
 
-                    {retosActivos.length === 0 ? (
+                    {retosActivos.length === 0 || !retoActual ? (
                         <div className="flex items-center justify-center h-48">
                             <div className="text-center">
                                 <p className="text-dark-muted mb-3 text-sm">Sin retos activos</p>
@@ -320,8 +352,8 @@ export default function Inicio() {
                                         <div className="absolute inset-0 flex flex-col items-center justify-center">
                                             <span className="text-terra font-bold text-lg">{retoActual.porcentaje || 0}%</span>
                                             <span className="text-dark-muted text-xs">
-                                                {retoActual.progreso}/{retoActual.meta}{(retoActual.tipoReto || retoActual.tipo) === 'HORAS' ? ' min' : ''}
-                                            </span>
+                        {retoActual.progreso}/{retoActual.meta}{(retoActual.tipoReto || retoActual.tipo) === 'HORAS' ? ' min' : ''}
+                      </span>
                                         </div>
                                     </div>
                                 </div>
@@ -409,6 +441,7 @@ export default function Inicio() {
                 </div>
             )}
 
+            {/* Modal abandonar */}
             {mostrarAbandonarModal && (
                 <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50">
                     <div className="bg-dark-card border border-dark-border rounded-2xl p-6 max-w-sm w-full mx-4">
@@ -428,6 +461,7 @@ export default function Inicio() {
                 </div>
             )}
 
+            {/* Modal anotación */}
             {mostrarAnotacionModal && (
                 <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50">
                     <div className="bg-dark-card border border-dark-border rounded-2xl p-6 max-w-sm w-full mx-4">
@@ -443,6 +477,19 @@ export default function Inicio() {
                                 Sí, anotar
                             </button>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {retoCumplido && (
+                <div className="fixed top-6 right-6 z-50 animate-slide-in">
+                    <div className="bg-dark-card border border-terra/40 rounded-xl p-4 shadow-2xl flex items-center gap-4 max-w-sm">
+                        <div className="text-3xl">🎉</div>
+                        <div>
+                            <p className="text-dark-text font-semibold text-sm">¡Reto completado!</p>
+                            <p className="text-terra text-sm">{retoCumplido}</p>
+                        </div>
+                        <button onClick={() => setRetoCumplido(null)} className="text-dark-muted hover:text-dark-text text-sm ml-2">✕</button>
                     </div>
                 </div>
             )}

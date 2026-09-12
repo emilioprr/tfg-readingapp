@@ -1,5 +1,6 @@
 import { Outlet } from 'react-router-dom'
 import Navbar from '../components/Navbar'
+import ToastNotificaciones from '../components/ToastNotificaciones'
 
 export default function MainLayout() {
     return (
@@ -8,6 +9,7 @@ export default function MainLayout() {
             <main className="max-w-7xl mx-auto px-6 py-8">
                 <Outlet />
             </main>
+            <ToastNotificaciones />
         </div>
     )
 }

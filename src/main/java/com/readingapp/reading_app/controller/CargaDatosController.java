@@ -68,12 +68,4 @@ public class CargaDatosController {
         int enriquecidos = openLibraryService.enriquecerAutoresIncompletos();
         return ResponseEntity.ok(Map.of("autoresEnriquecidos", enriquecidos));
     }
-
-    @PostMapping("/populares")
-    public ResponseEntity<Map<String, Object>> importarPopulares(
-            @RequestParam(defaultValue = "200") int cantidad,
-            @RequestParam(defaultValue = "es") String idioma) {
-        int importados = googleBooksService.importarPopulares(cantidad, idioma);
-        return ResponseEntity.ok(Map.of("importados", importados));
-    }
 }

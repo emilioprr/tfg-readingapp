@@ -131,8 +131,16 @@ public class NotificacionService {
 
     @Transactional
     public void crearNotificacionRetoCumplido(Reto reto, Usuario usuarioQueCompleto, Usuario seguidor) {
+        String mensaje;
+        if (usuarioQueCompleto.getIdusuario().equals(seguidor.getIdusuario())) {
+            mensaje = "¡Has completado el reto \"" + reto.getTitulo() + "\"!";
+        } else {
+            mensaje = usuarioQueCompleto.getNombre() + " ha completado el reto \"" + reto.getTitulo() + "\"";
+        }
+
         Notificacion notif = Notificacion.builder()
                 .tipo(TipoNotificacion.RETO_CUMPLIDO)
+                .mensaje(mensaje)
                 .fecha(LocalDateTime.now())
                 .leida(false)
                 .usuario(seguidor)
