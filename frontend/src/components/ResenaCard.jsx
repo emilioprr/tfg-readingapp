@@ -131,10 +131,10 @@ export default function ResenaCard({ resena: resenaInicial, mostrarLibro = true,
                             )}
                             <span className={`text-xs ${liked ? 'text-red-500' : 'text-dark-muted'}`}>{resena.numLikes || 0}</span>
                         </button>
-                        {usuario && (usuario.id === resena.idusuario || usuario.rol === 'ADMIN') && (
-                            <button onClick={eliminarResena}
-                                    className="text-red-400/60 hover:text-red-400 text-xs transition-colors">
-                                Eliminar
+                        {usuario && usuario.id === resena.idusuario && (
+                            <button onClick={(e) => { e.stopPropagation(); navigate(`/libro/${resena.idlibro}/resena?editar=${resena.idresena}`) }}
+                                    className="text-dark-muted hover:text-terra text-xs transition-colors">
+                                Editar
                             </button>
                         )}
                     </div>

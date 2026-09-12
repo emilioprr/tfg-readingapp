@@ -7,6 +7,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Repository
@@ -34,8 +36,9 @@ public interface LibroRepository extends JpaRepository<Libro, Long> {
 
     @Query("SELECT l FROM Libro l WHERE l.idlibro IN " +
             "(SELECT r.libro.idlibro FROM Resena r WHERE r.esPublica = true " +
+            "AND r.fechaCreacion > :desde " +
             "GROUP BY r.libro.idlibro ORDER BY COUNT(r) DESC)")
-    List<Libro> findPopulares(Pageable pageable);
+    List<Libro> findPopulares(@Param("desde") LocalDateTime desde, Pageable pageable);
 
     @Query("SELECT r.libro FROM Resena r WHERE r.esPublica = true AND r.usuario IN " +
             "(SELECT s FROM Usuario u JOIN u.seguidos s WHERE u.idusuario = :idusuario) " +

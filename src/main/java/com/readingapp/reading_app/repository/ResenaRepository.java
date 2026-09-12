@@ -7,6 +7,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -38,4 +40,7 @@ public interface ResenaRepository extends JpaRepository<Resena, Long> {
 
     @Query("SELECT e, COUNT(e) FROM Resena r JOIN r.etiquetas e WHERE r.libro.idlibro = :idlibro AND r.esPublica = true GROUP BY e ORDER BY COUNT(e) DESC")
     List<Object[]> findEtiquetasPopularesByLibro(@Param("idlibro") Long idlibro);
+
+    @Query("SELECT r FROM Resena r WHERE r.esPublica = true AND r.fechaCreacion > :desde ORDER BY SIZE(r.likes) DESC")
+    List<Resena> findPopulares(@Param("desde") LocalDateTime desde, Pageable pageable);
 }

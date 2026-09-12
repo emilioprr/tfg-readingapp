@@ -16,6 +16,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -142,7 +143,8 @@ public class LibroService {
     }
 
     public List<LibroDTO.Response> obtenerPopulares(Pageable pageable) {
-        return libroRepository.findPopulares(pageable).stream()
+        LocalDateTime hace30Dias = LocalDateTime.now().minusDays(30);
+        return libroRepository.findPopulares(hace30Dias, pageable).stream()
                 .map(this::toResponse)
                 .toList();
     }

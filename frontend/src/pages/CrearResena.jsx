@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useSearchParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import api from '../api/axios'
 
@@ -12,6 +12,9 @@ const ETIQUETAS = [
 
 export default function CrearResena() {
     const { idlibro } = useParams()
+    const [searchParams] = useSearchParams()
+    const idresena = searchParams.get('editar')
+    const esEdicion = !!idresena
     const { usuario } = useAuth()
     const navigate = useNavigate()
     const [libro, setLibro] = useState(null)
@@ -29,10 +32,29 @@ export default function CrearResena() {
     const [error, setError] = useState('')
 
     useEffect(() => { cargarLibro() }, [idlibro])
+    useEffect(() => { if (esEdicion) cargarResena() }, [idresena])
+
     const cargarLibro = async () => {
         try { const res = await api.get(`/libros/${idlibro}`); setLibro(res.data) }
         catch (err) { console.error('Error:', err) }
     }
+
+    const cargarResena = async () => {
+        try {
+            const res = await api.get(`/resenas/${idresena}`)
+            const r = res.data
+            setTexto(r.texto || '')
+            setPuntuacion(r.puntuacion || 0)
+            setBloqueadoEstrellas(true)
+            setRitmo(r.ritmo || 0)
+            setBloqueadoRitmo(r.ritmo > 0)
+            setEtiquetas(r.etiquetas || [])
+            setEsPublica(r.esPublica)
+            setTieneSpoiler(r.tieneSpoiler)
+            setLeidoPreviamente(r.leidopreviamente || false)
+        } catch (err) { console.error('Error:', err) }
+    }
+
     const toggleEtiqueta = (et) => { setEtiquetas(prev => prev.includes(et) ? prev.filter(e => e !== et) : [...prev, et]) }
 
     const handleSubmit = async (e) => {
@@ -40,9 +62,14 @@ export default function CrearResena() {
         if (puntuacion === 0) { setError('La puntuación es obligatoria'); return }
         if (ritmo === 0) { setError('El ritmo es obligatorio'); return }
         try {
-            await api.post('/resenas', { texto, puntuacion, ritmo, etiquetas, esPublica, tieneSpoiler, leidopreviamente: leidoPreviamente, idlibro: parseInt(idlibro), idusuario: usuario.id })
-            navigate(`/libro/${idlibro}`)
-        } catch (err) { setError(err.response?.data?.mensaje || 'Error al crear la reseña') }
+            if (esEdicion) {
+                await api.put(`/resenas/${idresena}`, { texto, puntuacion, ritmo, etiquetas, esPublica, tieneSpoiler })
+                navigate(`/resena/${idresena}`)
+            } else {
+                await api.post('/resenas', { texto, puntuacion, ritmo, etiquetas, esPublica, tieneSpoiler, leidopreviamente: leidoPreviamente, idlibro: parseInt(idlibro), idusuario: usuario.id })
+                navigate(`/libro/${idlibro}`)
+            }
+        } catch (err) { setError(err.response?.data?.mensaje || (esEdicion ? 'Error al actualizar' : 'Error al crear la reseña')) }
     }
 
     const handleClickEstrella = (estrella, esMitadIzquierda) => {
@@ -88,7 +115,7 @@ export default function CrearResena() {
     return (
         <div className="max-w-3xl mx-auto">
             <div className="flex items-center justify-between mb-6">
-                <h1 className="text-2xl font-bold text-terra tracking-tight">Escribir reseña</h1>
+                <h1 className="text-2xl font-bold text-terra tracking-tight">{esEdicion ? 'Editar reseña' : 'Escribir reseña'}</h1>
                 <button onClick={() => navigate(-1)} className="text-dark-muted hover:text-dark-text text-2xl transition-colors">✕</button>
             </div>
             <div className="flex gap-6">
@@ -127,9 +154,13 @@ export default function CrearResena() {
                         <div className="flex flex-wrap gap-6">
                             <label className="flex items-center gap-2 text-dark-muted text-sm cursor-pointer"><input type="checkbox" checked={esPublica} onChange={(e) => setEsPublica(e.target.checked)} className="accent-terra" />Pública</label>
                             <label className="flex items-center gap-2 text-dark-muted text-sm cursor-pointer"><input type="checkbox" checked={tieneSpoiler} onChange={(e) => setTieneSpoiler(e.target.checked)} className="accent-terra" />Spoilers</label>
-                            <label className="flex items-center gap-2 text-dark-muted text-sm cursor-pointer"><input type="checkbox" checked={leidoPreviamente} onChange={(e) => setLeidoPreviamente(e.target.checked)} className="accent-terra" />Relectura</label>
+                            {!esEdicion && (
+                                <label className="flex items-center gap-2 text-dark-muted text-sm cursor-pointer"><input type="checkbox" checked={leidoPreviamente} onChange={(e) => setLeidoPreviamente(e.target.checked)} className="accent-terra" />Relectura</label>
+                            )}
                         </div>
-                        <button type="submit" className="w-full bg-terra hover:bg-terra-hover text-white font-semibold py-2.5 rounded-lg transition-colors">Publicar reseña</button>
+                        <button type="submit" className="w-full bg-terra hover:bg-terra-hover text-white font-semibold py-2.5 rounded-lg transition-colors">
+                            {esEdicion ? 'Guardar cambios' : 'Publicar reseña'}
+                        </button>
                     </form>
                 </div>
             </div>

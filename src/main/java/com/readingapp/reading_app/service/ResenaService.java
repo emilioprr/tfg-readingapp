@@ -163,6 +163,12 @@ public class ResenaService {
                 .toList();
     }
 
+    public List<ResenaDTO.Response> obtenerPopulares(Pageable pageable) {
+        LocalDateTime hace30Dias = LocalDateTime.now().minusDays(30);
+        return resenaRepository.findPopulares(hace30Dias, pageable)
+                .stream().map(this::toResponse).toList();
+    }
+
     private ResenaDTO.Response toResponse(Resena resena) {
         return ResenaDTO.Response.builder()
                 .idresena(resena.getIdresena())

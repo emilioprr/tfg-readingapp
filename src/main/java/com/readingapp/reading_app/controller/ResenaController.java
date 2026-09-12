@@ -58,6 +58,11 @@ public class ResenaController {
         return ResponseEntity.ok(resenaService.obtenerPublicas(pageable));
     }
 
+    @GetMapping("/populares")
+    public ResponseEntity<List<ResenaDTO.Response>> populares(@PageableDefault(size = 20) Pageable pageable) {
+        return ResponseEntity.ok(resenaService.obtenerPopulares(pageable));
+    }
+
     @PutMapping("/{id}")
     public ResponseEntity<ResenaDTO.Response> actualizar(@PathVariable Long id,
                                                          @RequestBody ResenaDTO.UpdateRequest request) {

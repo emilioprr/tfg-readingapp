@@ -20,6 +20,13 @@ export default function LibroDetalle() {
     const [loading, setLoading] = useState(true)
     const [anotacionesPublicas, setAnotacionesPublicas] = useState([])
     const [mensajeExito, setMensajeExito] = useState('')
+    const [tabPrincipal, setTabPrincipal] = useState('resenas')
+    const [subTabResenas, setSubTabResenas] = useState('todas')
+    const [subTabAnotaciones, setSubTabAnotaciones] = useState('todas')
+    const [resenasAmigos, setResenasAmigos] = useState([])
+    const [misResenas, setMisResenas] = useState([])
+    const [anotacionesAmigos, setAnotacionesAmigos] = useState([])
+    const [misAnotaciones, setMisAnotaciones] = useState([])
 
     useEffect(() => {
         cargarLibro()
@@ -28,6 +35,10 @@ export default function LibroDetalle() {
         cargarFavoritos()
         cargarListas()
         cargarAnotaciones()
+        cargarResenasAmigos()
+        cargarMisResenas()
+        cargarAnotacionesAmigos()
+        cargarMisAnotaciones()
     }, [id, usuario])
 
     const cargarLibro = async () => {
@@ -70,6 +81,45 @@ export default function LibroDetalle() {
         try {
             const res = await api.get(`/anotaciones/libro/${id}/publicas`)
             setAnotacionesPublicas(res.data.content || res.data || [])
+        } catch (err) { console.error('Error:', err) }
+    }
+
+    const cargarResenasAmigos = async () => {
+        if (!usuario) return
+        try {
+            const res = await api.get(`/resenas/libro/${id}?size=50`)
+            const todas = res.data.content || res.data || []
+            const segRes = await api.get(`/usuarios/${usuario.id}/seguidos`)
+            const seguidos = (segRes.data || []).map(u => u.idusuario)
+            setResenasAmigos(todas.filter(r => seguidos.includes(r.idusuario)))
+        } catch (err) { console.error('Error:', err) }
+    }
+
+    const cargarMisResenas = async () => {
+        if (!usuario) return
+        try {
+            const res = await api.get(`/resenas/libro/${id}?size=50`)
+            const todas = res.data.content || res.data || []
+            setMisResenas(todas.filter(r => r.idusuario === usuario.id))
+        } catch (err) { console.error('Error:', err) }
+    }
+
+    const cargarAnotacionesAmigos = async () => {
+        if (!usuario) return
+        try {
+            const res = await api.get(`/anotaciones/libro/${id}/publicas`)
+            const todas = res.data || []
+            const segRes = await api.get(`/usuarios/${usuario.id}/seguidos`)
+            const seguidos = (segRes.data || []).map(u => u.idusuario)
+            setAnotacionesAmigos(todas.filter(a => seguidos.includes(a.idusuario)))
+        } catch (err) { console.error('Error:', err) }
+    }
+
+    const cargarMisAnotaciones = async () => {
+        if (!usuario) return
+        try {
+            const res = await api.get(`/anotaciones/usuario/${usuario.id}/libro/${id}`)
+            setMisAnotaciones(res.data || [])
         } catch (err) { console.error('Error:', err) }
     }
 
@@ -338,58 +388,142 @@ export default function LibroDetalle() {
                 </div>
             )}
 
-            {/* Reseñas */}
-            <div className="mb-12">
-                <h2 className="text-xl font-semibold text-dark-text mb-5">Reseñas</h2>
-                {resenas.length === 0 ? (
-                    <div className="text-center py-8 bg-dark-card rounded-2xl">
-                        <p className="text-dark-muted">Aún no hay reseñas para este libro</p>
-                    </div>
-                ) : (
-                    <div className="space-y-4">
-                        {resenas.map((r) => (
-                            <ResenaCard key={r.idresena} resena={r} mostrarLibro={false} />
-                        ))}
-                    </div>
-                )}
+            {/* Tabs principales */}
+            <div className="flex gap-4 mb-6 border-b border-dark-border">
+                <button onClick={() => setTabPrincipal('resenas')}
+                        className={`px-4 py-2.5 text-sm font-medium transition-colors relative ${
+                            tabPrincipal === 'resenas' ? 'text-terra' : 'text-dark-muted hover:text-dark-text'
+                        }`}>
+                    Reseñas
+                    {tabPrincipal === 'resenas' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-terra rounded-full" />}
+                </button>
+                <button onClick={() => setTabPrincipal('anotaciones')}
+                        className={`px-4 py-2.5 text-sm font-medium transition-colors relative ${
+                            tabPrincipal === 'anotaciones' ? 'text-terra' : 'text-dark-muted hover:text-dark-text'
+                        }`}>
+                    Anotaciones
+                    {tabPrincipal === 'anotaciones' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-terra rounded-full" />}
+                </button>
             </div>
 
-            {anotacionesPublicas.length > 0 && (
-                <div className="mt-10">
-                    <h2 className="text-lg font-semibold text-dark-text mb-4">Anotaciones de lectores</h2>
-                    <div className="space-y-3">
-                        {anotacionesPublicas.map((a) => (
-                            <div key={a.idanotacion} className="bg-dark-card p-4 rounded-xl">
-                                <div className="flex items-center justify-between mb-2">
-                                    <div className="flex items-center gap-2">
-                            <span onClick={() => navigate(`/usuario/${a.idusuario}`)}
-                                  className="text-dark-text text-sm font-medium hover:text-terra transition-colors cursor-pointer">
-                                {a.nombreUsuario}
-                            </span>
-                                        <span className="text-dark-muted text-xs">{new Date(a.fecha).toLocaleDateString()}</span>
-                                        {(a.parte || a.numPagina) && (
-                                            <span className="text-dark-muted text-xs">
-                                    · {a.parte}{a.parte && a.numPagina ? ' · ' : ''}{a.numPagina ? `Pág. ${a.numPagina}` : ''}
-                                </span>
-                                        )}
-                                    </div>
-                                    {usuario && (usuario.id === a.idusuario || usuario.rol === 'ADMIN') && (
-                                        <button onClick={async (e) => {
-                                            e.stopPropagation()
-                                            if (!window.confirm('¿Eliminar esta anotación?')) return
-                                            try { await api.delete(`/anotaciones/${a.idanotacion}`); cargarAnotaciones() }
-                                            catch (err) { alert('Error al eliminar') }
-                                        }}
-                                                className="text-red-400/60 hover:text-red-400 text-xs transition-colors">
-                                            Eliminar
-                                        </button>
-                                    )}
-                                </div>
-                                {a.titulo && <p className="text-dark-text font-medium text-sm mb-1">{a.titulo}</p>}
-                                <p className="text-dark-text/70 text-sm">{a.texto}</p>
-                            </div>
+            {/* Contenido de Reseñas */}
+            {tabPrincipal === 'resenas' && (
+                <div className="mb-12">
+                    {/* Sub-tabs */}
+                    <div className="flex gap-2 mb-5">
+                        {[
+                            { key: 'todas', label: 'Todas' },
+                            ...(usuario ? [{ key: 'amigos', label: 'De amigos' }] : []),
+                            ...(usuario ? [{ key: 'mias', label: 'Mías' }] : []),
+                        ].map((t) => (
+                            <button key={t.key} onClick={() => setSubTabResenas(t.key)}
+                                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                                        subTabResenas === t.key ? 'bg-terra text-white' : 'bg-dark-elevated text-dark-muted hover:text-dark-text'
+                                    }`}>
+                                {t.label}
+                            </button>
                         ))}
                     </div>
+
+                    {/* Lista de reseñas según sub-tab */}
+                    {(() => {
+                        const lista = subTabResenas === 'amigos' ? resenasAmigos
+                            : subTabResenas === 'mias' ? misResenas
+                                : resenas
+                        return lista.length === 0 ? (
+                            <div className="text-center py-8 bg-dark-card rounded-2xl">
+                                <p className="text-dark-muted">
+                                    {subTabResenas === 'amigos' ? 'Tus amigos aún no han reseñado este libro'
+                                        : subTabResenas === 'mias' ? 'No has reseñado este libro'
+                                            : 'Aún no hay reseñas para este libro'}
+                                </p>
+                            </div>
+                        ) : (
+                            <div className="space-y-4">
+                                {lista.map((r) => (
+                                    <ResenaCard key={r.idresena} resena={r} mostrarLibro={false} />
+                                ))}
+                            </div>
+                        )
+                    })()}
+                </div>
+            )}
+
+            {/* Contenido de Anotaciones */}
+            {tabPrincipal === 'anotaciones' && (
+                <div className="mb-12">
+                    {/* Sub-tabs */}
+                    <div className="flex gap-2 mb-5">
+                        {[
+                            { key: 'todas', label: 'Todas' },
+                            ...(usuario ? [{ key: 'amigos', label: 'De amigos' }] : []),
+                            ...(usuario ? [{ key: 'mias', label: 'Mias' }] : []),
+                        ].map((t) => (
+                            <button key={t.key} onClick={() => setSubTabAnotaciones(t.key)}
+                                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                                        subTabAnotaciones === t.key ? 'bg-terra text-white' : 'bg-dark-elevated text-dark-muted hover:text-dark-text'
+                                    }`}>
+                                {t.label}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* Lista de anotaciones según sub-tab */}
+                    {(() => {
+                        const lista = subTabAnotaciones === 'amigos' ? anotacionesAmigos
+                            : subTabAnotaciones === 'mias' ? misAnotaciones
+                                : anotacionesPublicas
+                        return lista.length === 0 ? (
+                            <div className="text-center py-8 bg-dark-card rounded-2xl">
+                                <p className="text-dark-muted">
+                                    {subTabAnotaciones === 'amigos' ? 'Tus amigos no tienen anotaciones en este libro'
+                                        : subTabAnotaciones === 'mias' ? 'No tienes anotaciones en este libro'
+                                            : 'No hay anotaciones públicas para este libro'}
+                                </p>
+                            </div>
+                        ) : (
+                            <div className="space-y-3">
+                                {lista.map((a) => (
+                                    <div key={a.idanotacion} className="bg-dark-card p-4 rounded-xl">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <div className="flex items-center gap-2">
+                                                <span onClick={() => navigate(`/usuario/${a.idusuario}`)}
+                                                      className="text-dark-text text-sm font-medium hover:text-terra transition-colors cursor-pointer">
+                                                    {a.nombreUsuario}
+                                                </span>
+                                                <span className="text-dark-muted text-xs">{new Date(a.fecha).toLocaleDateString()}</span>
+                                                {(a.parte || a.numPagina) && (
+                                                    <span className="text-dark-muted text-xs">
+                                                        · {a.parte}{a.parte && a.numPagina ? ' · ' : ''}{a.numPagina ? `Pág. ${a.numPagina}` : ''}
+                                                    </span>
+                                                )}
+                                                {!a.esPublica && (
+                                                    <span className="text-xs bg-dark-elevated text-dark-muted px-2 py-0.5 rounded-full">Privada</span>
+                                                )}
+                                            </div>
+                                            {usuario && (usuario.id === a.idusuario || usuario.rol === 'ADMIN') && (
+                                                <button onClick={async (e) => {
+                                                    e.stopPropagation()
+                                                    if (!window.confirm('¿Eliminar esta anotación?')) return
+                                                    try {
+                                                        await api.delete(`/anotaciones/${a.idanotacion}`)
+                                                        cargarAnotaciones()
+                                                        cargarMisAnotaciones()
+                                                        cargarAnotacionesAmigos()
+                                                    } catch (err) { alert('Error al eliminar') }
+                                                }}
+                                                        className="text-red-400/60 hover:text-red-400 text-xs transition-colors">
+                                                    Eliminar
+                                                </button>
+                                            )}
+                                        </div>
+                                        {a.titulo && <p className="text-dark-text font-medium text-sm mb-1">{a.titulo}</p>}
+                                        <p className="text-dark-text/70 text-sm">{a.texto}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        )
+                    })()}
                 </div>
             )}
 
