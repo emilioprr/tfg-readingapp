@@ -221,8 +221,12 @@ public class RetoService {
         participante.setFechaCumplimiento(LocalDateTime.now());
         participanteRetoRepository.save(participante);
 
-        // Notificar a seguidores
         Usuario usuario = participante.getUsuario();
+
+        // Notificar al propio usuario
+        notificacionService.crearNotificacionRetoCumplido(reto, usuario, usuario);
+
+        // Notificar a seguidores
         for (Usuario seguidor : usuario.getSeguidoresList()) {
             notificacionService.crearNotificacionRetoCumplido(reto, usuario, seguidor);
         }
