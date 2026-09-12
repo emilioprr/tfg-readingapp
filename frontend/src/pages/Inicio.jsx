@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import LibroCard from '../components/LibroCard'
-import ResenaCard from '../components/ResenaCard'
 import api from '../api/axios'
 
 export default function Inicio() {
@@ -12,7 +11,6 @@ export default function Inicio() {
     const [leyendoIndex, setLeyendoIndex] = useState(0)
     const [retosActivos, setRetosActivos] = useState([])
     const [retoIndex, setRetoIndex] = useState(0)
-    const [resenasSeguidos, setResenasSeguidos] = useState([])
     const [popularesAmigos, setPopularesAmigos] = useState([])
     const [loading, setLoading] = useState(true)
     const [retoCumplido, setRetoCumplido] = useState(null)
@@ -22,12 +20,13 @@ export default function Inicio() {
     const [mostrarFinalizarModal, setMostrarFinalizarModal] = useState(false)
     const [mostrarAbandonarModal, setMostrarAbandonarModal] = useState(false)
     const [mostrarAnotacionModal, setMostrarAnotacionModal] = useState(false)
+    const [librosPopulares, setLibrosPopulares] = useState([])
 
     useEffect(() => {
         if (usuario) {
             cargarLeyendo()
             cargarRetos()
-            cargarResenasSeguidos()
+            cargarLibrosPopulares()
             cargarPopularesAmigos()
         }
     }, [usuario])
@@ -76,6 +75,13 @@ export default function Inicio() {
         try {
             const res = await api.get(`/libros/populares-amigos/${usuario.id}?size=12`)
             setPopularesAmigos(res.data.content || res.data || [])
+        } catch (err) { console.error('Error:', err) }
+    }
+
+    const cargarLibrosPopulares = async () => {
+        try {
+            const res = await api.get('/libros/populares?size=12')
+            setLibrosPopulares(res.data || [])
         } catch (err) { console.error('Error:', err) }
     }
 
@@ -386,6 +392,21 @@ export default function Inicio() {
                 </div>
             </div>
 
+            {/* Libros populares */}
+            {librosPopulares.length > 0 && (
+                <div className="mb-12">
+                    <div className="flex items-center justify-between mb-5">
+                        <h2 className="text-xl font-semibold text-dark-text">Libros populares</h2>
+                        <Link to="/catalogo" className="text-xs text-dark-muted hover:text-terra transition-colors">Ver más</Link>
+                    </div>
+                    <div className="flex gap-5 overflow-x-auto pb-2">
+                        {librosPopulares.map((libro) => (
+                            <LibroCard key={libro.idlibro} libro={libro} />
+                        ))}
+                    </div>
+                </div>
+            )}
+
             {/* Popular entre amigos */}
             {popularesAmigos.length > 0 && (
                 <div className="mb-12">
@@ -400,26 +421,6 @@ export default function Inicio() {
                     </div>
                 </div>
             )}
-
-            {/* Nuevas reseñas de amigos */}
-            <div className="mb-12">
-                <h2 className="text-xl font-semibold text-dark-text mb-5">Nuevas reseñas de amigos</h2>
-
-                {resenasSeguidos.length === 0 ? (
-                    <div className="text-center py-10 bg-dark-card rounded-2xl">
-                        <p className="text-dark-muted mb-2">Tus amigos aún no han reseñado libros</p>
-                        <Link to="/buscar" className="text-terra hover:text-terra-hover text-sm transition-colors">
-                            Buscar lectores para seguir
-                        </Link>
-                    </div>
-                ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {resenasSeguidos.map((resena) => (
-                            <ResenaCard key={resena.idresena} resena={resena} />
-                        ))}
-                    </div>
-                )}
-            </div>
 
             {/* Modal finalizar */}
             {mostrarFinalizarModal && (

@@ -44,6 +44,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/libros/buscar/importar").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/libros/buscar/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/libros/importar").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/resenas/populares").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/anotaciones/libro/*/publicas").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/carga/**").hasAuthority("ROLE_ADMIN")
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()

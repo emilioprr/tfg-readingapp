@@ -109,6 +109,7 @@ export default function Navbar() {
                     </div>
 
                     <Link to="/catalogo" className="text-dark-muted hover:text-dark-text text-sm font-medium transition-colors">Libros</Link>
+                    <Link to="/resenas" className="text-dark-muted hover:text-dark-text text-sm font-medium transition-colors">Reseñas</Link>
                     <Link to="/listas" className="text-dark-muted hover:text-dark-text text-sm font-medium transition-colors">Listas</Link>
                     <Link to="/calendario" className="text-dark-muted hover:text-dark-text text-sm font-medium transition-colors">Diario</Link>
                     <Link to="/timer" className="text-dark-muted hover:text-dark-text text-sm font-medium transition-colors">Sesión de Lectura</Link>
