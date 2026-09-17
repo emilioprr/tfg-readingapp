@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import Estrellas from '../components/Estrellas'
 import ResenaCard from '../components/ResenaCard'
 import LibroCard from '../components/LibroCard'
+import ListaCard from '../components/ListaCard'
 import api from '../api/axios'
 
 export default function Perfil() {
@@ -512,32 +513,10 @@ export default function Perfil() {
                 <>
 
                     {/* Listas */}
-                    <div className="mb-12">
-                        <div className="flex items-center justify-between mb-5">
-                            <h2 className="text-lg font-semibold text-dark-text">Listas</h2>
-                            {esMio && (
-                                <Link to="/crear-lista" className="text-xs text-dark-muted hover:text-terra transition-colors">
-                                    + Nueva lista
-                                </Link>
-                            )}
-                        </div>
-                        {listasPublicas.length === 0 ? (
-                            <div className="text-center py-8 bg-dark-card rounded-2xl">
-                                <p className="text-dark-muted text-sm">
-                                    {esMio ? 'No tienes listas todavía' : 'No tiene listas públicas'}
-                                </p>
-                            </div>
-                        ) : (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                                {listasPublicas.map((lista) => (
-                                    <Link key={lista.idlista} to={`/lista/${lista.idlista}`}
-                                          className="bg-dark-card rounded-xl p-4 hover:bg-dark-elevated transition-colors">
-                                        <p className="text-terra font-medium">{lista.nombre}</p>
-                                        {lista.descripcion && <p className="text-dark-muted text-sm mt-1 line-clamp-1">{lista.descripcion}</p>}
-                                    </Link>
-                                ))}
-                            </div>
-                        )}
+                    <div className="space-y-4">
+                        {listasPublicas.map((lista) => (
+                            <ListaCard key={lista.idlista} lista={lista} />
+                        ))}
                     </div>
                 </>
             )}

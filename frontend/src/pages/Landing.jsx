@@ -33,8 +33,8 @@ export default function Landing() {
 
                 <div className="relative z-10 text-center px-6 max-w-3xl">
                     <h1 className="text-6xl md:text-7xl font-bold text-dark-text tracking-tight leading-tight mb-6">
-                        Lleva el control de<br />
-                        <span className="text-terra">tus lecturas.</span>
+                        Cada libro es un mundo,<br />
+                        <span className="text-terra">construye el tuyo.</span>
                     </h1>
                     <p className="text-xl text-dark-muted leading-relaxed mb-4">
                         Guarda los libros que lees. Comparte lo que te gusta.

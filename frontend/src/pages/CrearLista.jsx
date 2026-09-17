@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import api from '../api/axios'
@@ -6,26 +6,48 @@ import api from '../api/axios'
 export default function CrearLista() {
     const { usuario } = useAuth()
     const navigate = useNavigate()
+    const [searchParams] = useSearchParams()
+    const volver = searchParams.get('volver')
+    const idlista = searchParams.get('editar')
+    const esEdicion = !!idlista
+
     const [nombre, setNombre] = useState('')
     const [descripcion, setDescripcion] = useState('')
     const [esPublica, setEsPublica] = useState(true)
     const [error, setError] = useState('')
-    const [searchParams] = useSearchParams()
-    const volver = searchParams.get('volver')
+
+    useEffect(() => {
+        if (esEdicion) cargarLista()
+    }, [idlista])
+
+    const cargarLista = async () => {
+        try {
+            const res = await api.get(`/listas/${idlista}`)
+            const lista = res.data
+            setNombre(lista.nombre || '')
+            setDescripcion(lista.descripcion || '')
+            setEsPublica(lista.esPublica)
+        } catch (err) { console.error('Error:', err) }
+    }
 
     const handleSubmit = async (e) => {
         e.preventDefault(); setError('')
         if (!nombre.trim()) { setError('El nombre es obligatorio'); return }
         try {
-            await api.post(`/listas/usuario/${usuario.id}`, { nombre, descripcion, esPublica })
-            navigate(volver || '/listas')
-        } catch (err) { setError(err.response?.data?.mensaje || 'Error al crear la lista') }
+            if (esEdicion) {
+                await api.put(`/listas/${idlista}`, { nombre, descripcion, esPublica })
+                navigate(volver || `/lista/${idlista}`)
+            } else {
+                await api.post(`/listas/usuario/${usuario.id}`, { nombre, descripcion, esPublica })
+                navigate(volver || '/listas')
+            }
+        } catch (err) { setError(err.response?.data?.mensaje || (esEdicion ? 'Error al actualizar' : 'Error al crear la lista')) }
     }
 
     return (
         <div className="max-w-md mx-auto">
             <div className="flex items-center justify-between mb-6">
-                <h1 className="text-2xl font-bold text-terra tracking-tight">Nueva lista</h1>
+                <h1 className="text-2xl font-bold text-terra tracking-tight">{esEdicion ? 'Editar lista' : 'Nueva lista'}</h1>
                 <button onClick={() => navigate(-1)} className="text-dark-muted hover:text-dark-text text-2xl transition-colors">✕</button>
             </div>
             {error && <p className="text-red-400 text-sm mb-4">{error}</p>}
@@ -43,7 +65,9 @@ export default function CrearLista() {
                 <label className="flex items-center gap-2 text-dark-muted text-sm cursor-pointer">
                     <input type="checkbox" checked={esPublica} onChange={(e) => setEsPublica(e.target.checked)} className="accent-terra" />Lista pública
                 </label>
-                <button type="submit" className="w-full bg-terra hover:bg-terra-hover text-white font-semibold py-2.5 rounded-lg transition-colors">Crear lista</button>
+                <button type="submit" className="w-full bg-terra hover:bg-terra-hover text-white font-semibold py-2.5 rounded-lg transition-colors">
+                    {esEdicion ? 'Guardar cambios' : 'Crear lista'}
+                </button>
             </form>
         </div>
     )
