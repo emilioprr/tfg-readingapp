@@ -158,10 +158,11 @@ export default function LibroDetalle() {
     }
 
     const agregarAWishlist = async () => {
-        const wishlist = listas.find(l => l.esAutomatica && l.nombre === 'Wishlist')
-        if (wishlist) agregarALista(wishlist.idlista)
-        else alert('No se encontró tu wishlist')
-        setMenuAbierto(false)
+        try {
+            await api.post('/seguimientos', { estado: 'PENDIENTE', idusuario: usuario.id, idlibro: parseInt(id) })
+            setEstadoLibro('PENDIENTE')
+            setMenuAbierto(false)
+        } catch (err) { alert(err.response?.data?.mensaje || 'Error') }
     }
 
     const getColorNota = (nota) => {
@@ -260,13 +261,15 @@ export default function LibroDetalle() {
                                     </button>
                                     {menuAbierto && (
                                         <div className="absolute right-0 top-8 bg-dark-elevated border border-dark-border rounded-xl shadow-2xl w-48 overflow-hidden z-50">
-                                            <button onClick={agregarAWishlist}
-                                                    className="w-full text-left px-4 py-2.5 text-dark-text hover:bg-dark-card text-sm transition-colors flex items-center gap-2">
-                                                <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-dark-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
-                                                </svg>
-                                                Añadir a Wishlist
-                                            </button>
+                                            {!estadoLibro && (
+                                                <button onClick={agregarAWishlist}
+                                                        className="w-full text-left px-4 py-2.5 text-dark-text hover:bg-dark-card text-sm transition-colors flex items-center gap-2">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-dark-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                                                    </svg>
+                                                    Quiero leer
+                                                </button>
+                                            )}
                                             {listasNormales.length > 0 && (
                                                 listasNormales.map((lista) => (
                                                     <button key={lista.idlista} onClick={() => agregarALista(lista.idlista)}

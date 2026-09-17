@@ -36,10 +36,21 @@ public class SeguimientoService {
         Libro libro = libroRepository.findById(request.getIdlibro())
                 .orElseThrow(() -> new EntityNotFoundException("Libro no encontrado"));
 
+        Optional<Seguimiento> ultimo = seguimientoRepository
+                .findTopByUsuarioIdusuarioAndLibroIdlibroOrderByIdseguimientoDesc(
+                        usuario.getIdusuario(), libro.getIdlibro());
+
+        // === PENDIENTE ===
+        if (request.getEstado() == EstadoLectura.PENDIENTE) {
+            if (ultimo.isPresent() && (ultimo.get().getEstado() == EstadoLectura.LEYENDO
+                    || ultimo.get().getEstado() == EstadoLectura.PENDIENTE)) {
+                throw new IllegalArgumentException("Este libro ya está en tu lista de lectura");
+            }
+            request.setNumPagina(0);
+        }
+
+        // === LEYENDO ===
         if (request.getEstado() == EstadoLectura.LEYENDO) {
-            Optional<Seguimiento> ultimo = seguimientoRepository
-                    .findTopByUsuarioIdusuarioAndLibroIdlibroOrderByIdseguimientoDesc(
-                            usuario.getIdusuario(), libro.getIdlibro());
             if (ultimo.isPresent() && ultimo.get().getEstado() == EstadoLectura.LEYENDO
                     && (request.getNumPagina() == null || request.getNumPagina() == 0)) {
                 throw new IllegalArgumentException("Ya estás leyendo este libro");
@@ -49,40 +60,28 @@ public class SeguimientoService {
             if (leyendoActualmente >= 10) {
                 throw new IllegalArgumentException("No puedes estar leyendo más de 10 libros a la vez");
             }
+            if (request.getNumPagina() == null) {
+                request.setNumPagina(0);
+            }
+            if (request.getNumPagina() != null && request.getNumPagina() > 0 && ultimo.isPresent()
+                    && request.getNumPagina() <= ultimo.get().getNumPagina()) {
+                throw new IllegalArgumentException("La página debe ser mayor que " + ultimo.get().getNumPagina());
+            }
         }
 
+        // === LEIDO / ABANDONADO ===
         if (request.getEstado() == EstadoLectura.LEIDO || request.getEstado() == EstadoLectura.ABANDONADO) {
-            Optional<Seguimiento> ultimo = seguimientoRepository
-                    .findTopByUsuarioIdusuarioAndLibroIdlibroOrderByIdseguimientoDesc(
-                            usuario.getIdusuario(), libro.getIdlibro());
             if (ultimo.isEmpty() || ultimo.get().getEstado() != EstadoLectura.LEYENDO) {
                 throw new IllegalArgumentException(
                         "Debes estar leyendo el libro antes de marcarlo como " + request.getEstado());
             }
         }
 
-        if (request.getEstado() == EstadoLectura.LEYENDO && request.getNumPagina() == null) {
-            request.setNumPagina(0);
-        }
-
-        if (request.getEstado() == EstadoLectura.LEYENDO && request.getNumPagina() != null && request.getNumPagina() > 0) {
-            Optional<Seguimiento> ultimoProgreso = seguimientoRepository
-                    .findTopByUsuarioIdusuarioAndLibroIdlibroOrderByIdseguimientoDesc(
-                            usuario.getIdusuario(), libro.getIdlibro());
-            if (ultimoProgreso.isPresent() && request.getNumPagina() <= ultimoProgreso.get().getNumPagina()) {
-                throw new IllegalArgumentException("La página debe ser mayor que " + ultimoProgreso.get().getNumPagina());
-            }
-        }
-
-        // Validar que la página no supere el total del libro y exista
         if (request.getEstado() == EstadoLectura.LEIDO && libro.getNumPaginas() != null) {
             request.setNumPagina(libro.getNumPaginas());
         }
 
         if (request.getEstado() == EstadoLectura.ABANDONADO && request.getNumPagina() == null) {
-            Optional<Seguimiento> ultimo = seguimientoRepository
-                    .findTopByUsuarioIdusuarioAndLibroIdlibroOrderByIdseguimientoDesc(
-                            usuario.getIdusuario(), libro.getIdlibro());
             request.setNumPagina(ultimo.map(Seguimiento::getNumPagina).orElse(0));
         }
 
@@ -91,7 +90,8 @@ public class SeguimientoService {
             throw new IllegalArgumentException("La página no puede superar el total de páginas del libro");
         }
 
-        if (request.getEstado() != EstadoLectura.LEIDO && request.getNumPagina() == null) {
+        if (request.getEstado() != EstadoLectura.LEIDO && request.getEstado() != EstadoLectura.PENDIENTE
+                && request.getNumPagina() == null) {
             throw new IllegalArgumentException("La página es obligatoria si el estado no es LEIDO");
         }
 
@@ -104,22 +104,6 @@ public class SeguimientoService {
                 .build();
 
         seguimiento = seguimientoRepository.save(seguimiento);
-
-        // Si empieza a leer, quitar de la wishlist
-        if (request.getEstado() == EstadoLectura.LEYENDO && (request.getNumPagina() == null || request.getNumPagina() == 0)) {
-            try {
-                List<Lista> listas = listaRepository.findByUsuarioIdusuario(usuario.getIdusuario());
-                for (Lista lista : listas) {
-                    if (lista.getEsAutomatica() && "Wishlist".equals(lista.getNombre())) {
-                        lista.getLibros().remove(libro);
-                        listaRepository.save(lista);
-                        break;
-                    }
-                }
-            } catch (Exception e) {
-                // No bloquear si falla
-            }
-        }
 
         retoService.recalcularRetosActivosDeUsuario(usuario.getIdusuario());
         return toResponse(seguimiento);
