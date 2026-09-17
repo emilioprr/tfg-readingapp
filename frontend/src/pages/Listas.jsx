@@ -2,64 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import api from '../api/axios'
-
-function ListaCard({ lista }) {
-    const [libros, setLibros] = useState([])
-
-    useEffect(() => {
-        cargarLibros()
-    }, [lista.idlista])
-
-    const cargarLibros = async () => {
-        try {
-            const res = await api.get(`/listas/${lista.idlista}`)
-            setLibros((res.data.libros || []).slice(0, 4))
-        } catch (err) { console.error('Error:', err) }
-    }
-
-    return (
-        <Link to={`/lista/${lista.idlista}`}
-              className="bg-dark-card rounded-xl overflow-hidden hover:bg-dark-elevated transition-colors group">
-            <div className="h-32 relative overflow-hidden">
-                {libros.length > 0 ? (
-                    <div className={`grid h-full ${
-                        libros.length === 1 ? 'grid-cols-1' :
-                            libros.length === 2 ? 'grid-cols-2' :
-                                libros.length === 3 ? 'grid-cols-3' :
-                                    'grid-cols-4'
-                    } gap-0.5`}>
-                        {libros.map((libro) => (
-                            <div key={libro.idlibro} className="overflow-hidden">
-                                {libro.portada ? (
-                                    <img src={libro.portada} alt={libro.titulo}
-                                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200" />
-                                ) : (
-                                    <div className="w-full h-full bg-dark-elevated flex items-center justify-center text-dark-muted text-xs">
-                                        📖
-                                    </div>
-                                )}
-                            </div>
-                        ))}
-                    </div>
-                ) : (
-                    <div className="w-full h-full bg-dark-elevated flex items-center justify-center">
-                        <span className="text-dark-muted text-sm">Lista vacía</span>
-                    </div>
-                )}
-            </div>
-
-            <div className="p-4">
-                <p className="text-terra font-medium group-hover:text-terra-hover transition-colors">{lista.nombre}</p>
-                {lista.descripcion && (
-                    <p className="text-dark-muted text-sm mt-1 line-clamp-1">{lista.descripcion}</p>
-                )}
-                <div className="flex items-center gap-2 mt-2 text-xs text-dark-muted">
-                    {lista.nombreUsuario && <span>{lista.nombreUsuario}</span>}
-                </div>
-            </div>
-        </Link>
-    )
-}
+import ListaCard from '../components/ListaCard'
 
 export default function Listas() {
     const { usuario } = useAuth()
@@ -154,7 +97,7 @@ export default function Listas() {
                             <p className="text-dark-muted">No hay listas públicas todavía</p>
                         </div>
                     ) : (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
+                        <div className="space-y-4">
                             {publicas.map((lista) => (
                                 <ListaCard key={lista.idlista} lista={lista} />
                             ))}
@@ -170,7 +113,7 @@ export default function Listas() {
                             <p className="text-dark-muted">Tus amigos no tienen listas públicas</p>
                         </div>
                     ) : (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
+                        <div className="space-y-4">
                             {listasAmigos.map((lista) => (
                                 <ListaCard key={lista.idlista} lista={lista} />
                             ))}
@@ -189,7 +132,7 @@ export default function Listas() {
                             </Link>
                         </div>
                     ) : (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
+                        <div className="space-y-4">
                             {misListas.map((lista) => (
                                 <ListaCard key={lista.idlista} lista={lista} />
                             ))}

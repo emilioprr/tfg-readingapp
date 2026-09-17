@@ -42,6 +42,12 @@ export default function ListaDetalle() {
                 <div className="flex items-start justify-between">
                     <h1 className="text-2xl font-bold text-dark-text tracking-tight">{lista.nombre}</h1>
                     <div className="flex items-center gap-3">
+                        {esMia && !lista.esAutomatica && (
+                            <Link to={`/crear-lista?editar=${id}&volver=/lista/${id}`}
+                                  className="text-sm text-dark-muted hover:text-terra transition-colors">
+                                Editar
+                            </Link>
+                        )}
                         {esMia && (
                             <Link to="/catalogo"
                                   className="text-sm bg-terra hover:bg-terra-hover text-white font-semibold px-4 py-1.5 rounded-lg transition-colors">
