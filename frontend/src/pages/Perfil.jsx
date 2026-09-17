@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import {useParams, Link, useSearchParams} from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import Estrellas from '../components/Estrellas'
 import ResenaCard from '../components/ResenaCard'
@@ -19,9 +19,13 @@ export default function Perfil() {
     const [anotaciones, setAnotaciones] = useState([])
     const [siguiendo, setSiguiendo] = useState(false)
     const [loading, setLoading] = useState(true)
-    const [wishlist, setWishlist] = useState(null)
     const [listasPublicas, setListasPublicas] = useState([])
-    const [tab, setTab] = useState('libros')
+    const [searchParams] = useSearchParams()
+    const [tab, setTab] = useState(searchParams.get('tab') || 'libros')
+    const [leyendoLibros, setLeyendoLibros] = useState([])
+    const [leidosLibros, setLeidosLibros] = useState([])
+    const [pendientesLibros, setPendientesLibros] = useState([])
+    const [abandonadosLibros, setAbandonadosLibros] = useState([])
 
     useEffect(() => {
         if (perfilId) {
@@ -30,7 +34,10 @@ export default function Perfil() {
             cargarLecturasRecientes()
             cargarResenas()
             cargarAnotaciones()
-            cargarWishlist()
+            cargarLeyendoLibros()
+            cargarLeidosLibros()
+            cargarPendientesLibros()
+            cargarAbandonadosLibros()
             cargarListasPublicas()
             comprobarSiguiendo()
         }
@@ -77,18 +84,6 @@ export default function Perfil() {
         } catch (err) { console.error('Error:', err) }
     }
 
-    const cargarWishlist = async () => {
-        try {
-            const res = await api.get(`/listas/usuario/${perfilId}`)
-            const listas = res.data.content || res.data || []
-            const wl = listas.find(l => l.esAutomatica && l.nombre === 'Wishlist')
-            if (wl) {
-                const detalle = await api.get(`/listas/${wl.idlista}`)
-                setWishlist(detalle.data)
-            }
-        } catch (err) { console.error('Error:', err) }
-    }
-
     const cargarListasPublicas = async () => {
         try {
             const res = await api.get(`/listas/usuario/${perfilId}`)
@@ -127,6 +122,34 @@ export default function Perfil() {
         } catch (err) { console.error('Error:', err) }
     }
 
+    const cargarLeyendoLibros = async () => {
+        try {
+            const res = await api.get(`/seguimientos/usuario/${perfilId}/estado/LEYENDO`)
+            setLeyendoLibros(res.data || [])
+        } catch (err) { console.error('Error:', err) }
+    }
+
+    const cargarLeidosLibros = async () => {
+        try {
+            const res = await api.get(`/seguimientos/usuario/${perfilId}/estado/LEIDO`)
+            setLeidosLibros(res.data || [])
+        } catch (err) { console.error('Error:', err) }
+    }
+
+    const cargarPendientesLibros = async () => {
+        try {
+            const res = await api.get(`/seguimientos/usuario/${perfilId}/estado/PENDIENTE`)
+            setPendientesLibros(res.data || [])
+        } catch (err) { console.error('Error:', err) }
+    }
+
+    const cargarAbandonadosLibros = async () => {
+        try {
+            const res = await api.get(`/seguimientos/usuario/${perfilId}/estado/ABANDONADO`)
+            setAbandonadosLibros(res.data || [])
+        } catch (err) { console.error('Error:', err) }
+    }
+
     if (loading) return <p className="text-dark-muted">Cargando...</p>
     if (!perfil) return <p className="text-red-400">Usuario no encontrado</p>
 
@@ -135,7 +158,7 @@ export default function Perfil() {
 
     const tabs = [
         { key: 'libros', label: 'Libros' },
-        { key: 'wishlist', label: 'Wishlist' },
+        { key: 'estanteria', label: 'Estantería' },
         { key: 'resenas', label: 'Reseñas' },
         { key: 'anotaciones', label: 'Anotaciones' },
         { key: 'listas', label: 'Listas' },
@@ -293,28 +316,130 @@ export default function Perfil() {
                 </>
             )}
 
-            {/* Tab: Wishlist */}
-            {tab === 'wishlist' && (
-                <div>
-                    {!wishlist || (wishlist.libros || []).length === 0 ? (
-                        <div className="text-center py-16 bg-dark-card rounded-2xl">
-                            <p className="text-dark-muted text-sm">
-                                {esMio ? 'Tu wishlist está vacía' : 'Wishlist vacía'}
-                            </p>
-                            {esMio && (
-                                <Link to="/catalogo" className="text-terra hover:text-terra-hover text-sm transition-colors mt-2 inline-block">
-                                    Explorar libros
+            {tab === 'estanteria' && (
+                <>
+                    {/* Quiero leer */}
+                    <div className="mb-10">
+                        <div className="flex items-center justify-between mb-4">
+                            <h2 className="text-lg font-semibold text-dark-text">Quiero leer</h2>
+                            {pendientesLibros.length > 6 && (
+                                <Link to={`/estanteria/${perfilId}/PENDIENTE`} className="text-xs text-dark-muted hover:text-terra transition-colors">
+                                    Ver todo ({pendientesLibros.length})
                                 </Link>
                             )}
                         </div>
-                    ) : (
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-x-4 gap-y-6">
-                            {(wishlist.libros || []).map((libro) => (
-                                <LibroCard key={libro.idlibro} libro={libro} />
-                            ))}
+                        {pendientesLibros.length === 0 ? (
+                            <p className="text-dark-muted text-sm">No hay libros pendientes</p>
+                        ) : (
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-x-5 gap-y-6">
+                                {pendientesLibros.slice(0, 6).map((s) => (
+                                    <Link key={s.idseguimiento} to={`/libro/${s.idlibro}`} className="group">
+                                        {s.portadaLibro ? (
+                                            <img src={s.portadaLibro} alt={s.tituloLibro}
+                                                 className="w-full h-56 object-cover rounded-sm shadow-md group-hover:shadow-xl transition-shadow" />
+                                        ) : (
+                                            <div className="w-full h-56 bg-dark-elevated rounded-sm flex items-center justify-center text-dark-muted text-sm shadow-md">
+                                                Sin portada
+                                            </div>
+                                        )}
+                                        <p className="text-xs text-dark-text truncate mt-2 group-hover:text-terra transition-colors">{s.tituloLibro}</p>
+                                    </Link>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Leyendo */}
+                    <div className="mb-10">
+                        <div className="flex items-center justify-between mb-4">
+                            <h2 className="text-lg font-semibold text-dark-text">Leyendo</h2>
+                            {leyendoLibros.length > 6 && (
+                                <Link to={`/estanteria/${perfilId}/LEYENDO`} className="text-xs text-dark-muted hover:text-terra transition-colors">
+                                    Ver todo ({leyendoLibros.length})
+                                </Link>
+                            )}
+                        </div>
+                        {leyendoLibros.length === 0 ? (
+                            <p className="text-dark-muted text-sm">No hay libros en lectura</p>
+                        ) : (
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-x-5 gap-y-6">
+                                {leyendoLibros.slice(0, 6).map((s) => (
+                                    <Link key={s.idseguimiento} to={`/libro/${s.idlibro}`} className="group">
+                                        {s.portadaLibro ? (
+                                            <img src={s.portadaLibro} alt={s.tituloLibro}
+                                                 className="w-full h-56 object-cover rounded-sm shadow-md group-hover:shadow-xl transition-shadow" />
+                                        ) : (
+                                            <div className="w-full h-56 bg-dark-elevated rounded-sm flex items-center justify-center text-dark-muted text-sm shadow-md">
+                                                Sin portada
+                                            </div>
+                                        )}
+                                        <p className="text-xs text-dark-text truncate mt-2 group-hover:text-terra transition-colors">{s.tituloLibro}</p>
+                                    </Link>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Leídos */}
+                    <div className="mb-10">
+                        <div className="flex items-center justify-between mb-4">
+                            <h2 className="text-lg font-semibold text-dark-text">Leídos</h2>
+                            {leidosLibros.length > 6 && (
+                                <Link to={`/estanteria/${perfilId}/LEIDO`} className="text-xs text-dark-muted hover:text-terra transition-colors">
+                                    Ver todo ({leidosLibros.length})
+                                </Link>
+                            )}
+                        </div>
+                        {leidosLibros.length === 0 ? (
+                            <p className="text-dark-muted text-sm">No hay libros leídos</p>
+                        ) : (
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-x-5 gap-y-6">
+                                {leidosLibros.slice(0, 6).map((s) => (
+                                    <Link key={s.idseguimiento} to={`/libro/${s.idlibro}`} className="group">
+                                        {s.portadaLibro ? (
+                                            <img src={s.portadaLibro} alt={s.tituloLibro}
+                                                 className="w-full h-56 object-cover rounded-sm shadow-md group-hover:shadow-xl transition-shadow" />
+                                        ) : (
+                                            <div className="w-full h-56 bg-dark-elevated rounded-sm flex items-center justify-center text-dark-muted text-sm shadow-md">
+                                                Sin portada
+                                            </div>
+                                        )}
+                                        <p className="text-xs text-dark-text truncate mt-2 group-hover:text-terra transition-colors">{s.tituloLibro}</p>
+                                    </Link>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Abandonados */}
+                    {abandonadosLibros.length > 0 && (
+                        <div className="mb-10">
+                            <div className="flex items-center justify-between mb-4">
+                                <h2 className="text-lg font-semibold text-dark-text">Abandonados</h2>
+                                {abandonadosLibros.length > 6 && (
+                                    <Link to={`/estanteria/${perfilId}/ABANDONADO`} className="text-xs text-dark-muted hover:text-terra transition-colors">
+                                        Ver todo ({abandonadosLibros.length})
+                                    </Link>
+                                )}
+                            </div>
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-x-5 gap-y-6">
+                                {abandonadosLibros.slice(0, 6).map((s) => (
+                                    <Link key={s.idseguimiento} to={`/libro/${s.idlibro}`} className="group">
+                                        {s.portadaLibro ? (
+                                            <img src={s.portadaLibro} alt={s.tituloLibro}
+                                                 className="w-full h-56 object-cover rounded-sm shadow-md group-hover:shadow-xl transition-shadow" />
+                                        ) : (
+                                            <div className="w-full h-56 bg-dark-elevated rounded-sm flex items-center justify-center text-dark-muted text-sm shadow-md">
+                                                Sin portada
+                                            </div>
+                                        )}
+                                        <p className="text-xs text-dark-text truncate mt-2 group-hover:text-terra transition-colors">{s.tituloLibro}</p>
+                                    </Link>
+                                ))}
+                            </div>
                         </div>
                     )}
-                </div>
+                </>
             )}
 
             {/* Tab: Reseñas */}
@@ -385,24 +510,6 @@ export default function Perfil() {
             {/* Tab: Listas */}
             {tab === 'listas' && (
                 <>
-                    {/* Wishlist */}
-                    {wishlist && (wishlist.libros || []).length > 0 && (
-                        <div className="mb-12">
-                            <div className="flex items-center justify-between mb-5">
-                                <h2 className="text-lg font-semibold text-dark-text">
-                                    {esMio ? 'Mi Wishlist' : `Wishlist de ${perfil.nombre}`}
-                                </h2>
-                                <Link to={`/lista/${wishlist.idlista}`} className="text-xs text-dark-muted hover:text-terra transition-colors">
-                                    Ver todo
-                                </Link>
-                            </div>
-                            <div className="flex gap-5 overflow-x-auto pb-2">
-                                {(wishlist.libros || []).slice(0, 8).map((libro) => (
-                                    <LibroCard key={libro.idlibro} libro={libro} />
-                                ))}
-                            </div>
-                        </div>
-                    )}
 
                     {/* Listas */}
                     <div className="mb-12">

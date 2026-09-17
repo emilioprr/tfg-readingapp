@@ -47,16 +47,6 @@ public class UsuarioService {
 
         usuario = usuarioRepository.save(usuario);
 
-        Lista wishlist = Lista.builder()
-                .nombre("Wishlist")
-                .descripcion("Libros que quiero leer")
-                .esPublica(false)
-                .esAutomatica(true)
-                .fechaCreacion(java.time.LocalDateTime.now())
-                .usuario(usuario)
-                .build();
-        listaRepository.save(wishlist);
-
         return toResponse(usuario);
     }
 

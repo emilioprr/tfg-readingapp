@@ -64,13 +64,6 @@ export default function Inicio() {
         return []
     }
 
-    const cargarResenasSeguidos = async () => {
-        try {
-            const res = await api.get(`/resenas/seguidos/${usuario.id}?size=12`)
-            setResenasSeguidos(res.data.content || res.data || [])
-        } catch (err) { console.error('Error:', err) }
-    }
-
     const cargarPopularesAmigos = async () => {
         try {
             const res = await api.get(`/libros/populares-amigos/${usuario.id}?size=12`)
@@ -252,7 +245,7 @@ export default function Inicio() {
                                                 <span className="text-terra font-bold text-sm">{libroActual.porcentaje || 0}%</span>
                                             </div>
                                             <div className="bg-dark-border rounded-full h-2.5 w-full">
-                                                <div className="bg-terra h-2.5 rounded-full transition-all duration-500"
+                                                <div className="bg-gradient-to-r from-orange-500 to-amber-500 h-2.5 rounded-full transition-all duration-500"
                                                      style={{ width: `${libroActual.porcentaje || 0}%` }} />
                                             </div>
                                         </div>
@@ -289,7 +282,7 @@ export default function Inicio() {
                           Pág. {libroActual.numPagina}{libroActual.totalPaginas ? ` de ${libroActual.totalPaginas}` : ''}
                         </span>
                                                 <button onClick={() => { setEditandoProgreso(true); setNuevaPagina(String(libroActual.numPagina + 1)) }}
-                                                        className="bg-terra hover:bg-terra-hover text-white font-semibold px-4 py-1.5 rounded-lg text-sm transition-colors">
+                                                        className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-semibold px-4 py-1.5 rounded-lg text-sm transition-all">
                                                     Actualizar
                                                 </button>
                                             </div>
