@@ -27,6 +27,7 @@ export default function LibroDetalle() {
     const [misResenas, setMisResenas] = useState([])
     const [anotacionesAmigos, setAnotacionesAmigos] = useState([])
     const [misAnotaciones, setMisAnotaciones] = useState([])
+    const [totalResenas, setTotalResenas] = useState(0)
 
     useEffect(() => {
         cargarLibro()
@@ -48,8 +49,11 @@ export default function LibroDetalle() {
     }
 
     const cargarResenas = async () => {
-        try { const res = await api.get(`/resenas/libro/${id}?size=10`); setResenas(res.data.content || res.data || []) }
-        catch (err) { console.error('Error:', err) }
+        try {
+            const res = await api.get(`/resenas/libro/${id}?size=5`)
+            setResenas(res.data.content || res.data || [])
+            setTotalResenas(res.data.totalElements || res.data.length || 0)
+        } catch (err) { console.error('Error:', err) }
     }
 
     const cargarEstado = async () => {
@@ -442,11 +446,20 @@ export default function LibroDetalle() {
                                 </p>
                             </div>
                         ) : (
-                            <div className="space-y-4">
-                                {lista.map((r) => (
-                                    <ResenaCard key={r.idresena} resena={r} mostrarLibro={false} />
-                                ))}
-                            </div>
+                            <>
+                                <div className="space-y-4">
+                                    {lista.map((r) => (
+                                        <ResenaCard key={r.idresena} resena={r} mostrarLibro={false} />
+                                    ))}
+                                </div>
+                                {subTabResenas === 'todas' && totalResenas > 5 && (
+                                    <div className="text-center mt-4">
+                                        <Link to={`/libro/${id}/resenas`} className="text-sm text-dark-muted hover:text-terra transition-colors">
+                                            Ver todas ({totalResenas})
+                                        </Link>
+                                    </div>
+                                )}
+                            </>
                         )
                     })()}
                 </div>

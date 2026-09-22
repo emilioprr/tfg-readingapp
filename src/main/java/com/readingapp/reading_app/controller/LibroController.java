@@ -14,6 +14,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/libros")
@@ -81,10 +82,16 @@ public class LibroController {
         return ResponseEntity.ok(libroService.obtenerPopularesEntreSeguidos(idusuario, pageable));
     }
 
-    @GetMapping("/buscar/importar")
-    public ResponseEntity<Integer> importarBusqueda(@RequestParam String titulo) {
-        int importados = googleBooksService.importarPorTitulo(titulo, 20);
-        return ResponseEntity.ok(importados);
+    @GetMapping("/buscar/google")
+    public ResponseEntity<Map<String, Object>> buscarEnGoogle(
+            @RequestParam String q,
+            @RequestParam(defaultValue = "0") int startIndex) {
+        return ResponseEntity.ok(googleBooksService.buscarEnGoogle(q, startIndex));
+    }
+
+    @PostMapping("/importar/google/{idExterno}")
+    public ResponseEntity<Map<String, Long>> importarDesdeGoogle(@PathVariable String idExterno) {
+        return ResponseEntity.ok(Map.of("idlibro", googleBooksService.importarPorIdExterno(idExterno)));
     }
 
     // === FAVORITOS ===

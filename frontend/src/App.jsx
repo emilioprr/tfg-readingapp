@@ -31,6 +31,7 @@ import Timer from './pages/Timer'
 import EditarLibro from './pages/EditarLibro'
 import Resenas from './pages/Resenas'
 import EstanteriaCompleta from './pages/EstanteriaCompleta'
+import ResenasLibro from './pages/ResenasLibro'
 
 
 function App() {
@@ -70,6 +71,7 @@ function App() {
                         <Route path="/libro/:id/editar" element={<EditarLibro />} />
                         <Route path="/resenas" element={<Resenas />} />
                         <Route path="/estanteria/:idusuario/:estado" element={<EstanteriaCompleta />} />
+                        <Route path="/libro/:id/resenas" element={<ResenasLibro />} />
                     </Route>
                 </Routes>
             </BrowserRouter>
