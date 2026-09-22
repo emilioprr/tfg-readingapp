@@ -35,6 +35,19 @@ public class LibroDTO {
     }
 
     @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
+    public static class BusquedaResponse {
+        private Long idlibro;        // null si es externo
+        private String idExterno;    // id de Google Books
+        private String titulo;
+        private String nombreAutor;
+        private String portada;
+        private String sinopsis;
+        private Integer numPaginas;
+        private String genero;
+        private Boolean externo;
+    }
+
+    @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
     public static class Response {
         private Long idlibro;
         private String idapiexterna;

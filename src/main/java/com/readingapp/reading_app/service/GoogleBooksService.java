@@ -1,9 +1,11 @@
 package com.readingapp.reading_app.service;
 
+import com.readingapp.reading_app.dto.LibroDTO;
 import com.readingapp.reading_app.model.Autor;
 import com.readingapp.reading_app.model.Libro;
 import com.readingapp.reading_app.repository.AutorRepository;
 import com.readingapp.reading_app.repository.LibroRepository;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -26,7 +28,14 @@ public class GoogleBooksService {
     @Value("${google.books.api.key}")
     private String apiKey;
 
-    private static final String GOOGLE_BOOKS_URL = "https://www.googleapis.com/books/v1/volumes?q={query}&startIndex={startIndex}&maxResults={maxResults}&langRestrict={lang}&key={key}";
+    private static final String GOOGLE_BOOKS_URL =
+            "https://www.googleapis.com/books/v1/volumes?q={query}&startIndex={startIndex}&maxResults={maxResults}&langRestrict={lang}&key={key}";
+    private static final String GOOGLE_SEARCH_URL =
+            "https://www.googleapis.com/books/v1/volumes?q={query}&startIndex={startIndex}&maxResults=40&printType=books&key={key}";
+    private static final String GOOGLE_VOLUME_URL =
+            "https://www.googleapis.com/books/v1/volumes/{id}?key={key}";
+
+    // ==================== CARGA MASIVA (ADMIN) ====================
 
     public int importarPorCategoria(String query, int cantidad, String idioma) {
         int importados = 0;
@@ -86,7 +95,6 @@ public class GoogleBooksService {
     @Transactional
     public boolean importarPorIsbn(String isbn) {
         try {
-            // Verificar si ya existe por ISBN
             if (libroRepository.existsByIsbn(isbn)) {
                 log.info("Libro con ISBN {} ya existe en la BD", isbn);
                 return false;
@@ -111,28 +119,110 @@ public class GoogleBooksService {
         }
     }
 
-    public int importarPorTitulo(String titulo, int cantidad) {
-        int importados = 0;
-        try {
-            Map<String, Object> response = restTemplate.getForObject(
-                    GOOGLE_BOOKS_URL, Map.class, titulo, 0, Math.min(cantidad, 40), "es", apiKey
-            );
-            if (response == null || !response.containsKey("items")) return 0;
+    // ==================== BÚSQUEDA (SIN GUARDAR) ====================
+
+    /** Busca en Google Books SIN guardar nada. Excluye los libros que ya existen en local. */
+    public Map<String, Object> buscarEnGoogle(String query, int startIndex) {
+        List<LibroDTO.BusquedaResponse> resultados = new ArrayList<>();
+        Set<String> vistos = new HashSet<>();
+        int index = startIndex;
+        boolean agotado = false;
+        int peticiones = 0;
+
+        // Hasta 3 peticiones para asegurar una tanda decente tras filtrar duplicados
+        while (resultados.size() < 10 && peticiones < 3) {
+            peticiones++;
+            Map<String, Object> response;
+            try {
+                response = restTemplate.getForObject(GOOGLE_SEARCH_URL, Map.class, query, index, apiKey);
+            } catch (Exception e) {
+                log.error("Error buscando en Google Books: {}", e.getMessage());
+                break;
+            }
+
+            if (response == null || !response.containsKey("items")) {
+                agotado = true;
+                break;
+            }
 
             List<Map<String, Object>> items = (List<Map<String, Object>>) response.get("items");
+            index += items.size();
+
             for (Map<String, Object> item : items) {
-                try {
-                    if (guardarLibro(item)) importados++;
-                } catch (Exception e) {
-                    log.warn("Error al procesar libro: {}", e.getMessage());
-                }
+                String idExterno = (String) item.get("id");
+                if (idExterno == null || !vistos.add(idExterno)) continue;
+                if (buscarLocalEquivalente(item).isPresent()) continue;
+                LibroDTO.BusquedaResponse dto = toBusquedaDTO(item);
+                if (dto != null) resultados.add(dto);
             }
-        } catch (Exception e) {
-            log.error("Error buscando en Google Books: {}", e.getMessage());
         }
-        return importados;
+
+        return Map.of("resultados", resultados, "siguienteIndex", index, "hayMas", !agotado);
     }
 
+    /** Importa UN libro concreto cuando el usuario lo abre. Devuelve su id local. */
+    @Transactional
+    public Long importarPorIdExterno(String idExterno) {
+        Map<String, Object> item = restTemplate.getForObject(GOOGLE_VOLUME_URL, Map.class, idExterno, apiKey);
+        if (item == null) throw new EntityNotFoundException("Libro no encontrado en Google Books");
+
+        Optional<Libro> existente = buscarLocalEquivalente(item);
+        if (existente.isPresent()) return existente.get().getIdlibro();
+
+        guardarLibro(item);
+
+        return buscarLocalEquivalente(item)
+                .map(Libro::getIdlibro)
+                .orElseThrow(() -> new IllegalArgumentException("No se pudo importar el libro"));
+    }
+
+    /** Busca si ya existe en local un libro equivalente (mismo id externo, ISBN o título+autor). */
+    private Optional<Libro> buscarLocalEquivalente(Map<String, Object> item) {
+        String idExterno = (String) item.get("id");
+        if (idExterno != null) {
+            Optional<Libro> porId = libroRepository.findFirstByIdapiexterna(idExterno);
+            if (porId.isPresent()) return porId;
+        }
+
+        Map<String, Object> volumeInfo = (Map<String, Object>) item.get("volumeInfo");
+        if (volumeInfo == null) return Optional.empty();
+
+        String isbn = extraerIsbn(volumeInfo);
+        if (isbn != null) {
+            Optional<Libro> porIsbn = libroRepository.findFirstByIsbn(isbn);
+            if (porIsbn.isPresent()) return porIsbn;
+        }
+
+        String titulo = (String) volumeInfo.get("title");
+        if (titulo == null) return Optional.empty();
+        List<String> autores = (List<String>) volumeInfo.get("authors");
+        String nombreAutor = (autores != null && !autores.isEmpty()) ? autores.get(0) : "Desconocido";
+
+        return libroRepository.buscarPorTituloYAutorNormalizado(titulo, nombreAutor);
+    }
+
+    private LibroDTO.BusquedaResponse toBusquedaDTO(Map<String, Object> item) {
+        Map<String, Object> volumeInfo = (Map<String, Object>) item.get("volumeInfo");
+        if (volumeInfo == null || volumeInfo.get("title") == null) return null;
+
+        List<String> autores = (List<String>) volumeInfo.get("authors");
+        if (autores == null || autores.isEmpty()) return null;
+
+        List<String> categorias = (List<String>) volumeInfo.get("categories");
+
+        return LibroDTO.BusquedaResponse.builder()
+                .idExterno((String) item.get("id"))
+                .titulo((String) volumeInfo.get("title"))
+                .nombreAutor(autores.get(0))
+                .portada(extraerPortada(volumeInfo))
+                .sinopsis((String) volumeInfo.get("description"))
+                .numPaginas(volumeInfo.get("pageCount") != null ? ((Number) volumeInfo.get("pageCount")).intValue() : null)
+                .genero(categorias != null && !categorias.isEmpty() ? categorias.get(0) : null)
+                .externo(true)
+                .build();
+    }
+
+    // ==================== GUARDADO ====================
 
     private boolean guardarLibro(Map<String, Object> item) {
         Map<String, Object> volumeInfo = (Map<String, Object>) item.get("volumeInfo");
@@ -165,14 +255,7 @@ public class GoogleBooksService {
 
         String sinopsis = (String) volumeInfo.get("description");
         Integer paginas = volumeInfo.get("pageCount") != null ? ((Number) volumeInfo.get("pageCount")).intValue() : null;
-        String fechaPublicacion = (String) volumeInfo.get("publishedDate");
-        Integer anio = extraerAnio(fechaPublicacion);
-
-        String portada = null;
-        Map<String, Object> imageLinks = (Map<String, Object>) volumeInfo.get("imageLinks");
-        if (imageLinks != null) {
-            portada = (String) imageLinks.getOrDefault("thumbnail", imageLinks.get("smallThumbnail"));
-        }
+        Integer anio = extraerAnio((String) volumeInfo.get("publishedDate"));
 
         List<String> categorias = (List<String>) volumeInfo.get("categories");
         String genero = (categorias != null && !categorias.isEmpty()) ? categorias.get(0) : "Ficción";
@@ -184,7 +267,7 @@ public class GoogleBooksService {
                 .anioPublicacion(anio)
                 .numPaginas(paginas)
                 .isbn(isbn)
-                .portada(portada)
+                .portada(extraerPortada(volumeInfo))
                 .genero(genero)
                 .autor(autor)
                 .build();
@@ -211,6 +294,15 @@ public class GoogleBooksService {
                     }
                     return autor;
                 });
+    }
+
+    // ==================== UTILIDADES ====================
+
+    private String extraerPortada(Map<String, Object> volumeInfo) {
+        Map<String, Object> imageLinks = (Map<String, Object>) volumeInfo.get("imageLinks");
+        if (imageLinks == null) return null;
+        String url = (String) imageLinks.getOrDefault("thumbnail", imageLinks.get("smallThumbnail"));
+        return url != null ? url.replace("http://", "https://") : null;
     }
 
     private Integer extraerAnio(String fecha) {

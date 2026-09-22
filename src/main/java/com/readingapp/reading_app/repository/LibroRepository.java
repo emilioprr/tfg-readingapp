@@ -10,13 +10,15 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface LibroRepository extends JpaRepository<Libro, Long> {
     @Query(value = "SELECT l.* FROM libro l JOIN autor a ON l.idautor = a.idautor " +
             "WHERE (LOWER(unaccent(l.titulo)) LIKE LOWER(unaccent(CONCAT('%', :texto, '%'))) " +
             "OR LOWER(unaccent(a.nombre)) LIKE LOWER(unaccent(CONCAT('%', :texto, '%')))) " +
-            "AND l.idlibro = (SELECT MIN(l2.idlibro) FROM libro l2 WHERE l2.titulo = l.titulo AND l2.idautor = l.idautor)",
+            "AND l.idlibro = (SELECT MIN(l2.idlibro) FROM libro l2 WHERE l2.titulo = l.titulo AND l2.idautor = l.idautor) " +
+            "ORDER BY CASE WHEN LOWER(unaccent(l.titulo)) LIKE LOWER(unaccent(CONCAT('%', :texto, '%'))) THEN 0 ELSE 1 END, l.idlibro",
             countQuery = "SELECT COUNT(*) FROM libro l JOIN autor a ON l.idautor = a.idautor " +
                     "WHERE (LOWER(unaccent(l.titulo)) LIKE LOWER(unaccent(CONCAT('%', :texto, '%'))) " +
                     "OR LOWER(unaccent(a.nombre)) LIKE LOWER(unaccent(CONCAT('%', :texto, '%')))) " +
@@ -49,5 +51,13 @@ public interface LibroRepository extends JpaRepository<Libro, Long> {
             "WHERE LOWER(unaccent(l.titulo)) = LOWER(unaccent(:titulo)) " +
             "AND LOWER(unaccent(a.nombre)) = LOWER(unaccent(:nombreAutor))", nativeQuery = true)
     boolean existsByTituloYAutorNormalizado(@Param("titulo") String titulo, @Param("nombreAutor") String nombreAutor);
+    Optional<Libro> findFirstByIdapiexterna(String idapiexterna);
+
+    Optional<Libro> findFirstByIsbn(String isbn);
+
+    @Query(value = "SELECT l.* FROM libro l JOIN autor a ON l.idautor = a.idautor " +
+            "WHERE LOWER(unaccent(l.titulo)) = LOWER(unaccent(:titulo)) " +
+            "AND LOWER(unaccent(a.nombre)) = LOWER(unaccent(:autor)) LIMIT 1", nativeQuery = true)
+    Optional<Libro> buscarPorTituloYAutorNormalizado(@Param("titulo") String titulo, @Param("autor") String autor);
 }
 

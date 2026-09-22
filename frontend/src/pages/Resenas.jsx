@@ -8,6 +8,9 @@ export default function Resenas() {
     const [resenasAmigos, setResenasAmigos] = useState([])
     const [resenasPopulares, setResenasPopulares] = useState([])
     const [loading, setLoading] = useState(true)
+    const [paginaPopulares, setPaginaPopulares] = useState(0)
+    const [hayMasPopulares, setHayMasPopulares] = useState(true)
+    const [cargandoMas, setCargandoMas] = useState(false)
 
     useEffect(() => {
         cargarResenasAmigos()
@@ -23,11 +26,25 @@ export default function Resenas() {
         finally { setLoading(false) }
     }
 
-    const cargarResenasPopulares = async () => {
+    const cargarResenasPopulares = async (pagina = 0, acumular = false) => {
         try {
-            const res = await api.get('/resenas/populares?size=20')
-            setResenasPopulares(res.data || [])
+            const res = await api.get(`/resenas/populares?size=20&page=${pagina}`)
+            const nuevas = res.data.content || res.data || []
+            if (acumular) {
+                setResenasPopulares(prev => [...prev, ...nuevas])
+            } else {
+                setResenasPopulares(nuevas)
+            }
+            setHayMasPopulares(nuevas.length === 20)
         } catch (err) { console.error('Error:', err) }
+    }
+
+    const cargarMasPopulares = async () => {
+        setCargandoMas(true)
+        const siguiente = paginaPopulares + 1
+        setPaginaPopulares(siguiente)
+        await cargarResenasPopulares(siguiente, true)
+        setCargandoMas(false)
     }
 
     if (loading) return <p className="text-dark-muted">Cargando...</p>
@@ -62,11 +79,21 @@ export default function Resenas() {
                         <p className="text-dark-muted">No hay reseñas populares este mes</p>
                     </div>
                 ) : (
-                    <div className="space-y-4">
-                        {resenasPopulares.map((r) => (
-                            <ResenaCard key={r.idresena} resena={r} />
-                        ))}
-                    </div>
+                    <>
+                        <div className="space-y-4">
+                            {resenasPopulares.map((r) => (
+                                <ResenaCard key={r.idresena} resena={r} />
+                            ))}
+                        </div>
+                        {hayMasPopulares && (
+                            <div className="text-center mt-6">
+                                <button onClick={cargarMasPopulares} disabled={cargandoMas}
+                                        className="text-sm text-dark-muted hover:text-terra transition-colors disabled:opacity-50">
+                                    {cargandoMas ? 'Cargando...' : 'Ver más'}
+                                </button>
+                            </div>
+                        )}
+                    </>
                 )}
             </div>
         </div>
