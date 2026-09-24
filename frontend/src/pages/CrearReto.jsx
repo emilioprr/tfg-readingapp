@@ -30,10 +30,16 @@ export default function CrearReto() {
         { value: 'PAGINAS', label: 'Páginas', desc: 'Leer X páginas' },
         { value: 'HORAS', label: 'Horas', desc: 'Leer X horas' },
     ]
+
     const modalidades = [
         { value: 'PERSONAL', label: 'Personal', desc: 'Solo para ti' },
-        { value: 'COMPARTIDO', label: 'Compartido', desc: 'Otros pueden adoptarlo' },
+        { value: 'COMPARTIDO', label: 'Con amigos', desc: 'Tus amigos pueden unirse' },
+        ...(usuario?.rol === 'ADMIN' ? [
+            { value: 'PREDEFINIDO', label: 'Oficial', desc: 'Visible para toda la comunidad' },
+            { value: 'COLABORATIVO', label: 'Colaborativo', desc: 'Toda la comunidad suma' },
+        ] : []),
     ]
+
     const metaLabel = tipo === 'LIBROS' ? 'libros' : tipo === 'PAGINAS' ? 'páginas' : 'horas'
 
     const hoy = new Date().toISOString().split('T')[0]
@@ -69,7 +75,7 @@ export default function CrearReto() {
                 </div>
                 <div>
                     <label className="block text-dark-muted text-sm mb-2">Modalidad</label>
-                    <div className="flex gap-2">
+                    <div className="grid grid-cols-2 gap-2">
                         {modalidades.map((m) => (
                             <button key={m.value} type="button" onClick={() => setModalidad(m.value)}
                                     className={`flex-1 p-3 rounded-xl text-left text-sm transition-colors ${modalidad === m.value ? 'bg-terra/20 border border-terra/40 text-terra' : 'bg-dark-elevated border border-dark-border text-dark-muted hover:text-dark-text'}`}>

@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import api from '../api/axios'
 import logoBookmark from '../assets/logo.png'
+import { RachaNavbar } from './Racha'
 
 export default function Navbar() {
     const { usuario, logout } = useAuth()
@@ -120,6 +121,7 @@ export default function Navbar() {
                             {usuario.rol === 'ADMIN' && (
                                 <Link to="/admin" className="text-dark-muted hover:text-dark-text text-sm font-medium transition-colors">Admin</Link>
                             )}
+                            <RachaNavbar />
 
                             {/* Recomendaciones — avión de papel */}
                             <Link to="/recomendaciones" className="text-dark-muted hover:text-dark-text transition-colors" title="Recomendaciones">

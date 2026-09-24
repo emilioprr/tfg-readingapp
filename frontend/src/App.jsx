@@ -21,7 +21,6 @@ import EditarPerfil from './pages/EditarPerfil'
 import Admin from './pages/Admin'
 import Inicio from './pages/Inicio'
 import MisResenas from './pages/MisResenas'
-import MiWishlist from './pages/MiWishlist'
 import MisLikes from './pages/MisLikes'
 import Busqueda from './pages/Busqueda'
 import Listas from './pages/Listas'
@@ -32,49 +31,51 @@ import EditarLibro from './pages/EditarLibro'
 import Resenas from './pages/Resenas'
 import EstanteriaCompleta from './pages/EstanteriaCompleta'
 import ResenasLibro from './pages/ResenasLibro'
+import { RachaProvider } from './context/RachaContext'
 
 
 function App() {
     return (
         <AuthProvider>
-            <BrowserRouter>
-                <Routes>
-                    <Route path="/landing" element={<Landing />} />
-                    <Route element={<MainLayout />}>
-                        <Route path="/login" element={<Login />} />
-                        <Route path="/registro" element={<Registro />} />
-                        <Route path="/catalogo" element={<Catalogo />} />
-                        <Route path="/libro/:id" element={<LibroDetalle />} />
-                        <Route path="/perfil" element={<Perfil />} />
-                        <Route path="/autor/:id" element={<AutorDetalle />} />
-                        <Route path="/notificaciones" element={<Notificaciones />} />
-                        <Route path="/retos" element={<Retos />} />
-                        <Route path="/libro/:idlibro/resena" element={<CrearResena />} />
-                        <Route path="/lista/:id" element={<ListaDetalle />} />
-                        <Route path="/crear-lista" element={<CrearLista />} />
-                        <Route path="/buscar" element={<Busqueda />} />
-                        <Route path="/usuario/:id" element={<Perfil />} />
-                        <Route path="/recomendaciones" element={<Recomendaciones />} />
-                        <Route path="/libro/:idlibro/recomendar" element={<EnviarRecomendacion />} />
-                        <Route path="/libro/:idlibro/anotaciones" element={<CrearAnotacion />} />
-                        <Route path="/crear-reto" element={<CrearReto />} />
-                        <Route path="/editar-perfil" element={<EditarPerfil />} />
-                        <Route path="/admin" element={<Admin />} />
-                        <Route path="/" element={<Inicio />} />
-                        <Route path="/mis-resenas" element={<MisResenas />} />
-                        <Route path="/mi-wishlist" element={<MiWishlist />} />
-                        <Route path="/mis-likes" element={<MisLikes />} />
-                        <Route path="/listas" element={<Listas />} />
-                        <Route path="/resena/:id" element={<ResenaDetalle />} />
-                        <Route path="/calendario" element={<Calendario />} />
-                        <Route path="/timer" element={<Timer />} />
-                        <Route path="/libro/:id/editar" element={<EditarLibro />} />
-                        <Route path="/resenas" element={<Resenas />} />
-                        <Route path="/estanteria/:idusuario/:estado" element={<EstanteriaCompleta />} />
-                        <Route path="/libro/:id/resenas" element={<ResenasLibro />} />
-                    </Route>
-                </Routes>
-            </BrowserRouter>
+            <RachaProvider>
+                <BrowserRouter>
+                    <Routes>
+                        <Route path="/landing" element={<Landing/>}/>
+                        <Route element={<MainLayout/>}>
+                            <Route path="/login" element={<Login/>}/>
+                            <Route path="/registro" element={<Registro/>}/>
+                            <Route path="/catalogo" element={<Catalogo/>}/>
+                            <Route path="/libro/:id" element={<LibroDetalle/>}/>
+                            <Route path="/perfil" element={<Perfil/>}/>
+                            <Route path="/autor/:id" element={<AutorDetalle/>}/>
+                            <Route path="/notificaciones" element={<Notificaciones/>}/>
+                            <Route path="/retos" element={<Retos/>}/>
+                            <Route path="/libro/:idlibro/resena" element={<CrearResena/>}/>
+                            <Route path="/lista/:id" element={<ListaDetalle/>}/>
+                            <Route path="/crear-lista" element={<CrearLista/>}/>
+                            <Route path="/buscar" element={<Busqueda/>}/>
+                            <Route path="/usuario/:id" element={<Perfil/>}/>
+                            <Route path="/recomendaciones" element={<Recomendaciones/>}/>
+                            <Route path="/libro/:idlibro/recomendar" element={<EnviarRecomendacion/>}/>
+                            <Route path="/libro/:idlibro/anotaciones" element={<CrearAnotacion/>}/>
+                            <Route path="/crear-reto" element={<CrearReto/>}/>
+                            <Route path="/editar-perfil" element={<EditarPerfil/>}/>
+                            <Route path="/admin" element={<Admin/>}/>
+                            <Route path="/" element={<Inicio/>}/>
+                            <Route path="/mis-resenas" element={<MisResenas/>}/>
+                            <Route path="/mis-likes" element={<MisLikes/>}/>
+                            <Route path="/listas" element={<Listas/>}/>
+                            <Route path="/resena/:id" element={<ResenaDetalle/>}/>
+                            <Route path="/calendario" element={<Calendario/>}/>
+                            <Route path="/timer" element={<Timer/>}/>
+                            <Route path="/libro/:id/editar" element={<EditarLibro/>}/>
+                            <Route path="/resenas" element={<Resenas/>}/>
+                            <Route path="/estanteria/:idusuario/:estado" element={<EstanteriaCompleta/>}/>
+                            <Route path="/libro/:id/resenas" element={<ResenasLibro/>}/>
+                        </Route>
+                    </Routes>
+                </BrowserRouter>
+            </RachaProvider>
         </AuthProvider>
     )
 }

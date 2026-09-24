@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import LibroCard from '../components/LibroCard'
+import { useRacha } from '../context/RachaContext'
+import { RachaTarjeta } from '../components/Racha'
 import api from '../api/axios'
 
 export default function Inicio() {
@@ -21,6 +23,7 @@ export default function Inicio() {
     const [mostrarAbandonarModal, setMostrarAbandonarModal] = useState(false)
     const [mostrarAnotacionModal, setMostrarAnotacionModal] = useState(false)
     const [librosPopulares, setLibrosPopulares] = useState([])
+    const { refrescarRacha } = useRacha()
 
     useEffect(() => {
         if (usuario) {
@@ -82,6 +85,10 @@ export default function Inicio() {
         if (!nuevaPagina) return
         setErrorProgreso('')
         const libroActual = leyendo[leyendoIndex]
+
+        const salto = parseInt(nuevaPagina) - (libroActual.numPagina || 0)
+        if (salto > 200 && !window.confirm(`Vas a registrar ${salto} páginas de golpe. ¿Es correcto?`)) return
+
         try {
             await api.post('/seguimientos', {
                 estado: 'LEYENDO',
@@ -89,6 +96,7 @@ export default function Inicio() {
                 idlibro: libroActual.idlibro,
                 numPagina: parseInt(nuevaPagina),
             })
+            refrescarRacha()
             setEditandoProgreso(false)
             setNuevaPagina('')
 
@@ -101,9 +109,6 @@ export default function Inicio() {
                 cargarRetos()
                 navigate(`/libro/${libroActual.idlibro}/resena`)
             } else {
-                setEditandoProgreso(false)
-                setNuevaPagina('')
-                setErrorProgreso('')
                 cargarLeyendo()
                 cargarRetos()
 
@@ -166,10 +171,13 @@ export default function Inicio() {
 
     return (
         <div>
-            {/* Saludo */}
-            <div className="mb-8">
-                <h1 className="text-3xl font-bold text-dark-text tracking-tight">Hola, {usuario.nombre}</h1>
-                <p className="text-dark-muted mt-1">¿Qué vas a leer hoy?</p>
+            {/* Saludo + racha */}
+            <div className="mb-8 flex items-center justify-between gap-6">
+                <div>
+                    <h1 className="text-3xl font-bold text-dark-text tracking-tight">Hola, {usuario.nombre}</h1>
+                    <p className="text-dark-muted mt-1">¿Qué vas a leer hoy?</p>
+                </div>
+                <RachaTarjeta />
             </div>
 
             {/* Grid principal */}
@@ -331,57 +339,65 @@ export default function Inicio() {
                                 <Link to="/retos" className="text-terra hover:text-terra-hover text-sm transition-colors">Explorar retos</Link>
                             </div>
                         </div>
-                    ) : (
-                        <div className="flex flex-col justify-between h-[calc(100%-2rem)]">
-                            <div>
-                                <h3 className="text-dark-text font-medium text-sm mb-1">{retoActual.tituloReto || retoActual.titulo}</h3>
-                                <div className="flex gap-1.5 mb-4">
-                                    <span className="text-xs bg-terra/10 text-terra px-2 py-0.5 rounded-full">{retoActual.tipoReto || retoActual.tipo}</span>
-                                    <span className="text-xs bg-dark-elevated text-dark-muted px-2 py-0.5 rounded-full">{retoActual.modalidadReto || retoActual.modalidad}</span>
-                                </div>
+                    ) : (() => {
+                        const tipo = retoActual.tipoReto || retoActual.tipo
+                        const modalidad = retoActual.modalidadReto || retoActual.modalidad
+                        const TIPOS = { LIBROS: 'Libros', PAGINAS: 'Páginas', HORAS: 'Horas' }
+                        const MODALIDADES = { PERSONAL: 'Personal', COMPARTIDO: 'Con amigos', PREDEFINIDO: 'Oficial', COLABORATIVO: 'Colaborativo' }
+                        const textoProgreso = tipo === 'HORAS'
+                            ? `${((retoActual.progreso || 0) / 60).toFixed(1)}/${retoActual.meta} h`
+                            : `${retoActual.progreso || 0}/${retoActual.meta}`
 
-                                <div className="flex items-center justify-center my-4">
-                                    <div className="relative w-28 h-28">
-                                        <svg className="w-28 h-28 -rotate-90" viewBox="0 0 100 100">
-                                            <circle cx="50" cy="50" r="42" fill="none" stroke="#2a2a2a" strokeWidth="8" />
-                                            <circle cx="50" cy="50" r="42" fill="none" stroke="#c45d3e" strokeWidth="8"
-                                                    strokeLinecap="round"
-                                                    strokeDasharray={`${Math.min(100, retoActual.porcentaje || 0) * 2.64} 264`} />
-                                        </svg>
-                                        <div className="absolute inset-0 flex flex-col items-center justify-center">
-                                            <span className="text-terra font-bold text-lg">{retoActual.porcentaje || 0}%</span>
-                                            <span className="text-dark-muted text-xs">
-                        {retoActual.progreso}/{retoActual.meta}{(retoActual.tipoReto || retoActual.tipo) === 'HORAS' ? ' min' : ''}
-                      </span>
+                        return (
+                            <div className="flex flex-col justify-between h-[calc(100%-2rem)]">
+                                <div>
+                                    <h3 className="text-dark-text font-medium text-sm mb-1">{retoActual.tituloReto || retoActual.titulo}</h3>
+                                    <div className="flex gap-1.5 mb-4">
+                                        <span className="text-xs bg-terra/10 text-terra px-2 py-0.5 rounded-full">{TIPOS[tipo] || tipo}</span>
+                                        <span className="text-xs bg-dark-elevated text-dark-muted px-2 py-0.5 rounded-full">{MODALIDADES[modalidad] || modalidad}</span>
+                                    </div>
+
+                                    <div className="flex items-center justify-center my-4">
+                                        <div className="relative w-28 h-28">
+                                            <svg className="w-28 h-28 -rotate-90" viewBox="0 0 100 100">
+                                                <circle cx="50" cy="50" r="42" fill="none" stroke="#2a2a2a" strokeWidth="8" />
+                                                <circle cx="50" cy="50" r="42" fill="none" stroke="#c45d3e" strokeWidth="8"
+                                                        strokeLinecap="round"
+                                                        strokeDasharray={`${Math.min(100, retoActual.porcentaje || 0) * 2.64} 264`} />
+                                            </svg>
+                                            <div className="absolute inset-0 flex flex-col items-center justify-center">
+                                                <span className="text-terra font-bold text-lg">{retoActual.porcentaje || 0}%</span>
+                                                <span className="text-dark-muted text-xs">{textoProgreso}</span>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
 
-                            {retosActivos.length > 1 && (
-                                <div className="flex items-center justify-center gap-3 pt-3 border-t border-dark-border">
-                                    <button onClick={() => setRetoIndex(i => i === 0 ? retosActivos.length - 1 : i - 1)}
-                                            className="text-dark-muted hover:text-terra transition-colors">
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-                                        </svg>
-                                    </button>
-                                    <div className="flex gap-1.5">
-                                        {retosActivos.map((_, i) => (
-                                            <button key={i} onClick={() => setRetoIndex(i)}
-                                                    className={`w-1.5 h-1.5 rounded-full transition-colors ${i === retoIndex ? 'bg-terra' : 'bg-dark-border hover:bg-dark-muted'}`} />
-                                        ))}
+                                {retosActivos.length > 1 && (
+                                    <div className="flex items-center justify-center gap-3 pt-3 border-t border-dark-border">
+                                        <button onClick={() => setRetoIndex(i => i === 0 ? retosActivos.length - 1 : i - 1)}
+                                                className="text-dark-muted hover:text-terra transition-colors">
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                                            </svg>
+                                        </button>
+                                        <div className="flex gap-1.5">
+                                            {retosActivos.map((_, i) => (
+                                                <button key={i} onClick={() => setRetoIndex(i)}
+                                                        className={`w-1.5 h-1.5 rounded-full transition-colors ${i === retoIndex ? 'bg-terra' : 'bg-dark-border hover:bg-dark-muted'}`} />
+                                            ))}
+                                        </div>
+                                        <button onClick={() => setRetoIndex(i => i === retosActivos.length - 1 ? 0 : i + 1)}
+                                                className="text-dark-muted hover:text-terra transition-colors">
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                                            </svg>
+                                        </button>
                                     </div>
-                                    <button onClick={() => setRetoIndex(i => i === retosActivos.length - 1 ? 0 : i + 1)}
-                                            className="text-dark-muted hover:text-terra transition-colors">
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                                        </svg>
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-                    )}
+                                )}
+                            </div>
+                        )
+                    })()}
                 </div>
             </div>
 
