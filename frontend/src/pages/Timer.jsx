@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { useRacha } from '../context/RachaContext'
 import api from '../api/axios'
 
 export default function Timer() {
@@ -17,6 +18,7 @@ export default function Timer() {
     const [sesionTerminada, setSesionTerminada] = useState(false)
     const [guardando, setGuardando] = useState(false)
     const [guardado, setGuardado] = useState(false)
+    const { refrescarRacha } = useRacha()
 
     const intervalRef = useRef(null)
     const segundosRef = useRef(0)
@@ -140,6 +142,7 @@ export default function Timer() {
                 idusuario: usuario.id,
                 duracionMinutos: minutosLeidos,
             })
+            refrescarRacha()
             setSesionTerminada(true)
             setGuardado(true)
         } catch (err) {

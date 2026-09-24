@@ -51,6 +51,21 @@ public class Usuario {
     @Builder.Default
     private RolUsuario rol = RolUsuario.USER;
 
+    @Column(name = "protectores_racha")
+    private Integer protectoresRacha;
+
+    @Column(name = "mejor_racha")
+    private Integer mejorRacha;
+
+    @Column(name = "fecha_ultimo_protector")
+    private LocalDate fechaUltimoProtector;
+
+    @ElementCollection
+    @CollectionTable(name = "usuario_dia_protegido", joinColumns = @JoinColumn(name = "idusuario"))
+    @Column(name = "fecha")
+    @Builder.Default
+    private Set<LocalDate> diasProtegidos = new HashSet<>();
+
     // RELACIONES
     @ManyToMany
     @JoinTable(

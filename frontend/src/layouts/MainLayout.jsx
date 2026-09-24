@@ -1,6 +1,7 @@
 import { Outlet } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import ToastNotificaciones from '../components/ToastNotificaciones'
+import { RachaCelebracion } from '../components/Racha'
 
 export default function MainLayout() {
     return (
@@ -10,6 +11,7 @@ export default function MainLayout() {
                 <Outlet />
             </main>
             <ToastNotificaciones />
+            <RachaCelebracion />
         </div>
     )
 }

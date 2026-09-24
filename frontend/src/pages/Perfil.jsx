@@ -27,6 +27,8 @@ export default function Perfil() {
     const [leidosLibros, setLeidosLibros] = useState([])
     const [pendientesLibros, setPendientesLibros] = useState([])
     const [abandonadosLibros, setAbandonadosLibros] = useState([])
+    const [rachaPerfil, setRachaPerfil] = useState(null)
+
 
     useEffect(() => {
         if (perfilId) {
@@ -151,6 +153,11 @@ export default function Perfil() {
         } catch (err) { console.error('Error:', err) }
     }
 
+    const cargarRachaPerfil = async () => {
+        try { const res = await api.get(`/racha/usuario/${perfilId}`); setRachaPerfil(res.data) }
+        catch (err) { console.error('Error:', err) }
+    }
+
     if (loading) return <p className="text-dark-muted">Cargando...</p>
     if (!perfil) return <p className="text-red-400">Usuario no encontrado</p>
 
@@ -194,6 +201,15 @@ export default function Perfil() {
                     <span className="w-1 h-1 bg-dark-border rounded-full" />
                     <span>Miembro desde {perfil.fechaAlta}</span>
                 </div>
+
+                {rachaPerfil && (
+                    <div className="flex items-center justify-center gap-3 mt-3 text-sm">
+                        <span className="text-dark-muted">🔥 Racha: {rachaPerfil.racha} · Mejor: {rachaPerfil.mejorRacha}</span>
+                        {rachaPerfil.insignias?.map((h) => (
+                            <span key={h} className="text-xs bg-orange-500/15 text-orange-400 px-2 py-0.5 rounded-full">🏅 {h} días</span>
+                        ))}
+                    </div>
+                )}
 
                 <div className="mt-4">
                     {esMio ? (
