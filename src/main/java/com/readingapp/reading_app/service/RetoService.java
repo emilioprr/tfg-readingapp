@@ -15,6 +15,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -32,6 +33,7 @@ public class RetoService {
     private final SeguimientoRepository seguimientoRepository;
     private final SesionLecturaRepository sesionLecturaRepository;
     private final NotificacionService notificacionService;
+    private final Clock clock;
 
     public RetoDTO.Response crear(RetoDTO.CreateRequest request) {
         if (request.getModalidad() == ModalidadReto.PREDEFINIDO
@@ -51,7 +53,7 @@ public class RetoService {
             creador = usuarioRepository.findById(request.getIdCreador()).orElse(null);
         }
 
-        LocalDate fechaInicio = LocalDate.now();
+        LocalDate fechaInicio = LocalDate.now(clock);
 
         if (request.getFechaFin().isBefore(fechaInicio)) {
             throw new IllegalArgumentException("La fecha de fin no puede ser anterior a hoy");
@@ -76,7 +78,7 @@ public class RetoService {
                     .usuario(creador)
                     .progreso(0)
                     .retoCumplido(false)
-                    .fechaUnion(LocalDateTime.now())
+                    .fechaUnion(LocalDateTime.now(clock))
                     .build();
             participanteRetoRepository.save(participante);
         }
@@ -104,7 +106,7 @@ public class RetoService {
                 .usuario(usuario)
                 .progreso(0)
                 .retoCumplido(false)
-                .fechaUnion(LocalDateTime.now())
+                .fechaUnion(LocalDateTime.now(clock))
                 .build();
 
         participante = participanteRetoRepository.save(participante);
@@ -178,11 +180,7 @@ public class RetoService {
         List<ParticipanteReto> activos = participanteRetoRepository
                 .findByUsuarioIdusuarioAndRetoCumplidoFalse(idusuario);
 
-        log.info("Recalculando retos para usuario {}: {} retos activos", idusuario, activos.size());
-
         for (ParticipanteReto p : activos) {
-            int progreso = calcularProgreso(p.getReto(), idusuario);
-            log.info("Reto {}: progreso calculado = {}", p.getReto().getIdreto(), progreso);
             recalcularProgreso(p.getReto().getIdreto(), idusuario);
         }
     }
@@ -218,7 +216,7 @@ public class RetoService {
 
     private void completarParticipante(ParticipanteReto participante, Reto reto) {
         participante.setRetoCumplido(true);
-        participante.setFechaCumplimiento(LocalDateTime.now());
+        participante.setFechaCumplimiento(LocalDateTime.now(clock));
         participanteRetoRepository.save(participante);
 
         Usuario usuario = participante.getUsuario();
@@ -239,7 +237,7 @@ public class RetoService {
 
         for (ParticipanteReto p : activos) {
             p.setRetoCumplido(true);
-            p.setFechaCumplimiento(LocalDateTime.now());
+            p.setFechaCumplimiento(LocalDateTime.now(clock));
             participanteRetoRepository.save(p);
 
             // Notificar a seguidores de cada participante
@@ -288,8 +286,9 @@ public class RetoService {
         Double porcentajeColab = null;
         if (reto.getModalidad() == ModalidadReto.COLABORATIVO) {
             progresoColab = participanteRetoRepository.sumProgresoByReto(reto.getIdreto());
-            porcentajeColab = reto.getMeta() > 0
-                    ? Math.round(progresoColab * 1000.0 / reto.getMeta()) / 10.0 : 0.0;
+            int metaRealColab = reto.getTipo() == TipoReto.HORAS ? reto.getMeta() * 60 : reto.getMeta();
+            porcentajeColab = metaRealColab > 0
+                    ? Math.min(100.0, Math.round(progresoColab * 1000.0 / metaRealColab) / 10.0) : 0.0;
         }
 
         return RetoDTO.Response.builder()
@@ -322,7 +321,7 @@ public class RetoService {
                 .tituloReto(reto.getTitulo())
                 .tipoReto(reto.getTipo())
                 .modalidadReto(reto.getModalidad())
-                .meta(metaReal)
+                .meta(meta)
                 .idusuario(p.getUsuario().getIdusuario())
                 .nombreUsuario(p.getUsuario().getNombre())
                 .progreso(p.getProgreso())
