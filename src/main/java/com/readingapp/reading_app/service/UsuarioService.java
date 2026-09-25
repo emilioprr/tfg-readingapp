@@ -20,7 +20,6 @@ public class UsuarioService {
 
     private final UsuarioRepository usuarioRepository;
     private final PasswordEncoder passwordEncoder;
-    private final ListaRepository listaRepository;
     private final NotificacionService notificacionService;
 
     @Transactional
