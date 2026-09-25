@@ -25,8 +25,8 @@ public class SesionLectura {
     @JoinColumn(name = "id_usuario", nullable = false)
     private Usuario usuario;
 
-    @ManyToOne
-    @JoinColumn(name = "id_libro", nullable = false)
+    @ManyToOne(optional = true)
+    @JoinColumn(name = "id_libro")
     private Libro libro;
 }
 
