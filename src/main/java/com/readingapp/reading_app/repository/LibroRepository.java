@@ -25,7 +25,6 @@ public interface LibroRepository extends JpaRepository<Libro, Long> {
                     "AND l.idlibro = (SELECT MIN(l2.idlibro) FROM libro l2 WHERE l2.titulo = l.titulo AND l2.idautor = l.idautor)",
             nativeQuery = true)
     Page<Libro> findByTituloContainingIgnoreCase(@Param("texto") String texto, Pageable pageable);
-    List<Libro> findByTituloContainingIgnoreCase(String titulo);
     List<Libro> findByGeneroIgnoreCase(String genero, Pageable pageable);
     List<Libro> findByAutorIdautor(Long idautor, Pageable pageable);
     boolean existsByIdapiexterna(String idapiexterna);

@@ -2,12 +2,10 @@ package com.readingapp.reading_app.service;
 
 import com.readingapp.reading_app.dto.SeguimientoDTO;
 import com.readingapp.reading_app.model.Libro;
-import com.readingapp.reading_app.model.Lista;
 import com.readingapp.reading_app.model.Seguimiento;
 import com.readingapp.reading_app.model.Usuario;
 import com.readingapp.reading_app.model.enums.EstadoLectura;
 import com.readingapp.reading_app.repository.LibroRepository;
-import com.readingapp.reading_app.repository.ListaRepository;
 import com.readingapp.reading_app.repository.SeguimientoRepository;
 import com.readingapp.reading_app.repository.UsuarioRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -27,7 +25,6 @@ public class SeguimientoService {
     private final UsuarioRepository usuarioRepository;
     private final LibroRepository libroRepository;
     private final RetoService retoService;
-    private final ListaRepository listaRepository;
 
     @Transactional
     public SeguimientoDTO.Response registrar(SeguimientoDTO.CreateRequest request) {
@@ -55,10 +52,13 @@ public class SeguimientoService {
                     && (request.getNumPagina() == null || request.getNumPagina() == 0)) {
                 throw new IllegalArgumentException("Ya estás leyendo este libro");
             }
-            long leyendoActualmente = seguimientoRepository.countLibrosLeyendoActualmente(
-                    usuario.getIdusuario());
-            if (leyendoActualmente >= 10) {
-                throw new IllegalArgumentException("No puedes estar leyendo más de 10 libros a la vez");
+            boolean yaLoEstaLeyendo = ultimo.isPresent() && ultimo.get().getEstado() == EstadoLectura.LEYENDO;
+            if (!yaLoEstaLeyendo) {
+                long leyendoActualmente = seguimientoRepository.countLibrosLeyendoActualmente(
+                        usuario.getIdusuario());
+                if (leyendoActualmente >= 10) {
+                    throw new IllegalArgumentException("No puedes estar leyendo más de 10 libros a la vez");
+                }
             }
             if (request.getNumPagina() == null) {
                 request.setNumPagina(0);
