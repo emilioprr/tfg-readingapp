@@ -65,13 +65,26 @@ public class RachaService {
             cursor = cursor.minusDays(1);
         }
 
-        // 3. Premiar protector cada 7 días (máx. 2)
+        // 3. Premiar protector cada 7 días (máx. 2).
+        // Se cuentan los hitos (7, 14, 21...) alcanzados desde el último premio, aunque la racha
+        // no se calculase ese mismo día. Un hito alcanzado con el máximo de protectores se pierde.
         boolean nuevoProtector = false;
-        if (hoyCompletado && racha > 0 && racha % DIAS_POR_PROTECTOR == 0
-                && !hoy.equals(usuario.getFechaUltimoProtector()) && protectores < MAX_PROTECTORES) {
-            protectores++;
-            usuario.setFechaUltimoProtector(hoy);
-            nuevoProtector = true;
+        LocalDate finRacha = hoyCompletado ? hoy : ayer;
+        LocalDate ultimoPremio = usuario.getFechaUltimoProtector();
+        int hitosPendientes = 0;
+        LocalDate ultimoHito = null;
+        for (int dias = DIAS_POR_PROTECTOR; dias <= racha; dias += DIAS_POR_PROTECTOR) {
+            LocalDate diaHito = finRacha.minusDays(racha - dias);
+            if (ultimoPremio == null || diaHito.isAfter(ultimoPremio)) {
+                hitosPendientes++;
+                ultimoHito = diaHito;
+            }
+        }
+        if (hitosPendientes > 0) {
+            int antes = protectores;
+            protectores = Math.min(MAX_PROTECTORES, protectores + hitosPendientes);
+            usuario.setFechaUltimoProtector(ultimoHito);
+            nuevoProtector = protectores > antes;
         }
 
         // 4. Récord y guardado

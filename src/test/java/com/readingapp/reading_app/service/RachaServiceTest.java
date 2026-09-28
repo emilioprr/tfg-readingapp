@@ -201,14 +201,67 @@ class RachaServiceTest {
         }
 
         @Test
-        @DisplayName("No se gana protector si hoy aún no se ha leído")
-        void noProtectorSinLeerHoy() {
-            actividad(diasSeguidos(7, HOY.minusDays(1)));
+        @DisplayName("Si ayer se llegó a 7 días sin calcular la racha, el protector se concede hoy")
+        void protectorPendienteDeAyer() {
+            actividad(diasSeguidos(7, HOY.minusDays(1)));   // hoy aún no ha leído
 
             RachaDTO.Response res = rachaService.calcular(ID_USUARIO);
 
             assertThat(res.getRacha()).isEqualTo(7);
+            assertThat(res.getNuevoProtector()).isTrue();
+            assertThat(res.getProtectores()).isEqualTo(1);
+            assertThat(usuario.getFechaUltimoProtector()).isEqualTo(HOY.minusDays(1));
+        }
+
+        @Test
+        @DisplayName("Un hito ya pasado no se pierde aunque la racha no se calculase ese día")
+        void protectorNoSePierdeSiNoSeCalculo() {
+            // Día 7 fue hace 2 días y nadie calculó la racha ese día; hoy la racha es 9
+            actividad(diasSeguidos(9, HOY));
+
+            RachaDTO.Response res = rachaService.calcular(ID_USUARIO);
+
+            assertThat(res.getNuevoProtector()).isTrue();
+            assertThat(res.getProtectores()).isEqualTo(1);
+            assertThat(usuario.getFechaUltimoProtector()).isEqualTo(HOY.minusDays(2));
+        }
+
+        @Test
+        @DisplayName("Un hito ya premiado no se vuelve a premiar en días siguientes")
+        void hitoYaPremiado() {
+            usuario.setProtectoresRacha(1);
+            usuario.setFechaUltimoProtector(HOY.minusDays(2));   // premiado al llegar a 7
+            actividad(diasSeguidos(9, HOY));
+
+            RachaDTO.Response res = rachaService.calcular(ID_USUARIO);
+
             assertThat(res.getNuevoProtector()).isFalse();
+            assertThat(res.getProtectores()).isEqualTo(1);
+        }
+
+        @Test
+        @DisplayName("Un hito alcanzado con el máximo de protectores no se recupera después")
+        void hitoConMaximoSePierde() {
+            usuario.setProtectoresRacha(2);
+            actividad(diasSeguidos(7, HOY));
+
+            rachaService.calcular(ID_USUARIO);   // llega a 7 con 2 protectores: no suma
+            usuario.setProtectoresRacha(1);      // más tarde gasta uno
+            RachaDTO.Response res = rachaService.calcular(ID_USUARIO);
+
+            assertThat(res.getNuevoProtector()).isFalse();
+            assertThat(res.getProtectores()).isEqualTo(1);
+        }
+
+        @Test
+        @DisplayName("Varios hitos pendientes suman varios protectores, sin pasar del máximo")
+        void variosHitosPendientes() {
+            actividad(diasSeguidos(21, HOY));   // hitos 7, 14 y 21 sin premiar
+
+            RachaDTO.Response res = rachaService.calcular(ID_USUARIO);
+
+            assertThat(res.getProtectores()).isEqualTo(RachaService.MAX_PROTECTORES);
+            assertThat(usuario.getFechaUltimoProtector()).isEqualTo(HOY);
         }
     }
 
