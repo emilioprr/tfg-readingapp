@@ -106,11 +106,14 @@ public class RecomendacionService {
                 .esAutomatica(recomendacion.getEsAutomatica())
                 .idusuarioEmisor(recomendacion.getEmisor() != null ? recomendacion.getEmisor().getIdusuario() : null)
                 .nombreEmisor(recomendacion.getEmisor() != null ? recomendacion.getEmisor().getNombre() : "Sistema")
+                .avatarEmisor(recomendacion.getEmisor() != null ? recomendacion.getEmisor().getAvatar() : null)
                 .idusuarioReceptor(recomendacion.getReceptor().getIdusuario())
                 .nombreReceptor(recomendacion.getReceptor().getNombre())
+                .avatarReceptor(recomendacion.getReceptor().getAvatar())
                 .idlibro(recomendacion.getLibro().getIdlibro())
                 .tituloLibro(recomendacion.getLibro().getTitulo())
                 .portadaLibro(recomendacion.getLibro().getPortada())
+                .nombreAutorLibro(recomendacion.getLibro().getAutor() != null ? recomendacion.getLibro().getAutor().getNombre() : null)
                 .build();
     }
 }

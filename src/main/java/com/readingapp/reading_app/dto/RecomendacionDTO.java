@@ -25,10 +25,13 @@ public class RecomendacionDTO {
         private Boolean esAutomatica;
         private Long idusuarioEmisor;
         private String nombreEmisor;
+        private String avatarEmisor;
         private Long idusuarioReceptor;
         private String nombreReceptor;
+        private String avatarReceptor;
         private Long idlibro;
         private String tituloLibro;
         private String portadaLibro;
+        private String nombreAutorLibro;
     }
 }
