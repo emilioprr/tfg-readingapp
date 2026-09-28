@@ -27,6 +27,10 @@ public interface LibroRepository extends JpaRepository<Libro, Long> {
     Page<Libro> findByTituloContainingIgnoreCase(@Param("texto") String texto, Pageable pageable);
     List<Libro> findByGeneroIgnoreCase(String genero, Pageable pageable);
     List<Libro> findByAutorIdautor(Long idautor, Pageable pageable);
+
+    /** Todos los libros con su autor en una sola consulta (para montar el catálogo). */
+    @Query("SELECT l FROM Libro l JOIN FETCH l.autor")
+    List<Libro> findAllConAutor();
     boolean existsByIdapiexterna(String idapiexterna);
     boolean existsByIsbn(String isbn);
     @Query("SELECT l.genero FROM Libro l WHERE l.genero IS NOT NULL GROUP BY l.genero HAVING COUNT(l) >= 3 ORDER BY COUNT(l) DESC")

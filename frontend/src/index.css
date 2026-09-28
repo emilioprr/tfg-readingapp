@@ -33,6 +33,14 @@ body {
     background: #c45d3e;
 }
 
+/* Filas horizontales del catálogo: se desplazan sin mostrar la barra */
+.scrollbar-none {
+    scrollbar-width: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+    display: none;
+}
+
 a, button {
     transition: all 0.2s ease;
 }

@@ -14,6 +14,7 @@ import CrearResena from './pages/CrearResena'
 import ListaDetalle from './pages/ListaDetalle'
 import CrearLista from './pages/CrearLista'
 import Recomendaciones from './pages/Recomendaciones'
+import CategoriaCatalogo from './pages/CategoriaCatalogo'
 import Conexiones from './pages/Conexiones'
 import EnviarRecomendacion from './pages/EnviarRecomendacion'
 import CrearAnotacion from './pages/CrearAnotacion'
@@ -46,6 +47,7 @@ function App() {
                             <Route path="/login" element={<Login/>}/>
                             <Route path="/registro" element={<Registro/>}/>
                             <Route path="/catalogo" element={<Catalogo/>}/>
+                            <Route path="/catalogo/categoria/:slug" element={<CategoriaCatalogo/>}/>
                             <Route path="/libro/:id" element={<LibroDetalle/>}/>
                             <Route path="/perfil" element={<Perfil/>}/>
                             <Route path="/conexiones" element={<Conexiones/>}/>

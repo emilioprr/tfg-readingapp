@@ -21,6 +21,10 @@ public interface ResenaRepository extends JpaRepository<Resena, Long> {
     long countByUsuarioIdusuarioAndLibroIdlibro(Long idusuario, Long idlibro);
     long countByUsuarioIdusuario(Long idusuario);
     long countByUsuarioIdusuarioAndEsPublicaTrue(Long idusuario);
+
+    /** [idlibro, media de puntuación, nº de reseñas] de las reseñas públicas, por libro. */
+    @Query("SELECT r.libro.idlibro, AVG(r.puntuacion), COUNT(r) FROM Resena r WHERE r.esPublica = true GROUP BY r.libro.idlibro")
+    List<Object[]> findNotasMediasPorLibro();
     @Query("SELECT r FROM Resena r WHERE r.libro.idlibro = :idlibro AND r.esPublica = true ORDER BY SIZE(r.likes) DESC")
     Page<Resena> findByLibroIdlibroAndEsPublicaTrueOrderByLikesDesc(@Param("idlibro") Long idlibro, Pageable pageable);
     @Query("SELECT r FROM Resena r WHERE r.usuario.idusuario = :idusuario AND r.esPublica = true ORDER BY SIZE(r.likes) DESC")

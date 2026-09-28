@@ -11,6 +11,12 @@ public class SecurityUtils {
                 .getAuthentication().getCredentials();
     }
 
+    /*Id del usuario del token, o null si la petición es anónima.*/
+    public static Long usuarioActualId() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        return auth != null && auth.getCredentials() instanceof Long id ? id : null;
+    }
+
     /*Devuelve true si el usuario del token es idusuario. No falla si la petición es anónima.*/
     public static boolean esUsuarioActual(Long idusuario) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();

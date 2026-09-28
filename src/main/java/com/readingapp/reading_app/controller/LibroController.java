@@ -1,7 +1,9 @@
 package com.readingapp.reading_app.controller;
 
 import com.readingapp.reading_app.config.SecurityUtils;
+import com.readingapp.reading_app.dto.CatalogoDTO;
 import com.readingapp.reading_app.dto.LibroDTO;
+import com.readingapp.reading_app.service.CatalogoService;
 import com.readingapp.reading_app.service.GoogleBooksService;
 import com.readingapp.reading_app.service.LibroService;
 import jakarta.validation.Valid;
@@ -23,6 +25,7 @@ public class LibroController {
 
     private final LibroService libroService;
     private final GoogleBooksService googleBooksService;
+    private final CatalogoService catalogoService;
 
     @PostMapping
     public ResponseEntity<LibroDTO.Response> crear(@Valid @RequestBody LibroDTO.CreateRequest request) {
@@ -64,6 +67,19 @@ public class LibroController {
     public ResponseEntity<Void> eliminar(@PathVariable Long id) {
         libroService.eliminar(id);
         return ResponseEntity.noContent().build();
+    }
+
+    /*Catálogo completo: libro destacado, filas temáticas y por categoría (con libros aleatorios en cada visita).*/
+    @GetMapping("/catalogo")
+    public ResponseEntity<CatalogoDTO.Response> obtenerCatalogo() {
+        return ResponseEntity.ok(catalogoService.obtenerCatalogo());
+    }
+
+    @GetMapping("/categoria/{slug}")
+    public ResponseEntity<CatalogoDTO.PaginaCategoria> obtenerPorCategoria(@PathVariable String slug,
+                                                                         @RequestParam(defaultValue = "0") int page,
+                                                                         @RequestParam(defaultValue = "24") int size) {
+        return ResponseEntity.ok(catalogoService.obtenerPorCategoria(slug, Math.max(page, 0), Math.min(Math.max(size, 1), 60)));
     }
 
     @GetMapping("/generos")
