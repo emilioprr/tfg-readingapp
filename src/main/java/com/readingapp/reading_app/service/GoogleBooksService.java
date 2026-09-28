@@ -13,7 +13,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 @RequiredArgsConstructor
@@ -27,6 +30,12 @@ public class GoogleBooksService {
 
     @Value("${google.books.api.key}")
     private String apiKey;
+
+    // Caché de búsquedas: cada entrada es la respuesta de una petición (consulta + página)
+    private static final Duration DURACION_CACHE = Duration.ofHours(6);
+    private static final int MAX_ENTRADAS_CACHE = 1000;
+    private record EntradaCache(List<Map<String, Object>> items, Instant caduca) {}
+    private final Map<String, EntradaCache> cacheBusquedas = new ConcurrentHashMap<>();
 
     private static final String GOOGLE_BOOKS_URL =
             "https://www.googleapis.com/books/v1/volumes?q={query}&startIndex={startIndex}&maxResults={maxResults}&langRestrict={lang}&key={key}";
@@ -121,43 +130,117 @@ public class GoogleBooksService {
 
     // ==================== BÚSQUEDA (SIN GUARDAR) ====================
 
-    /** Busca en Google Books SIN guardar nada. Excluye los libros que ya existen en local. */
+    /**
+     * Busca en Google Books SIN guardar nada. Excluye los libros que ya existen en local.
+     *
+     * La primera tanda combina una búsqueda por título ("intitle") con la búsqueda general y la reordena
+     * por relevancia propia (ver {@link RelevanciaBusqueda}); las siguientes tandas continúan la búsqueda
+     * general. En ambos casos se deja una sola edición de cada obra.
+     */
     public Map<String, Object> buscarEnGoogle(String query, int startIndex) {
-        List<LibroDTO.BusquedaResponse> resultados = new ArrayList<>();
-        Set<String> vistos = new HashSet<>();
+        List<Map<String, Object>> candidatos = new ArrayList<>();
         int index = startIndex;
         boolean agotado = false;
+
+        if (startIndex == 0) {
+            String frase = "\"" + query.replace("\"", "") + "\"";
+            // Google Books a veces responde vacío de forma puntual: se reintenta una vez porque es la búsqueda que más aporta
+            List<Map<String, Object>> porTitulo = pedirGoogle("intitle:" + frase, 0);
+            if (porTitulo.isEmpty()) porTitulo = pedirGoogle("intitle:" + frase, 0);
+            candidatos.addAll(porTitulo);
+            candidatos.addAll(pedirGoogle("inauthor:" + frase, 0));
+        }
+
+        // Al menos una petición de la búsqueda general (hasta 3 si hace falta para tener una tanda decente)
         int peticiones = 0;
-
-        // Hasta 3 peticiones para asegurar una tanda decente tras filtrar duplicados
-        while (resultados.size() < 10 && peticiones < 3) {
+        while (peticiones == 0 || (candidatos.size() < 20 && peticiones < 3)) {
             peticiones++;
-            Map<String, Object> response;
-            try {
-                response = restTemplate.getForObject(GOOGLE_SEARCH_URL, Map.class, query, index, apiKey);
-            } catch (Exception e) {
-                log.error("Error buscando en Google Books: {}", e.getMessage());
-                break;
-            }
-
-            if (response == null || !response.containsKey("items")) {
+            List<Map<String, Object>> items = pedirGoogle(query, index);
+            if (items.isEmpty()) {
                 agotado = true;
                 break;
             }
-
-            List<Map<String, Object>> items = (List<Map<String, Object>>) response.get("items");
             index += items.size();
-
-            for (Map<String, Object> item : items) {
-                String idExterno = (String) item.get("id");
-                if (idExterno == null || !vistos.add(idExterno)) continue;
-                if (buscarLocalEquivalente(item).isPresent()) continue;
-                LibroDTO.BusquedaResponse dto = toBusquedaDTO(item);
-                if (dto != null) resultados.add(dto);
-            }
+            candidatos.addAll(items);
         }
 
-        return Map.of("resultados", resultados, "siguienteIndex", index, "hayMas", !agotado);
+        return Map.of("resultados", ordenarPorRelevancia(candidatos, query),
+                "siguienteIndex", index, "hayMas", !agotado);
+    }
+
+    /**
+     * Una petición a Google Books, con caché en memoria: las búsquedas repetidas ("harry potter", "el principito"...)
+     * no gastan cuota y responden al instante. Las respuestas vacías no se guardan, porque a veces son fallos puntuales.
+     */
+    private List<Map<String, Object>> pedirGoogle(String query, int startIndex) {
+        String clave = query.trim().toLowerCase() + "|" + startIndex;
+        EntradaCache enCache = cacheBusquedas.get(clave);
+        if (enCache != null && enCache.caduca().isAfter(Instant.now())) return enCache.items();
+
+        try {
+            Map<String, Object> response = restTemplate.getForObject(GOOGLE_SEARCH_URL, Map.class, query, startIndex, apiKey);
+            if (response == null || !response.containsKey("items")) return List.of();
+            List<Map<String, Object>> items = (List<Map<String, Object>>) response.get("items");
+            guardarEnCache(clave, items);
+            return items;
+        } catch (Exception e) {
+            log.error("Error buscando en Google Books: {}", e.getMessage());
+            return List.of();
+        }
+    }
+
+    private void guardarEnCache(String clave, List<Map<String, Object>> items) {
+        if (cacheBusquedas.size() >= MAX_ENTRADAS_CACHE) {
+            cacheBusquedas.values().removeIf(e -> e.caduca().isBefore(Instant.now()));
+            if (cacheBusquedas.size() >= MAX_ENTRADAS_CACHE) cacheBusquedas.clear();
+        }
+        cacheBusquedas.put(clave, new EntradaCache(items, Instant.now().plus(DURACION_CACHE)));
+    }
+
+    /** Quita repetidos, libros ya existentes en local y ediciones duplicadas; ordena por relevancia. */
+    private List<LibroDTO.BusquedaResponse> ordenarPorRelevancia(List<Map<String, Object>> items, String query) {
+        record Valido(LibroDTO.BusquedaResponse libro, Map<String, Object> info, int posicion) {}
+        record Puntuado(LibroDTO.BusquedaResponse libro, double puntos, int posicion) {}
+
+        List<Valido> validos = new ArrayList<>();
+        Set<String> vistos = new HashSet<>();
+        for (int i = 0; i < items.size(); i++) {
+            Map<String, Object> item = items.get(i);
+            String idExterno = (String) item.get("id");
+            if (idExterno == null || !vistos.add(idExterno)) continue;
+
+            LibroDTO.BusquedaResponse dto = toBusquedaDTO(item);
+            if (dto == null || buscarLocalEquivalente(item).isPresent()) continue;
+            validos.add(new Valido(dto, (Map<String, Object>) item.get("volumeInfo"), i));
+        }
+
+        boolean busquedaDeAutor = RelevanciaBusqueda.esBusquedaDeAutor(query,
+                validos.stream().map(v -> v.libro().getNombreAutor()).toList());
+
+        List<Puntuado> puntuados = new ArrayList<>();
+        for (Valido v : validos) {
+            Number valoraciones = (Number) v.info().get("ratingsCount");
+            double puntos = RelevanciaBusqueda.puntuar(query, new RelevanciaBusqueda.Candidato(
+                            v.libro().getTitulo(), v.libro().getNombreAutor(),
+                            valoraciones != null ? valoraciones.intValue() : null,
+                            v.libro().getPortada() != null, v.libro().getSinopsis() != null,
+                            (String) v.info().get("language")),
+                    busquedaDeAutor);
+            puntuados.add(new Puntuado(v.libro(), puntos, v.posicion()));
+        }
+
+        // Mejor puntuación primero; a igualdad, se respeta el orden de Google
+        puntuados.sort(Comparator.comparingDouble(Puntuado::puntos).reversed().thenComparingInt(Puntuado::posicion));
+
+        // Una sola edición por obra: la mejor puntuada
+        List<LibroDTO.BusquedaResponse> resultado = new ArrayList<>();
+        for (Puntuado p : puntuados) {
+            LibroDTO.BusquedaResponse libro = p.libro();
+            boolean repetido = resultado.stream().anyMatch(r -> RelevanciaBusqueda.mismaObra(
+                    r.getTitulo(), r.getNombreAutor(), libro.getTitulo(), libro.getNombreAutor()));
+            if (!repetido) resultado.add(libro);
+        }
+        return resultado;
     }
 
     /** Importa UN libro concreto cuando el usuario lo abre. Devuelve su id local. */

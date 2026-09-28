@@ -18,7 +18,10 @@ public interface LibroRepository extends JpaRepository<Libro, Long> {
             "WHERE (LOWER(unaccent(l.titulo)) LIKE LOWER(unaccent(CONCAT('%', :texto, '%'))) " +
             "OR LOWER(unaccent(a.nombre)) LIKE LOWER(unaccent(CONCAT('%', :texto, '%')))) " +
             "AND l.idlibro = (SELECT MIN(l2.idlibro) FROM libro l2 WHERE l2.titulo = l.titulo AND l2.idautor = l.idautor) " +
-            "ORDER BY CASE WHEN LOWER(unaccent(l.titulo)) LIKE LOWER(unaccent(CONCAT('%', :texto, '%'))) THEN 0 ELSE 1 END, l.idlibro",
+            "ORDER BY CASE WHEN LOWER(unaccent(l.titulo)) = LOWER(unaccent(:texto)) THEN 0 " +
+            "WHEN LOWER(unaccent(l.titulo)) LIKE LOWER(unaccent(CONCAT(:texto, '%'))) THEN 1 " +
+            "WHEN LOWER(unaccent(l.titulo)) LIKE LOWER(unaccent(CONCAT('%', :texto, '%'))) THEN 2 ELSE 3 END, " +
+            "LENGTH(l.titulo), l.idlibro",
             countQuery = "SELECT COUNT(*) FROM libro l JOIN autor a ON l.idautor = a.idautor " +
                     "WHERE (LOWER(unaccent(l.titulo)) LIKE LOWER(unaccent(CONCAT('%', :texto, '%'))) " +
                     "OR LOWER(unaccent(a.nombre)) LIKE LOWER(unaccent(CONCAT('%', :texto, '%')))) " +
