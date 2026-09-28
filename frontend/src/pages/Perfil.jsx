@@ -7,6 +7,17 @@ import LibroCard from '../components/LibroCard'
 import ListaCard from '../components/ListaCard'
 import api from '../api/axios'
 
+/** Formato corto para contadores: 950 → 950, 1.234 → 1,2K, 1.500.000 → 1,5M.
+ *  Se trunca (no redondea) para no mostrar más de lo que hay, p. ej. 999.999 → 999,9K. */
+const formatoCorto = (n) => {
+    if (n == null) return 0
+    const corto = (valor, sufijo) =>
+        (Math.floor(valor * 10) / 10).toLocaleString('es-ES', { maximumFractionDigits: 1 }) + sufijo
+    if (n >= 1_000_000) return corto(n / 1_000_000, 'M')
+    if (n >= 1_000) return corto(n / 1_000, 'K')
+    return n
+}
+
 export default function Perfil() {
     const { id } = useParams()
     const { usuario } = useAuth()
@@ -27,12 +38,15 @@ export default function Perfil() {
     const [leidosLibros, setLeidosLibros] = useState([])
     const [pendientesLibros, setPendientesLibros] = useState([])
     const [abandonadosLibros, setAbandonadosLibros] = useState([])
-    const [rachaPerfil, setRachaPerfil] = useState(null)
+    const [estadisticas, setEstadisticas] = useState(null)
+    const [leyendoIndex, setLeyendoIndex] = useState(0)
 
 
     useEffect(() => {
         if (perfilId) {
             cargarPerfil()
+            cargarEstadisticas()
+            setLeyendoIndex(0)
             cargarFavoritos()
             cargarLecturasRecientes()
             cargarResenas()
@@ -153,14 +167,15 @@ export default function Perfil() {
         } catch (err) { console.error('Error:', err) }
     }
 
-    const cargarRachaPerfil = async () => {
-        try { const res = await api.get(`/racha/usuario/${perfilId}`); setRachaPerfil(res.data) }
+    const cargarEstadisticas = async () => {
+        try { const res = await api.get(`/usuarios/${perfilId}/perfil`); setEstadisticas(res.data) }
         catch (err) { console.error('Error:', err) }
     }
 
     if (loading) return <p className="text-dark-muted">Cargando...</p>
     if (!perfil) return <p className="text-red-400">Usuario no encontrado</p>
 
+    const libroLeyendo = leyendoLibros[leyendoIndex] ?? leyendoLibros[0]
     const favoritosSlots = [...favoritos.slice(0, 5)]
     while (favoritosSlots.length < 5) favoritosSlots.push(null)
 
@@ -175,58 +190,113 @@ export default function Perfil() {
     return (
         <div className="max-w-4xl mx-auto">
 
-            {/* Header */}
-            <div className="text-center mb-8">
-                <div className="flex justify-center mb-4">
+            {/* Header: foto y texto a la izquierda; estadísticas y lectura actual a la derecha */}
+            <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-8 mb-10">
+                <div className="flex items-start gap-5 min-w-0">
                     {perfil.avatar ? (
                         <img src={perfil.avatar} alt={perfil.nombre}
-                             className="w-28 h-28 rounded-full object-cover ring-4 ring-dark-border" />
+                             className="w-24 h-24 rounded-full object-cover ring-4 ring-dark-border flex-shrink-0" />
                     ) : (
-                        <div className="w-28 h-28 bg-terra/20 rounded-full flex items-center justify-center text-terra text-5xl font-bold ring-4 ring-dark-border">
+                        <div className="w-24 h-24 bg-terra/20 rounded-full flex items-center justify-center text-terra text-4xl font-bold ring-4 ring-dark-border flex-shrink-0">
                             {perfil.nombre?.charAt(0).toUpperCase()}
                         </div>
                     )}
-                </div>
 
-                <h1 className="text-3xl font-bold text-dark-text tracking-tight mb-1">{perfil.nombre}</h1>
+                    <div className="min-w-0">
+                        <h1 className="text-3xl font-bold text-dark-text tracking-tight">{perfil.nombre}</h1>
 
-                {perfil.biografia ? (
-                    <p className="text-dark-muted text-sm max-w-md mx-auto leading-relaxed mt-2">{perfil.biografia}</p>
-                ) : (
-                    <p className="text-dark-muted/50 text-sm mt-2 italic">Sin biografía</p>
-                )}
+                        {perfil.biografia ? (
+                            <p className="text-dark-muted text-sm leading-relaxed mt-1.5 max-w-md">{perfil.biografia}</p>
+                        ) : (
+                            <p className="text-dark-muted/50 text-sm mt-1.5 italic">Sin biografía</p>
+                        )}
 
-                <div className="flex items-center justify-center gap-6 mt-4 text-sm text-dark-muted">
-                    <span>{perfil.seguidores || 0} seguidores</span>
-                    <span className="w-1 h-1 bg-dark-border rounded-full" />
-                    <span>Miembro desde {perfil.fechaAlta}</span>
-                </div>
-
-                {rachaPerfil && (
-                    <div className="flex items-center justify-center gap-3 mt-3 text-sm">
-                        <span className="text-dark-muted">🔥 Racha: {rachaPerfil.racha} · Mejor: {rachaPerfil.mejorRacha}</span>
-                        {rachaPerfil.insignias?.map((h) => (
-                            <span key={h} className="text-xs bg-orange-500/15 text-orange-400 px-2 py-0.5 rounded-full">🏅 {h} días</span>
-                        ))}
+                        <div className="mt-3">
+                            {esMio ? (
+                                <Link to="/editar-perfil"
+                                      className="inline-block border border-dark-border text-dark-muted hover:border-terra hover:text-terra px-4 py-1.5 rounded-lg text-sm transition-colors">
+                                    Editar perfil
+                                </Link>
+                            ) : usuario && (
+                                <button onClick={toggleSeguir}
+                                        className={`px-5 py-1.5 rounded-lg text-sm font-semibold transition-colors ${
+                                            siguiendo
+                                                ? 'border border-dark-border text-dark-text hover:border-red-400 hover:text-red-400'
+                                                : 'bg-terra hover:bg-terra-hover text-white'
+                                        }`}>
+                                    {siguiendo ? 'Dejar de seguir' : 'Seguir'}
+                                </button>
+                            )}
+                        </div>
                     </div>
-                )}
+                </div>
 
-                <div className="mt-4">
-                    {esMio ? (
-                        <Link to="/editar-perfil"
-                              className="inline-block border border-dark-border text-dark-muted hover:border-terra hover:text-terra px-4 py-1.5 rounded-lg text-sm transition-colors">
-                            Editar perfil
-                        </Link>
-                    ) : usuario && (
-                        <button onClick={toggleSeguir}
-                                className={`px-5 py-1.5 rounded-lg text-sm font-semibold transition-colors ${
-                                    siguiendo
-                                        ? 'border border-dark-border text-dark-text hover:border-red-400 hover:text-red-400'
-                                        : 'bg-terra hover:bg-terra-hover text-white'
-                                }`}>
-                            {siguiendo ? 'Dejar de seguir' : 'Seguir'}
-                        </button>
+                <div className="md:w-72 flex-shrink-0 flex flex-col gap-3">
+                    {/* Estadísticas */}
+                    {estadisticas && (
+                        <div className="flex flex-wrap gap-x-4 gap-y-1">
+                            {[
+                                { valor: estadisticas.librosLeidos, label: 'libros leídos' },
+                                { valor: estadisticas.paginasLeidas, label: 'páginas' },
+                                { valor: estadisticas.resenasEscritas, label: 'reseñas' },
+                            ].map((e) => (
+                                <p key={e.label} className="text-dark-muted text-sm" title={e.valor?.toLocaleString('es-ES')}>
+                                    <span className="text-dark-text font-bold mr-1">{formatoCorto(e.valor)}</span>
+                                    {e.label}
+                                </p>
+                            ))}
+                        </div>
                     )}
+
+                    {/* Leyendo ahora (carrusel compacto) */}
+                    <div className="bg-dark-card rounded-xl px-3 py-2.5">
+                        <div className="flex items-center justify-between mb-2">
+                            <span className="text-xs text-dark-muted">Leyendo ahora</span>
+                            {leyendoLibros.length > 1 && (
+                                <div className="flex items-center gap-1.5">
+                                    <button onClick={() => setLeyendoIndex(i => i === 0 ? leyendoLibros.length - 1 : i - 1)}
+                                            className="text-dark-muted hover:text-terra transition-colors" title="Anterior">
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                                        </svg>
+                                    </button>
+                                    {leyendoLibros.map((_, i) => (
+                                        <button key={i} onClick={() => setLeyendoIndex(i)}
+                                                className={`w-1.5 h-1.5 rounded-full transition-colors ${i === leyendoIndex ? 'bg-terra' : 'bg-dark-border hover:bg-dark-muted'}`} />
+                                    ))}
+                                    <button onClick={() => setLeyendoIndex(i => i === leyendoLibros.length - 1 ? 0 : i + 1)}
+                                            className="text-dark-muted hover:text-terra transition-colors" title="Siguiente">
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+
+                        {!libroLeyendo ? (
+                            <p className="text-dark-muted/70 text-xs">Nada ahora mismo</p>
+                        ) : (
+                            <Link to={`/libro/${libroLeyendo.idlibro}`} className="group flex items-center gap-3">
+                                {libroLeyendo.portadaLibro ? (
+                                    <img src={libroLeyendo.portadaLibro} alt={libroLeyendo.tituloLibro}
+                                         className="w-8 h-12 object-cover rounded-sm flex-shrink-0" />
+                                ) : (
+                                    <div className="w-8 h-12 bg-dark-elevated rounded-sm flex-shrink-0" />
+                                )}
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-dark-text text-sm truncate group-hover:text-terra transition-colors">{libroLeyendo.tituloLibro}</p>
+                                    <div className="flex items-center gap-2 mt-1.5">
+                                        <div className="bg-dark-border rounded-full h-1 flex-1">
+                                            <div className="bg-gradient-to-r from-orange-500 to-amber-500 h-1 rounded-full"
+                                                 style={{ width: `${libroLeyendo.porcentaje || 0}%` }} />
+                                        </div>
+                                        <span className="text-dark-muted text-xs">{libroLeyendo.porcentaje || 0}%</span>
+                                    </div>
+                                </div>
+                            </Link>
+                        )}
+                    </div>
                 </div>
             </div>
 

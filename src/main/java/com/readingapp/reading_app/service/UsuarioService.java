@@ -1,9 +1,13 @@
 package com.readingapp.reading_app.service;
 
+import com.readingapp.reading_app.config.SecurityUtils;
 import com.readingapp.reading_app.dto.UsuarioDTO;
 import com.readingapp.reading_app.model.Lista;
 import com.readingapp.reading_app.model.Usuario;
+import com.readingapp.reading_app.model.enums.EstadoLectura;
 import com.readingapp.reading_app.repository.ListaRepository;
+import com.readingapp.reading_app.repository.ResenaRepository;
+import com.readingapp.reading_app.repository.SeguimientoRepository;
 import com.readingapp.reading_app.repository.UsuarioRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +25,8 @@ public class UsuarioService {
     private final UsuarioRepository usuarioRepository;
     private final PasswordEncoder passwordEncoder;
     private final NotificacionService notificacionService;
+    private final SeguimientoRepository seguimientoRepository;
+    private final ResenaRepository resenaRepository;
 
     @Transactional
     public UsuarioDTO.Response registrar(UsuarioDTO.RegistroRequest request) {
@@ -54,17 +60,21 @@ public class UsuarioService {
         return toResponse(usuario);
     }
 
+    /*Estadísticas del perfil. Las reseñas privadas solo cuentan para el propio usuario.*/
     public UsuarioDTO.PerfilResponse obtenerPerfil(Long id) {
         Usuario usuario = buscarPorId(id);
+        long resenas = SecurityUtils.esUsuarioActual(id)
+                ? resenaRepository.countByUsuarioIdusuario(id)
+                : resenaRepository.countByUsuarioIdusuarioAndEsPublicaTrue(id);
+
         return UsuarioDTO.PerfilResponse.builder()
                 .idusuario(usuario.getIdusuario())
                 .nombre(usuario.getNombre())
                 .biografia(usuario.getBiografia())
                 .avatar(usuario.getAvatar())
-                .seguidores(usuario.getSeguidoresList() != null ? usuario.getSeguidoresList().size() : 0)
-                .seguidos(usuario.getSeguidos() != null ? usuario.getSeguidos().size() : 0)
-                .librosLeidos(usuario.getResenas() != null ? usuario.getResenas().size() : 0)
-                .resenasEscritas(usuario.getResenas() != null ? usuario.getResenas().size() : 0)
+                .librosLeidos(seguimientoRepository.countByUsuarioIdusuarioAndEstado(id, EstadoLectura.LEIDO))
+                .paginasLeidas(seguimientoRepository.sumPaginasByUsuario(id))
+                .resenasEscritas(resenas)
                 .build();
     }
 

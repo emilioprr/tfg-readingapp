@@ -38,15 +38,14 @@ public class UsuarioDTO {
     }
 
     @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
-    /*Lo que la API devuelve en la página de perfil de uno mismo.*/
+    /*Estadísticas de lectura que se muestran en la página de perfil.*/
     public static class PerfilResponse {
         private Long idusuario;
         private String nombre;
         private String biografia;
         private String avatar;
-        private Integer seguidores;
-        private Integer seguidos;
-        private Integer librosLeidos;
-        private Integer resenasEscritas;
+        private Long librosLeidos;
+        private Long paginasLeidas;
+        private Long resenasEscritas;
     }
 }

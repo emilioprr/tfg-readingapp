@@ -19,6 +19,8 @@ public interface ResenaRepository extends JpaRepository<Resena, Long> {
     Page<Resena> findByEsPublicaTrue(Pageable pageable);
     Optional<Resena> findByUsuarioIdusuarioAndLibroIdlibro(Long idusuario, Long idlibro);
     long countByUsuarioIdusuarioAndLibroIdlibro(Long idusuario, Long idlibro);
+    long countByUsuarioIdusuario(Long idusuario);
+    long countByUsuarioIdusuarioAndEsPublicaTrue(Long idusuario);
     @Query("SELECT r FROM Resena r WHERE r.libro.idlibro = :idlibro AND r.esPublica = true ORDER BY SIZE(r.likes) DESC")
     Page<Resena> findByLibroIdlibroAndEsPublicaTrueOrderByLikesDesc(@Param("idlibro") Long idlibro, Pageable pageable);
     @Query("SELECT r FROM Resena r WHERE r.usuario.idusuario = :idusuario AND r.esPublica = true ORDER BY SIZE(r.likes) DESC")
