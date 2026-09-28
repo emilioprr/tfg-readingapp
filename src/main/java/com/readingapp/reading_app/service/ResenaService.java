@@ -53,12 +53,7 @@ public class ResenaService {
             throw new IllegalArgumentException("Ya has reseñado todas tus lecturas de este libro");
         }
 
-        if (request.getPuntuacion() != null) {
-            double val = request.getPuntuacion().doubleValue();
-            if (val % 0.5 != 0) {
-                throw new IllegalArgumentException("La puntuación debe ser en intervalos de 0.5");
-            }
-        }
+        validarPuntuacion(request.getPuntuacion());
 
         Resena resena = Resena.builder()
                 .texto(request.getTexto())
@@ -112,6 +107,7 @@ public class ResenaService {
     public ResenaDTO.Response actualizar(Long id, ResenaDTO.UpdateRequest request) {
         Resena resena = buscarPorId(id);
         SecurityUtils.validarUsuario(resena.getUsuario().getIdusuario());
+        validarPuntuacion(request.getPuntuacion());
         if (request.getTexto() != null) resena.setTexto(request.getTexto());
         if (request.getPuntuacion() != null) resena.setPuntuacion(request.getPuntuacion());
         if (request.getRitmo() != null) resena.setRitmo(request.getRitmo());
@@ -154,6 +150,13 @@ public class ResenaService {
         Resena resena = buscarPorId(resenaId);
         usuario.getResenasLikeadas().remove(resena);
         usuarioRepository.save(usuario);
+    }
+
+    /** La nota va de 0,5 en 0,5 (medias estrellas); el rango 0,5-5 lo valida el DTO. */
+    private void validarPuntuacion(java.math.BigDecimal puntuacion) {
+        if (puntuacion != null && puntuacion.doubleValue() % 0.5 != 0) {
+            throw new IllegalArgumentException("La puntuación debe ser en intervalos de 0.5");
+        }
     }
 
     private Resena buscarPorId(Long id) {
