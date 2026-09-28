@@ -40,13 +40,13 @@ public class AuthService {
     public AuthDTO.AuthResponse registro(UsuarioDTO.RegistroRequest request) {
         UsuarioDTO.Response usuario = usuarioService.registrar(request);
 
-        String token = jwtUtil.generateToken(usuario.getIdusuario(), usuario.getEmail(), "USER");
+        String token = jwtUtil.generateToken(usuario.getIdusuario(), request.getEmail(), "USER");
 
         return AuthDTO.AuthResponse.builder()
                 .token(token)
                 .idusuario(usuario.getIdusuario())
                 .nombre(usuario.getNombre())
-                .email(usuario.getEmail())
+                .email(request.getEmail())
                 .rol("USER")
                 .build();
     }

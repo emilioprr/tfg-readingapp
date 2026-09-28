@@ -1,5 +1,6 @@
 package com.readingapp.reading_app.service;
 
+import com.readingapp.reading_app.config.SecurityUtils;
 import com.readingapp.reading_app.dto.AutorDTO;
 import com.readingapp.reading_app.model.Autor;
 import com.readingapp.reading_app.model.Usuario;
@@ -21,6 +22,7 @@ public class AutorService {
 
     @Transactional
     public AutorDTO.Response crear(AutorDTO.CreateRequest request) {
+        SecurityUtils.validarAdmin();
         Autor autor = Autor.builder()
                 .nombre(request.getNombre())
                 .biografia(request.getBiografia())
@@ -51,6 +53,7 @@ public class AutorService {
 
     @Transactional
     public AutorDTO.Response actualizar(Long id, AutorDTO.CreateRequest request) {
+        SecurityUtils.validarAdmin();
         Autor autor = buscarPorId(id);
 
         if (request.getNombre() != null) autor.setNombre(request.getNombre());
@@ -86,6 +89,7 @@ public class AutorService {
 
     @Transactional
     public void eliminar(Long id) {
+        SecurityUtils.validarAdmin();
         if (!autorRepository.existsById(id)) {
             throw new EntityNotFoundException("Autor no encontrado");
         }

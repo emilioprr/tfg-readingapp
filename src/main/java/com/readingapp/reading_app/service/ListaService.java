@@ -44,11 +44,17 @@ public class ListaService {
 
     public ListaDTO.DetalleResponse obtenerPorId(Long id) {
         Lista lista = buscarPorId(id);
+        if (!lista.getEsPublica()) {
+            SecurityUtils.validarUsuarioOAdmin(lista.getUsuario().getIdusuario());
+        }
         return toDetalleResponse(lista);
     }
 
+    /*El propio usuario ve todas sus listas; los demás solo las públicas.*/
     public List<ListaDTO.Response> obtenerPorUsuario(Long usuarioId) {
+        boolean esPropio = SecurityUtils.esUsuarioActual(usuarioId);
         return listaRepository.findByUsuarioIdusuario(usuarioId).stream()
+                .filter(lista -> esPropio || lista.getEsPublica())
                 .map(this::toResponse)
                 .toList();
     }

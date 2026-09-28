@@ -63,29 +63,38 @@ public class AnotacionService {
 
     public AnotacionDTO.Response obtenerPorId(Long id) {
         Anotacion anotacion = buscarPorId(id);
+        if (!anotacion.getEsPublica()) {
+            SecurityUtils.validarUsuarioOAdmin(anotacion.getUsuario().getIdusuario());
+        }
         return toResponse(anotacion);
     }
 
+    /*El propio usuario ve todas sus anotaciones; los demás solo las públicas.*/
     public List<AnotacionDTO.Response> obtenerPorUsuario(Long idusuario, Pageable pageable) {
-        return anotacionRepository.findByUsuarioIdusuario(idusuario, pageable).stream()
+        List<Anotacion> anotaciones = SecurityUtils.esUsuarioActual(idusuario)
+                ? anotacionRepository.findByUsuarioIdusuario(idusuario, pageable)
+                : anotacionRepository.findByUsuarioIdusuarioAndEsPublicaTrue(idusuario, pageable);
+        return anotaciones.stream()
                 .map(this::toResponse)
                 .toList();
     }
 
     public List<AnotacionDTO.Response> obtenerPorLibro(Long idlibro, Pageable pageable) {
-        return anotacionRepository.findByLibroIdlibro(idlibro, pageable).stream()
-                .map(this::toResponse)
-                .toList();
+        return obtenerPublicasPorLibro(idlibro, pageable);
     }
 
     public List<AnotacionDTO.Response> obtenerPorUsuarioYLibro(Long idusuario, Long idlibro) {
+        SecurityUtils.validarUsuario(idusuario);
         return anotacionRepository.findByUsuarioIdusuarioAndLibroIdlibro(idusuario, idlibro).stream()
                 .map(this::toResponse)
                 .toList();
     }
 
     public List<AnotacionDTO.Response> obtenerPorUsuarioYTipo(Long idusuario, TipoAnotacion tipo, Pageable pageable) {
-        return anotacionRepository.findByUsuarioIdusuarioAndTipo(idusuario, tipo, pageable).stream()
+        List<Anotacion> anotaciones = SecurityUtils.esUsuarioActual(idusuario)
+                ? anotacionRepository.findByUsuarioIdusuarioAndTipo(idusuario, tipo, pageable)
+                : anotacionRepository.findByUsuarioIdusuarioAndTipoAndEsPublicaTrue(idusuario, tipo, pageable);
+        return anotaciones.stream()
                 .map(this::toResponse)
                 .toList();
     }

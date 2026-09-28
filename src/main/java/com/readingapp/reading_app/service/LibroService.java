@@ -33,6 +33,7 @@ public class LibroService {
 
     @Transactional
     public LibroDTO.Response crear(LibroDTO.CreateRequest request) {
+        SecurityUtils.validarAdmin();
         Autor autor = autorRepository.findById(request.getIdautor())
                 .orElseThrow(() -> new EntityNotFoundException("Autor no encontrado"));
 
@@ -104,6 +105,7 @@ public class LibroService {
 
     @Transactional
     public void eliminar(Long id) {
+        SecurityUtils.validarAdmin();
         if (!libroRepository.existsById(id)) {
             throw new EntityNotFoundException("Libro no encontrado");
         }

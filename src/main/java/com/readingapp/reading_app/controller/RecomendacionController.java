@@ -26,16 +26,19 @@ public class RecomendacionController {
 
     @GetMapping("/recibidas/{idusuario}")
     public ResponseEntity<List<RecomendacionDTO.Response>> obtenerRecibidas(@PathVariable Long idusuario) {
+        SecurityUtils.validarUsuario(idusuario);
         return ResponseEntity.ok(recomendacionService.obtenerRecibidas(idusuario));
     }
 
     @GetMapping("/enviadas/{idusuario}")
     public ResponseEntity<List<RecomendacionDTO.Response>> obtenerEnviadas(@PathVariable Long idusuario) {
+        SecurityUtils.validarUsuario(idusuario);
         return ResponseEntity.ok(recomendacionService.obtenerEnviadas(idusuario));
     }
 
     @GetMapping("/no-vistas/{idusuario}")
     public ResponseEntity<List<RecomendacionDTO.Response>> obtenerNoVistas(@PathVariable Long idusuario) {
+        SecurityUtils.validarUsuario(idusuario);
         return ResponseEntity.ok(recomendacionService.obtenerNoVistas(idusuario));
     }
 

@@ -31,7 +31,6 @@ public class UsuarioDTO {
     public static class Response {
         private Long idusuario;
         private String nombre;
-        private String email;
         private String biografia;
         private String avatar;
         private String fechaAlta;

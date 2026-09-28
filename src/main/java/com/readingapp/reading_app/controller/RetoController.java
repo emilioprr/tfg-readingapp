@@ -22,6 +22,9 @@ public class RetoController {
 
     @PostMapping
     public ResponseEntity<RetoDTO.Response> crear(@Valid @RequestBody RetoDTO.CreateRequest request) {
+        if (request.getIdCreador() != null) {
+            SecurityUtils.validarUsuario(request.getIdCreador());
+        }
         return ResponseEntity.status(HttpStatus.CREATED).body(retoService.crear(request));
     }
 

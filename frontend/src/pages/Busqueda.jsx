@@ -77,6 +77,9 @@ export default function Busqueda() {
                 localAgotado.current = true
             }
 
+            // Google Books solo para usuarios con sesión (el backend lo exige)
+            if (!usuario) googleAgotado.current = true
+
             if (!googleAgotado.current) {
                 setBuscandoExternos(true)
                 const res = await api.get(`/libros/buscar/google?q=${encodeURIComponent(query)}&startIndex=${googleIndex.current}`)

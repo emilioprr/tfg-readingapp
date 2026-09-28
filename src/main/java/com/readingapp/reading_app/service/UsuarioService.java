@@ -159,7 +159,6 @@ public class UsuarioService {
         return UsuarioDTO.Response.builder()
                 .idusuario(usuario.getIdusuario())
                 .nombre(usuario.getNombre())
-                .email(usuario.getEmail())
                 .biografia(usuario.getBiografia())
                 .avatar(usuario.getAvatar())
                 .fechaAlta(usuario.getFechaAlta() != null ? usuario.getFechaAlta().toString() : null)

@@ -1,5 +1,6 @@
 package com.readingapp.reading_app.service;
 
+import com.readingapp.reading_app.config.SecurityUtils;
 import com.readingapp.reading_app.dto.SeguimientoDTO;
 import com.readingapp.reading_app.model.Libro;
 import com.readingapp.reading_app.model.Seguimiento;
@@ -148,10 +149,10 @@ public class SeguimientoService {
 
     @Transactional
     public void eliminar(Long id) {
-        if (!seguimientoRepository.existsById(id)) {
-            throw new EntityNotFoundException("Seguimiento no encontrado");
-        }
-        seguimientoRepository.deleteById(id);
+        Seguimiento seguimiento = seguimientoRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Seguimiento no encontrado"));
+        SecurityUtils.validarUsuarioOAdmin(seguimiento.getUsuario().getIdusuario());
+        seguimientoRepository.delete(seguimiento);
     }
 
     // === HELPERS ===

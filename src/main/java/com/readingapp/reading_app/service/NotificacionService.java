@@ -65,10 +65,10 @@ public class NotificacionService {
 
     @Transactional
     public void eliminar(Long id) {
-        if (!notificacionRepository.existsById(id)) {
-            throw new EntityNotFoundException("Notificación no encontrada");
-        }
-        notificacionRepository.deleteById(id);
+        Notificacion notificacion = notificacionRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Notificación no encontrada"));
+        SecurityUtils.validarUsuario(notificacion.getUsuario().getIdusuario());
+        notificacionRepository.delete(notificacion);
     }
 
     // === MÉTODOS PARA CREAR NOTIFICACIONES DESDE OTROS SERVICIOS ===

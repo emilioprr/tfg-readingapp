@@ -85,7 +85,11 @@ public class ResenaService {
     }
 
     public ResenaDTO.Response obtenerPorId(Long id) {
-        return toResponse(buscarPorId(id));
+        Resena resena = buscarPorId(id);
+        if (!resena.getEsPublica()) {
+            SecurityUtils.validarUsuarioOAdmin(resena.getUsuario().getIdusuario());
+        }
+        return toResponse(resena);
     }
 
     public Page<ResenaDTO.Response> obtenerPorUsuario(Long idusuario, Pageable pageable) {

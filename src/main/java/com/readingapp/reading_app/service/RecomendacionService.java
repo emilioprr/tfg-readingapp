@@ -85,10 +85,14 @@ public class RecomendacionService {
 
     @Transactional
     public void eliminar(Long id) {
-        if (!recomendacionRepository.existsById(id)) {
-            throw new EntityNotFoundException("Recomendación no encontrada");
+        Recomendacion recomendacion = recomendacionRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Recomendación no encontrada"));
+        boolean esEmisor = recomendacion.getEmisor() != null
+                && SecurityUtils.esUsuarioActual(recomendacion.getEmisor().getIdusuario());
+        if (!esEmisor) {
+            SecurityUtils.validarUsuarioOAdmin(recomendacion.getReceptor().getIdusuario());
         }
-        recomendacionRepository.deleteById(id);
+        recomendacionRepository.delete(recomendacion);
     }
 
     // === HELPERS ===

@@ -204,10 +204,10 @@ public class RetoService {
         Reto reto = buscarPorId(idreto);
         boolean esCreador = reto.getCreador() != null
                 && reto.getCreador().getIdusuario().equals(idusuario);
-        boolean esSistema = reto.getCreador() == null;
 
-        if (!esCreador && !esSistema) {
-            throw new IllegalArgumentException("Solo el creador puede eliminar el reto");
+        // Los retos del sistema (sin creador) solo los puede borrar un admin
+        if (!esCreador && !SecurityUtils.esAdmin()) {
+            throw new IllegalArgumentException("Solo el creador o un administrador pueden eliminar el reto");
         }
         retoRepository.delete(reto);
     }
