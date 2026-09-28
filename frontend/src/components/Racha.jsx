@@ -66,28 +66,6 @@ export function RachaNavbar() {
     )
 }
 
-/** Tarjeta compacta para el inicio */
-export function RachaTarjeta() {
-    const { racha } = useRacha() || {}
-    if (!racha) return null
-    const n = racha.racha
-
-    return (
-        <div className="bg-dark-card rounded-2xl px-5 py-4 flex items-center gap-5">
-            <div className="flex flex-col items-center">
-                <Llama n={n} className="w-8 h-8" />
-                <span className="font-bold text-lg leading-none mt-1" style={{ color: colorLlama(n) }}>{n}</span>
-            </div>
-            <div>
-                <SemanaRacha semana={racha.semana} />
-                <p className="text-dark-muted text-xs mt-2">
-                    {racha.hoyCompletado ? '¡Hoy ya has leído!' : 'Lee hoy para mantener tu racha'} · 🛡 {racha.protectores}/2
-                </p>
-            </div>
-        </div>
-    )
-}
-
 /** Celebración global al sumar un día (se monta una vez en MainLayout) */
 export function RachaCelebracion() {
     const { celebracion, cerrarCelebracion } = useRacha() || {}

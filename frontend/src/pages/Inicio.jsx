@@ -3,7 +3,6 @@ import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import LibroCard from '../components/LibroCard'
 import { useRacha } from '../context/RachaContext'
-import { RachaTarjeta } from '../components/Racha'
 import api from '../api/axios'
 
 export default function Inicio() {
@@ -171,13 +170,10 @@ export default function Inicio() {
 
     return (
         <div>
-            {/* Saludo + racha */}
-            <div className="mb-8 flex items-center justify-between gap-6">
-                <div>
-                    <h1 className="text-3xl font-bold text-dark-text tracking-tight">Hola, {usuario.nombre}</h1>
-                    <p className="text-dark-muted mt-1">¿Qué vas a leer hoy?</p>
-                </div>
-                <RachaTarjeta />
+            {/* Saludo */}
+            <div className="mb-8">
+                <h1 className="text-3xl font-bold text-dark-text tracking-tight">Hola, {usuario.nombre}</h1>
+                <p className="text-dark-muted mt-1">¿Qué vas a leer hoy?</p>
             </div>
 
             {/* Grid principal */}
