@@ -170,17 +170,6 @@ export default function LibroDetalle() {
         } catch (err) { alert(err.response?.data?.mensaje || 'Error') }
     }
 
-    const getColorNota = (nota) => {
-        if (nota < 2) return '#ef4444'
-        if (nota < 4) return '#f97316'
-        if (nota < 5) return '#ca8a04'
-        if (nota < 6) return '#eab308'
-        if (nota < 7) return '#84cc16'
-        if (nota < 8) return '#22c55e'
-        if (nota < 9) return '#c45d3e'
-        return '#a855f7'
-    }
-
     if (loading) return <p className="text-dark-muted">Cargando...</p>
     if (!libro) return <p className="text-red-400">Libro no encontrado</p>
 
@@ -188,19 +177,15 @@ export default function LibroDetalle() {
     const dist = libro.distribucionNotas || {}
     const distKeys = ['0.5', '1.0', '1.5', '2.0', '2.5', '3.0', '3.5', '4.0', '4.5', '5.0']
     const maxDist = Math.max(...distKeys.map(k => dist[k] || 0), 1)
+    const notaSobre5 = libro.notaMedia != null ? libro.notaMedia / 2 : null
+    const formatoNota = (n) => n.toLocaleString('es-ES', { minimumFractionDigits: 1, maximumFractionDigits: 1 })
 
     return (
         <div className="max-w-5xl mx-auto">
             {/* Cabecera: Portada + Info + Acciones */}
             <div className="flex flex-col md:flex-row gap-8 mb-10">
                 {/* Portada */}
-                <div className="flex-shrink-0 relative">
-                    {libro.notaMedia && (
-                        <div className="absolute -top-3 -left-3 z-10 w-12 h-12 rounded-lg flex items-center justify-center font-bold text-white text-lg shadow-lg"
-                             style={{ backgroundColor: getColorNota(libro.notaMedia) }}>
-                            {libro.notaMedia}
-                        </div>
-                    )}
+                <div className="flex-shrink-0">
                     {libro.portada ? (
                         <img src={libro.portada} alt={libro.titulo} className="w-52 h-80 object-cover rounded-sm shadow-xl" />
                     ) : (
@@ -229,6 +214,19 @@ export default function LibroDetalle() {
                                 {libro.genero && <span className="bg-dark-elevated px-2.5 py-0.5 rounded">{libro.genero}</span>}
                                 {libro.anioPublicacion && <span>{libro.anioPublicacion}</span>}
                                 {libro.numPaginas && <span>{libro.numPaginas} pág.</span>}
+                            </div>
+                            <div className="flex items-center gap-2 mt-4">
+                                {notaSobre5 != null ? (
+                                    <>
+                                        <span className="text-terra text-4xl leading-none">★</span>
+                                        <span className="text-dark-text text-4xl font-bold leading-none tracking-tight">{formatoNota(notaSobre5)}</span>
+                                        <span className="text-dark-muted text-sm self-end mb-0.5 ml-1">
+                                            {libro.numResenas} {libro.numResenas === 1 ? 'reseña' : 'reseñas'}
+                                        </span>
+                                    </>
+                                ) : (
+                                    <span className="text-dark-muted text-sm">Sin valoraciones todavía</span>
+                                )}
                             </div>
                         </div>
 
@@ -328,56 +326,67 @@ export default function LibroDetalle() {
             {/* Estadísticas de reseñas */}
             {libro.numResenas > 0 && (
                 <div className="bg-dark-card rounded-2xl p-6 mb-10">
-                    <div className="flex gap-10">
-                        {/* Distribución de notas — barras */}
-                        <div className="flex-1 max-w-sm">
-                            <h3 className="text-sm font-medium text-dark-muted mb-3">Distribución</h3>
-                            <div className="space-y-1">
-                                {[...distKeys].reverse().map((star) => {
-                                    const count = dist[star] || 0
-                                    const pct = maxDist > 0 ? (count / maxDist) * 100 : 0
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-0 sm:divide-x divide-dark-border">
+                        {/* Distribución de notas: histograma compacto de 0,5 a 5 estrellas */}
+                        <div className="flex flex-col items-center sm:px-6">
+                            <h3 className="text-xs uppercase tracking-wide text-dark-muted mb-3">Distribución</h3>
+                            <div className="flex items-end gap-1 h-16">
+                                {distKeys.map((k) => {
+                                    const count = dist[k] || 0
+                                    const alto = count > 0 ? Math.max(8, (count / maxDist) * 100) : 4
                                     return (
-                                        <div key={star} className="flex items-center gap-2 group">
-                                            <span className="text-xs text-dark-muted w-6 text-right">{star}</span>
-                                            <div className="flex-1 h-3">
-                                                {pct > 0 && (
-                                                    <div className="h-full bg-terra rounded-sm transition-all"
-                                                         style={{ width: `${pct}%` }} />
-                                                )}
+                                        <div key={k} className="relative h-full flex items-end group">
+                                            <div className={`w-3 rounded-sm transition-colors ${count > 0 ? 'bg-terra/80 group-hover:bg-terra' : 'bg-dark-border'}`}
+                                                 style={{ height: `${alto}%` }} />
+                                            {/* Al pasar el ratón: nº de reseñas con esa nota, encima de la barra */}
+                                            <div className="absolute left-1/2 -translate-x-1/2 mb-1.5 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                                                 style={{ bottom: `${alto}%` }}>
+                                                <div className="bg-dark-elevated border border-dark-border text-dark-text text-[11px] rounded-md px-2 py-1 whitespace-nowrap shadow-lg">
+                                                    <span className="font-semibold">{count}</span> {count === 1 ? 'reseña' : 'reseñas'}
+                                                    <span className="text-dark-muted"> · {k.replace('.', ',')}★</span>
+                                                </div>
                                             </div>
-                                            <span className="text-xs text-dark-muted w-6 text-right opacity-0 group-hover:opacity-100 transition-opacity">
-                                            {count}
-                                            </span>
                                         </div>
                                     )
                                 })}
                             </div>
+                            <div className="flex justify-between w-full max-w-[9.5rem] mt-1.5 text-[11px] text-dark-muted">
+                                <span>★</span>
+                                <span>★★★★★</span>
+                            </div>
                         </div>
 
-                        {/* Nota media + estrellas */}
-                        <div className="flex flex-col items-center justify-center px-6 border-l border-dark-border">
-                            <span className="text-4xl font-bold text-dark-text mb-1">{libro.notaMedia}</span>
-                            <span className="text-dark-muted text-xs mb-2">de 10</span>
-                            <Estrellas puntuacion={libro.notaMedia / 2} />
-                            <span className="text-dark-muted text-xs mt-2">{libro.numResenas} reseñas</span>
+                        {/* Nota media sobre 5 */}
+                        <div className="flex flex-col items-center sm:px-6">
+                            <h3 className="text-xs uppercase tracking-wide text-dark-muted mb-2">Valoración media</h3>
+                            <div className="flex items-baseline gap-1">
+                                <span className="text-4xl font-bold text-dark-text leading-none">{formatoNota(notaSobre5)}</span>
+                                <span className="text-dark-muted text-sm">/ 5</span>
+                            </div>
+                            <div className="mt-2"><Estrellas puntuacion={notaSobre5} /></div>
+                            <span className="text-dark-muted text-xs mt-1">
+                                {libro.numResenas} {libro.numResenas === 1 ? 'reseña' : 'reseñas'}
+                            </span>
                         </div>
 
                         {/* Ritmo medio */}
-                        {libro.ritmoMedio && (
-                            <div className="flex flex-col items-center justify-center px-6 border-l border-dark-border">
-                                <span className="text-sm text-dark-muted mb-2">Ritmo</span>
-                                <div className="flex gap-1">
-                                    {[1, 2, 3].map((r) => (
-                                        <span key={r} className={`text-xl transition-opacity ${
-                                            libro.ritmoMedio >= r ? 'opacity-100' : 'opacity-25'
-                                        }`}>⚡</span>
-                                    ))}
-                                </div>
-                                <span className="text-dark-muted text-xs mt-2">
-                  {libro.ritmoMedio <= 1.5 ? 'Lento' : libro.ritmoMedio <= 2.5 ? 'Medio' : 'Rápido'}
-                </span>
-                            </div>
-                        )}
+                        <div className="flex flex-col items-center sm:px-6">
+                            <h3 className="text-xs uppercase tracking-wide text-dark-muted mb-3">Ritmo</h3>
+                            {libro.ritmoMedio ? (
+                                <>
+                                    <div className="flex gap-1">
+                                        {[1, 2, 3].map((r) => (
+                                            <span key={r} className={`text-2xl ${libro.ritmoMedio >= r ? 'opacity-100' : 'opacity-25'}`}>⚡</span>
+                                        ))}
+                                    </div>
+                                    <span className="text-dark-muted text-xs mt-2">
+                                        {libro.ritmoMedio <= 1.5 ? 'Lento' : libro.ritmoMedio <= 2.5 ? 'Medio' : 'Rápido'}
+                                    </span>
+                                </>
+                            ) : (
+                                <span className="text-dark-muted text-xs">Sin datos</span>
+                            )}
+                        </div>
                     </div>
 
                     {/* Etiquetas populares */}
