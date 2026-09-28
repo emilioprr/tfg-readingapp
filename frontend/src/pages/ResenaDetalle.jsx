@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import Estrellas from '../components/Estrellas'
 import api from '../api/axios'
+import SpoilerOculto from '../components/SpoilerOculto'
 
 const ETIQUETAS_DISPONIBLES = [
     'ADICTIVO', 'EMOTIVO', 'DIVERTIDO', 'PROFUNDO', 'LENTO',
@@ -213,10 +214,10 @@ export default function ResenaDetalle() {
                     <textarea value={textoEdit} onChange={(e) => setTextoEdit(e.target.value)} rows={5}
                               className="w-full bg-dark-elevated border border-dark-border rounded-lg px-4 py-2.5 text-dark-text focus:border-terra focus:outline-none transition-colors"
                               placeholder="¿Qué te ha parecido?" />
-                ) : resena.tieneSpoiler ? (
-                    <p className="text-dark-muted italic">Esta reseña contiene spoilers</p>
                 ) : resena.texto ? (
-                    <p className="text-dark-text/90 leading-relaxed">{resena.texto}</p>
+                    <SpoilerOculto activo={resena.tieneSpoiler && usuario?.id !== resena.idusuario}>
+                        <p className="text-dark-text/90 leading-relaxed">{resena.texto}</p>
+                    </SpoilerOculto>
                 ) : (
                     <p className="text-dark-muted italic">Sin texto</p>
                 )}

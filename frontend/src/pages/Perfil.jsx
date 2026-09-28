@@ -6,6 +6,7 @@ import ResenaCard from '../components/ResenaCard'
 import LibroCard from '../components/LibroCard'
 import ListaCard from '../components/ListaCard'
 import api from '../api/axios'
+import SpoilerOculto from '../components/SpoilerOculto'
 
 /** Formato corto para contadores: 950 → 950, 1.234 → 1,2K, 1.500.000 → 1,5M.
  *  Se trunca (no redondea) para no mostrar más de lo que hay, p. ej. 999.999 → 999,9K. */
@@ -577,8 +578,12 @@ export default function Perfil() {
                                             </Link>
                                             <span className="text-dark-muted text-xs flex-shrink-0 ml-2">{new Date(a.fecha).toLocaleDateString()}</span>
                                         </div>
-                                        {a.titulo && <p className="text-dark-text font-medium text-sm mb-1">{a.titulo}</p>}
-                                        <p className="text-dark-text/70 text-sm">{a.texto}</p>
+                                        <SpoilerOculto activo={a.tieneSpoiler && usuario?.id !== a.idusuario}>
+                                            <div>
+                                                {a.titulo && <p className="text-dark-text font-medium text-sm mb-1">{a.titulo}</p>}
+                                                <p className="text-dark-text/70 text-sm">{a.texto}</p>
+                                            </div>
+                                        </SpoilerOculto>
                                         {(a.parte || a.numPagina) && (
                                             <p className="text-dark-muted text-xs mt-2">
                                                 {a.parte && <span>{a.parte}</span>}

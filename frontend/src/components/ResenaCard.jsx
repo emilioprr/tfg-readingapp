@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import Estrellas from './Estrellas'
+import SpoilerOculto from './SpoilerOculto'
 import api from '../api/axios'
 
 export default function ResenaCard({ resena: resenaInicial, mostrarLibro = true, mostrarUsuario = true }) {
@@ -104,11 +105,13 @@ export default function ResenaCard({ resena: resenaInicial, mostrarLibro = true,
                         <Estrellas puntuacion={resena.puntuacion} />
                     </div>
 
-                    {resena.texto && !resena.tieneSpoiler && (
-                        <p className="text-dark-text/80 text-sm mt-2 line-clamp-3">{resena.texto}</p>
+                    {resena.texto && (
+                        <SpoilerOculto activo={resena.tieneSpoiler && usuario?.id !== resena.idusuario}>
+                            <p className="text-dark-text/80 text-sm mt-2 line-clamp-3">{resena.texto}</p>
+                        </SpoilerOculto>
                     )}
-                    {resena.tieneSpoiler && (
-                        <p className="text-dark-muted text-sm mt-2 italic">Contiene spoilers</p>
+                    {resena.tieneSpoiler && usuario?.id === resena.idusuario && (
+                        <p className="text-amber-400/80 text-xs mt-1">Marcada con spoilers</p>
                     )}
 
                     {/* Footer: like + acciones + fecha */}

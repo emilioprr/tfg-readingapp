@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import Estrellas from '../components/Estrellas'
 import ResenaCard from '../components/ResenaCard'
 import api from '../api/axios'
+import SpoilerOculto from '../components/SpoilerOculto'
 
 export default function LibroDetalle() {
     const { id } = useParams()
@@ -533,8 +534,12 @@ export default function LibroDetalle() {
                                                 </button>
                                             )}
                                         </div>
-                                        {a.titulo && <p className="text-dark-text font-medium text-sm mb-1">{a.titulo}</p>}
-                                        <p className="text-dark-text/70 text-sm">{a.texto}</p>
+                                        <SpoilerOculto activo={a.tieneSpoiler && usuario?.id !== a.idusuario}>
+                                            <div>
+                                                {a.titulo && <p className="text-dark-text font-medium text-sm mb-1">{a.titulo}</p>}
+                                                <p className="text-dark-text/70 text-sm">{a.texto}</p>
+                                            </div>
+                                        </SpoilerOculto>
                                     </div>
                                 ))}
                             </div>
