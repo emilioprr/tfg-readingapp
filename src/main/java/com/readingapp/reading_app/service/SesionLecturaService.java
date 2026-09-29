@@ -31,6 +31,11 @@ public class SesionLecturaService {
                     .orElseThrow(() -> new EntityNotFoundException("Libro no encontrado"));
         }
 
+        int minutos = request.getDuracionMinutos() != null ? request.getDuracionMinutos() : 0;
+        if (minutos < 1 || minutos > SesionLecturaDTO.MAX_MINUTOS_SESION) {
+            throw new IllegalArgumentException("Una sesión de lectura debe durar entre 1 minuto y 12 horas");
+        }
+
         LocalDateTime ahora = LocalDateTime.now();
 
         SesionLectura sesion = SesionLectura.builder()
