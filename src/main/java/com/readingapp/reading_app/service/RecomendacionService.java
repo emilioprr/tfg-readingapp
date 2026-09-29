@@ -38,6 +38,11 @@ public class RecomendacionService {
         Libro libro = libroRepository.findById(request.getIdlibro())
                 .orElseThrow(() -> new EntityNotFoundException("Libro no encontrado"));
 
+        // Solo entre mutuals (os seguís el uno al otro), para evitar recomendaciones no deseadas
+        if (!sigueA(emisor, receptor) || !sigueA(receptor, emisor)) {
+            throw new IllegalArgumentException("Solo puedes recomendar libros a personas que os seguís mutuamente");
+        }
+
         Recomendacion recomendacion = Recomendacion.builder()
                 .mensaje(request.getMensaje())
                 .emisor(emisor)
@@ -95,6 +100,11 @@ public class RecomendacionService {
     }
 
     // === HELPERS ===
+
+    private static boolean sigueA(Usuario seguidor, Usuario seguido) {
+        return seguidor.getSeguidos() != null && seguidor.getSeguidos().stream()
+                .anyMatch(u -> u.getIdusuario().equals(seguido.getIdusuario()));
+    }
 
     private RecomendacionDTO.Response toResponse(Recomendacion recomendacion) {
         return RecomendacionDTO.Response.builder()

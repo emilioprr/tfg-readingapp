@@ -14,7 +14,17 @@ export default function EnviarRecomendacion() {
     const [error, setError] = useState('')
 
     const cargarLibro = useCallback(async () => { try { const res = await api.get(`/libros/${idlibro}`); setLibro(res.data) } catch (err) { console.error('Error:', err) } }, [idlibro])
-    const cargarSeguidos = useCallback(async () => { try { const res = await api.get(`/usuarios/${usuario.id}/seguidos`); setSeguidos(res.data || []) } catch (err) { console.error('Error:', err) } }, [usuario])
+    // Solo se puede recomendar a mutuals: personas a las que sigues y que te siguen
+    const cargarSeguidos = useCallback(async () => {
+        try {
+            const [seguidosRes, seguidoresRes] = await Promise.all([
+                api.get(`/usuarios/${usuario.id}/seguidos`),
+                api.get(`/usuarios/${usuario.id}/seguidores`),
+            ])
+            const meSiguen = new Set((seguidoresRes.data || []).map(u => u.idusuario))
+            setSeguidos((seguidosRes.data || []).filter(u => meSiguen.has(u.idusuario)))
+        } catch (err) { console.error('Error:', err) }
+    }, [usuario])
 
     useEffect(() => { cargarLibro(); cargarSeguidos() }, [cargarLibro, cargarSeguidos, idlibro])
 
@@ -44,7 +54,11 @@ export default function EnviarRecomendacion() {
             <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                     <label className="block text-dark-muted text-sm mb-1">¿A quién se lo recomiendas?</label>
-                    {seguidos.length === 0 ? <p className="text-dark-muted text-sm">No sigues a nadie</p> : (
+                    {seguidos.length === 0 ? (
+                        <p className="text-dark-muted text-sm">
+                            Solo puedes recomendar libros a personas que os seguís mutuamente, y todavía no tienes ninguna.
+                        </p>
+                    ) : (
                         <select value={receptorId} onChange={(e) => setReceptorId(e.target.value)}
                                 className="w-full bg-dark-elevated border border-dark-border rounded-lg px-4 py-2.5 text-dark-text focus:border-terra focus:outline-none transition-colors">
                             <option value="">Seleccionar...</option>
