@@ -27,7 +27,6 @@ public class ListaDTO {
         private String nombre;
         private String descripcion;
         private Boolean esPublica;
-        private Boolean esAutomatica;
         private String fechaCreacion;
         private Long idusuario;
         private String nombreUsuario;
@@ -40,7 +39,6 @@ public class ListaDTO {
         private String nombre;
         private String descripcion;
         private Boolean esPublica;
-        private Boolean esAutomatica;
         private String fechaCreacion;
         private Long idusuario;
         private String nombreUsuario;

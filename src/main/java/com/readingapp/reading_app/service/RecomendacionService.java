@@ -43,7 +43,6 @@ public class RecomendacionService {
                 .emisor(emisor)
                 .receptor(receptor)
                 .libro(libro)
-                .esAutomatica(false)
                 .fecha(LocalDateTime.now())
                 .build();
 
@@ -103,7 +102,6 @@ public class RecomendacionService {
                 .mensaje(recomendacion.getMensaje())
                 .fecha(recomendacion.getFecha() != null ? recomendacion.getFecha().toString() : null)
                 .visto(recomendacion.getVisto())
-                .esAutomatica(recomendacion.getEsAutomatica())
                 .idusuarioEmisor(recomendacion.getEmisor() != null ? recomendacion.getEmisor().getIdusuario() : null)
                 .nombreEmisor(recomendacion.getEmisor() != null ? recomendacion.getEmisor().getNombre() : "Sistema")
                 .avatarEmisor(recomendacion.getEmisor() != null ? recomendacion.getEmisor().getAvatar() : null)

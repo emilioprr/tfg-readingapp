@@ -85,7 +85,7 @@ class PermisosServiceTest {
 
     private Lista lista(Long id, boolean publica) {
         return Lista.builder().idlista(id).nombre("Lista " + id).esPublica(publica)
-                .esAutomatica(false).usuario(propietario).libros(new HashSet<>()).build();
+                .usuario(propietario).libros(new HashSet<>()).build();
     }
 
     // ===== Borrados solo por el propietario (o admin) =====

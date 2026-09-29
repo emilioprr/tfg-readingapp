@@ -8,5 +8,5 @@ import java.util.List;
 @Repository
 public interface ListaRepository extends JpaRepository<Lista, Long> {
     List<Lista> findByUsuarioIdusuario(Long idusuario);
-    List<Lista> findByEsPublicaTrueAndEsAutomaticaFalse();
+    List<Lista> findByEsPublicaTrue();
 }

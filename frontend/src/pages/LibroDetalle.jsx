@@ -173,7 +173,6 @@ export default function LibroDetalle() {
     if (loading) return <p className="text-dark-muted">Cargando...</p>
     if (!libro) return <p className="text-red-400">Libro no encontrado</p>
 
-    const listasNormales = listas.filter(l => !l.esAutomatica)
     const dist = libro.distribucionNotas || {}
     const distKeys = ['0.5', '1.0', '1.5', '2.0', '2.5', '3.0', '3.5', '4.0', '4.5', '5.0']
     const maxDist = Math.max(...distKeys.map(k => dist[k] || 0), 1)
@@ -273,8 +272,8 @@ export default function LibroDetalle() {
                                                     Quiero leer
                                                 </button>
                                             )}
-                                            {listasNormales.length > 0 && (
-                                                listasNormales.map((lista) => (
+                                            {listas.length > 0 && (
+                                                listas.map((lista) => (
                                                     <button key={lista.idlista} onClick={() => agregarALista(lista.idlista)}
                                                             className="w-full text-left px-4 py-2.5 text-dark-text hover:bg-dark-card text-sm transition-colors flex items-center gap-2">
                                                         <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-dark-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

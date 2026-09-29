@@ -16,7 +16,7 @@ export default function Listas() {
         try {
             const res = await api.get('/listas/publicas')
             const todas = res.data.content || res.data || []
-            setPublicas(todas.filter(l => !l.esAutomatica && (!usuario || l.idusuario !== usuario.id)))
+            setPublicas(todas.filter(l => !usuario || l.idusuario !== usuario.id))
         } catch (err) { console.error('Error:', err) }
         finally { setLoading(false) }
     }, [usuario])

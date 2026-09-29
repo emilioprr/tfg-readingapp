@@ -25,9 +25,6 @@ public class Lista {
     @Column(name = "es_publica")
     private Boolean esPublica = true;
 
-    @Column(name = "es_automatica")
-    private Boolean esAutomatica = false;
-
     @Column(name = "fecha_creacion", nullable = false)
     private LocalDateTime fechaCreacion = LocalDateTime.now();
 

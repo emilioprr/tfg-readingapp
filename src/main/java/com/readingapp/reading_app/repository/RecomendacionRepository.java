@@ -10,5 +10,4 @@ public interface RecomendacionRepository extends JpaRepository<Recomendacion, Lo
     List<Recomendacion> findByReceptorIdusuario(Long idusuario);
     List<Recomendacion> findByEmisorIdusuario(Long idusuario);
     List<Recomendacion> findByReceptorIdusuarioAndVistoFalse(Long idusuario);
-    List<Recomendacion> findByReceptorIdusuarioAndEsAutomaticaTrue(Long idusuario);
 }

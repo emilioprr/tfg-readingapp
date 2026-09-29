@@ -57,15 +57,15 @@ class ListaServiceTest {
         SecurityContextHolder.clearContext();
     }
 
-    private Lista lista(boolean automatica) {
+    private Lista lista() {
         Lista l = Lista.builder().idlista(20L).nombre("Favoritos del verano").esPublica(true)
-                .esAutomatica(automatica).usuario(ana).libros(new HashSet<>()).build();
+                .usuario(ana).libros(new HashSet<>()).build();
         when(listaRepository.findById(20L)).thenReturn(Optional.of(l));
         return l;
     }
 
     @Test
-    @DisplayName("Una lista nueva es pública por defecto y nunca automática")
+    @DisplayName("Una lista nueva es pública por defecto")
     void crearValoresPorDefecto() {
         when(usuarioRepository.findById(1L)).thenReturn(Optional.of(ana));
         ListaDTO.CreateRequest r = new ListaDTO.CreateRequest();
@@ -75,14 +75,13 @@ class ListaServiceTest {
         ListaDTO.Response res = listaService.crear(1L, r);
 
         assertThat(res.getEsPublica()).isTrue();
-        assertThat(res.getEsAutomatica()).isFalse();
         assertThat(res.getNombre()).isEqualTo("Para el verano");
     }
 
     @Test
     @DisplayName("Añadir un libro a una lista")
     void agregarLibro() {
-        Lista l = lista(false);
+        Lista l = lista();
         when(libroRepository.findById(10L)).thenReturn(Optional.of(libro));
 
         listaService.agregarLibro(20L, 10L);
@@ -93,7 +92,7 @@ class ListaServiceTest {
     @Test
     @DisplayName("Añadir dos veces el mismo libro no lo duplica")
     void agregarLibroDosVeces() {
-        Lista l = lista(false);
+        Lista l = lista();
         when(libroRepository.findById(10L)).thenReturn(Optional.of(libro));
 
         listaService.agregarLibro(20L, 10L);
@@ -105,7 +104,7 @@ class ListaServiceTest {
     @Test
     @DisplayName("Quitar un libro de una lista")
     void quitarLibro() {
-        Lista l = lista(false);
+        Lista l = lista();
         l.getLibros().add(libro);
 
         listaService.quitarLibro(20L, 10L);
@@ -116,7 +115,7 @@ class ListaServiceTest {
     @Test
     @DisplayName("Solo se actualiza lo que se envía")
     void actualizarParcial() {
-        Lista l = lista(false);
+        Lista l = lista();
         ListaDTO.UpdateRequest r = new ListaDTO.UpdateRequest();
         r.setEsPublica(false);
 
@@ -127,31 +126,9 @@ class ListaServiceTest {
     }
 
     @Test
-    @DisplayName("Las listas automáticas no se pueden editar")
-    void automaticaNoSeEdita() {
-        lista(true);
-        ListaDTO.UpdateRequest r = new ListaDTO.UpdateRequest();
-        r.setNombre("Otro nombre");
-
-        assertThatThrownBy(() -> listaService.actualizar(20L, r))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("automática");
-    }
-
-    @Test
-    @DisplayName("Las listas automáticas no se pueden borrar")
-    void automaticaNoSeBorra() {
-        lista(true);
-
-        assertThatThrownBy(() -> listaService.eliminar(20L))
-                .isInstanceOf(IllegalArgumentException.class);
-        verify(listaRepository, never()).deleteById(any());
-    }
-
-    @Test
     @DisplayName("Otro usuario no puede añadir libros a mi lista")
     void otroNoAnadeLibros() {
-        lista(false);
+        lista();
         SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(
                 "luis@test.com", 2L, List.of(new SimpleGrantedAuthority("ROLE_USER"))));
 

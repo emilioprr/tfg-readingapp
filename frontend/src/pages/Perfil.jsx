@@ -90,9 +90,9 @@ export default function Perfil() {
             const listas = res.data.content || res.data || []
             const propio = usuario && parseInt(perfilId) === usuario.id
             if (propio) {
-                setListasPublicas(listas.filter(l => !l.esAutomatica))
+                setListasPublicas(listas)
             } else {
-                setListasPublicas(listas.filter(l => l.esPublica && !l.esAutomatica))
+                setListasPublicas(listas.filter(l => l.esPublica))
             }
         } catch (err) { console.error('Error:', err) }
     }, [perfilId, usuario])

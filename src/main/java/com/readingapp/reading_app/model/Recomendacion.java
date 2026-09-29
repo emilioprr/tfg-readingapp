@@ -24,9 +24,6 @@ public class Recomendacion {
     @Column
     private Boolean visto = false;
 
-    @Column(name = "es_automatica")
-    private Boolean esAutomatica = false;
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "idusuario_emisor")
     private Usuario emisor;

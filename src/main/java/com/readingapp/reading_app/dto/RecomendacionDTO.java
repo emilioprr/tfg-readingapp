@@ -22,7 +22,6 @@ public class RecomendacionDTO {
         private String mensaje;
         private String fecha;
         private Boolean visto;
-        private Boolean esAutomatica;
         private Long idusuarioEmisor;
         private String nombreEmisor;
         private String avatarEmisor;

@@ -33,7 +33,6 @@ public class ListaService {
                 .nombre(request.getNombre())
                 .descripcion(request.getDescripcion())
                 .esPublica(request.getEsPublica() != null ? request.getEsPublica() : true)
-                .esAutomatica(false)
                 .fechaCreacion(java.time.LocalDateTime.now())
                 .usuario(usuario)
                 .build();
@@ -60,7 +59,7 @@ public class ListaService {
     }
 
     public List<ListaDTO.Response> obtenerPublicas() {
-        return listaRepository.findByEsPublicaTrueAndEsAutomaticaFalse().stream()
+        return listaRepository.findByEsPublicaTrue().stream()
                 .map(this::toResponse)
                 .toList();
     }
@@ -70,9 +69,6 @@ public class ListaService {
         Lista lista = listaRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Lista no encontrada con id: " + id));
         SecurityUtils.validarUsuario(lista.getUsuario().getIdusuario());
-        if (lista.getEsAutomatica()) {
-            throw new IllegalArgumentException("No se puede editar una lista automática");
-        }
         if (request.getNombre() != null) lista.setNombre(request.getNombre());
         if (request.getDescripcion() != null) lista.setDescripcion(request.getDescripcion());
         if (request.getEsPublica() != null) lista.setEsPublica(request.getEsPublica());
@@ -85,9 +81,6 @@ public class ListaService {
         Lista lista = listaRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Lista no encontrada con id: " + id));
         SecurityUtils.validarUsuarioOAdmin(lista.getUsuario().getIdusuario());
-        if (lista.getEsAutomatica()) {
-            throw new IllegalArgumentException("No se puede eliminar una lista automática");
-        }
         listaRepository.deleteById(id);
     }
 
@@ -126,7 +119,6 @@ public class ListaService {
                 .nombre(lista.getNombre())
                 .descripcion(lista.getDescripcion())
                 .esPublica(lista.getEsPublica())
-                .esAutomatica(lista.getEsAutomatica())
                 .fechaCreacion(lista.getFechaCreacion() != null ? lista.getFechaCreacion().toString() : null)
                 .idusuario(lista.getUsuario().getIdusuario())
                 .nombreUsuario(lista.getUsuario().getNombre())
@@ -151,7 +143,6 @@ public class ListaService {
                 .nombre(lista.getNombre())
                 .descripcion(lista.getDescripcion())
                 .esPublica(lista.getEsPublica())
-                .esAutomatica(lista.getEsAutomatica())
                 .fechaCreacion(lista.getFechaCreacion() != null ? lista.getFechaCreacion().toString() : null)
                 .idusuario(lista.getUsuario().getIdusuario())
                 .nombreUsuario(lista.getUsuario().getNombre())

@@ -68,10 +68,10 @@ class BorradoCuentaRepositoryTest {
         // Actividad de lectura, lista, recomendaciones y notificaciones
         em.persist(Seguimiento.builder().usuario(ana).libro(libro).estado(EstadoLectura.LEYENDO)
                 .numPagina(20).fecha(LocalDate.now()).build());
-        em.persist(Lista.builder().nombre("Favoritas").usuario(ana).esPublica(true).esAutomatica(false)
+        em.persist(Lista.builder().nombre("Favoritas").usuario(ana).esPublica(true)
                 .fechaCreacion(LocalDateTime.now()).libros(new HashSet<>(Set.of(libro))).build());
         Recomendacion deLuisAAna = em.persist(Recomendacion.builder().emisor(luis).receptor(ana).libro(libro)
-                .fecha(LocalDateTime.now()).visto(false).esAutomatica(false).build());
+                .fecha(LocalDateTime.now()).visto(false).build());
         em.persist(Notificacion.builder().usuario(ana).tipo(TipoNotificacion.NUEVA_RECOMENDACION)
                 .recomendacion(deLuisAAna).usuarioOrigen(luis).fecha(LocalDateTime.now()).leida(false).build());
         em.persist(Notificacion.builder().usuario(luis).tipo(TipoNotificacion.LIKE_RESENA)
