@@ -5,6 +5,7 @@ import ResenaCard from '../components/ResenaCard'
 import ListaCard from '../components/ListaCard'
 import api from '../api/axios'
 import SpoilerOculto from '../components/SpoilerOculto'
+import MuralCitas from '../components/MuralCitas'
 import { Llama, colorLlama } from '../components/Racha'
 
 /** Formato corto para contadores: 950 → 950, 1.234 → 1,2K, 1.500.000 → 1,5M.
@@ -192,6 +193,7 @@ export default function Perfil() {
         { key: 'estanteria', label: 'Estantería' },
         { key: 'resenas', label: 'Reseñas' },
         { key: 'anotaciones', label: 'Anotaciones' },
+        { key: 'citas', label: 'Mural de citas' },
         { key: 'listas', label: 'Listas' },
     ]
 
@@ -614,6 +616,11 @@ export default function Perfil() {
                         </div>
                     )}
                 </div>
+            )}
+
+            {/* Tab: Mural de citas (citas de otros lectores que ha elegido exhibir) */}
+            {tab === 'citas' && (
+                <MuralCitas perfilId={perfilId} esMio={esMio} usuario={usuario} />
             )}
 
             {/* Tab: Listas */}

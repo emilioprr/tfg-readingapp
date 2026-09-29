@@ -38,6 +38,9 @@ public class BorradoCuentaRepository {
             // Listas y actividad de lectura
             "DELETE FROM lista_libro WHERE idlista IN (SELECT idlista FROM lista WHERE idusuario = :id)",
             "DELETE FROM lista WHERE idusuario = :id",
+            // Citas guardadas: las que guardó él y las suyas que guardaron otros
+            "DELETE FROM cita_guardada WHERE idusuario = :id " +
+                    "OR idanotacion IN (SELECT idanotacion FROM anotacion WHERE idusuario = :id)",
             "DELETE FROM anotacion WHERE idusuario = :id",
             "DELETE FROM favorito WHERE idusuario = :id",
             "DELETE FROM seguimiento WHERE idusuario = :id",

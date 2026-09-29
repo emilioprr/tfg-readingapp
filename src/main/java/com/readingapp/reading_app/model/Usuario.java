@@ -99,6 +99,15 @@ public class Usuario {
     )
     private Set<Resena> resenasLikeadas = new HashSet<>();
 
+    // Citas (anotaciones de tipo CITA) que el usuario ha guardado desde el muro de citas
+    @ManyToMany
+    @JoinTable(
+            name = "cita_guardada",
+            joinColumns = @JoinColumn(name = "idusuario"),
+            inverseJoinColumns = @JoinColumn(name = "idanotacion")
+    )
+    private Set<Anotacion> citasGuardadas = new HashSet<>();
+
     @OneToMany(mappedBy = "usuario", cascade = CascadeType.ALL)
     private List<Resena> resenas = new ArrayList<>();
 

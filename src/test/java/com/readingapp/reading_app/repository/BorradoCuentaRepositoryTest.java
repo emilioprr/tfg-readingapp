@@ -38,7 +38,7 @@ class BorradoCuentaRepositoryTest {
     private Usuario usuario(String nombre) {
         return em.persist(Usuario.builder().nombre(nombre).email(nombre + "@test.com").password("x")
                 .fechaAlta(LocalDate.now()).seguidos(new HashSet<>()).resenasLikeadas(new HashSet<>())
-                .autoresSeguidos(new HashSet<>()).librosFavoritos(new HashSet<>()).build());
+                .autoresSeguidos(new HashSet<>()).librosFavoritos(new HashSet<>()).citasGuardadas(new HashSet<>()).build());
     }
 
     private Resena resena(Usuario u) {
@@ -77,6 +77,14 @@ class BorradoCuentaRepositoryTest {
         em.persist(Notificacion.builder().usuario(luis).tipo(TipoNotificacion.LIKE_RESENA)
                 .resena(resenaDeLuis).usuarioOrigen(ana).fecha(LocalDateTime.now()).leida(false).build());
 
+        // Citas: Luis guarda una de Ana y Ana guarda una de Luis
+        Anotacion citaDeAna = em.persist(Anotacion.builder().usuario(ana).libro(libro).tipo(TipoAnotacion.CITA)
+                .esPublica(true).tieneSpoiler(false).texto("Cita de Ana").fecha(LocalDateTime.now()).build());
+        Anotacion citaDeLuis = em.persist(Anotacion.builder().usuario(luis).libro(libro).tipo(TipoAnotacion.CITA)
+                .esPublica(true).tieneSpoiler(false).texto("Cita de Luis").fecha(LocalDateTime.now()).build());
+        luis.getCitasGuardadas().add(citaDeAna);
+        ana.getCitasGuardadas().add(citaDeLuis);
+
         // Reto creado por Ana en el que participa Luis
         Reto reto = em.persist(Reto.builder().titulo("Leer 5 libros").tipo(TipoReto.LIBROS)
                 .modalidad(ModalidadReto.COMPARTIDO).meta(5).fechaInicio(LocalDate.now())
@@ -108,7 +116,9 @@ class BorradoCuentaRepositoryTest {
                 "SELECT COUNT(*) FROM sigue_autor WHERE idusuario = " + id,
                 "SELECT COUNT(*) FROM recomendacion WHERE idusuario_emisor = " + id + " OR idusuario_receptor = " + id,
                 "SELECT COUNT(*) FROM notificacion WHERE idusuario = " + id + " OR idusuario_origen = " + id,
-                "SELECT COUNT(*) FROM reto WHERE id_creador = " + id}) {
+                "SELECT COUNT(*) FROM reto WHERE id_creador = " + id,
+                "SELECT COUNT(*) FROM cita_guardada WHERE idusuario = " + id,
+                "SELECT COUNT(*) FROM anotacion WHERE idusuario = " + id}) {
             assertThat(contar(sql)).as(sql).isZero();
         }
     }
