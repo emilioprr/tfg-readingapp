@@ -7,6 +7,7 @@ import com.readingapp.reading_app.repository.AutorRepository;
 import com.readingapp.reading_app.repository.LibroRepository;
 import com.readingapp.reading_app.repository.ResenaRepository;
 import com.readingapp.reading_app.repository.UsuarioRepository;
+import com.readingapp.reading_app.repository.ValoracionRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -15,6 +16,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -32,6 +34,8 @@ class LibroServiceTest {
     @Mock private NotificacionService notificacionService;
     @Mock private ResenaRepository resenaRepository;
     @Mock private GoogleBooksService googleBooksService;
+    @Mock private ValoracionRepository valoracionRepository;
+    @Mock private NotasLibros notasLibros;
 
     @InjectMocks private LibroService libroService;
 
@@ -45,26 +49,16 @@ class LibroServiceTest {
     @DisplayName("Un listado pide las notas de todos sus libros en una sola consulta")
     void listadoUnaSolaConsultaDeNotas() {
         when(libroRepository.findByAutorIdautor(eq(1L), any())).thenReturn(List.of(libro(1), libro(2), libro(3)));
-        when(resenaRepository.findNotasMediasPorLibros(any())).thenReturn(List.<Object[]>of(new Object[]{2L, 4.25, 4L}));
+        when(notasLibros.de(any())).thenReturn(Map.of(2L, new NotasLibros.Nota(4.3, 6, 4)));
 
         List<LibroDTO.Response> libros = libroService.obtenerPorAutor(1L, org.springframework.data.domain.Pageable.unpaged());
 
-        verify(resenaRepository, times(1)).findNotasMediasPorLibros(any());
+        verify(notasLibros, times(1)).de(any());
         verify(resenaRepository, never()).findNotaMediaByLibro(anyLong());
         verify(resenaRepository, never()).findDistribucionByLibro(anyLong());
         assertThat(libros).extracting(LibroDTO.Response::getNotaMedia).containsExactly(null, 4.3, null);
         assertThat(libros.get(1).getNumResenas()).isEqualTo(4);
-    }
-
-    @Test
-    @DisplayName("La nota media va sobre 5, redondeada a un decimal")
-    void notaSobreCinco() {
-        when(libroRepository.findById(7L)).thenReturn(Optional.of(libro(7)));
-        when(resenaRepository.findNotasMediasPorLibros(any())).thenReturn(List.<Object[]>of(new Object[]{7L, 3.8333, 6L}));
-
-        LibroDTO.Response detalle = libroService.obtenerPorId(7L);
-
-        assertThat(detalle.getNotaMedia()).isEqualTo(3.8);
+        assertThat(libros.get(1).getNumValoraciones()).isEqualTo(6);
     }
 
     @Test
@@ -72,12 +66,14 @@ class LibroServiceTest {
     void detalleConEstadisticas() {
         when(libroRepository.findById(7L)).thenReturn(Optional.of(libro(7)));
         when(resenaRepository.findDistribucionByLibro(7L)).thenReturn(List.<Object[]>of(new Object[]{4.5, 2L}));
+        // Las puntuaciones sin reseña se suman en la misma barra
+        when(valoracionRepository.findDistribucionByLibro(7L)).thenReturn(List.<Object[]>of(new Object[]{4.5, 1L}, new Object[]{3.0, 1L}));
         when(resenaRepository.findRitmoMedioByLibro(7L)).thenReturn(2.0);
         when(resenaRepository.findEtiquetasPopularesByLibro(7L)).thenReturn(List.<Object[]>of(new Object[]{"ADICTIVO", 3L}));
 
         LibroDTO.Response detalle = libroService.obtenerPorId(7L);
 
-        assertThat(detalle.getDistribucionNotas()).containsEntry("4.5", 2L).containsEntry("5.0", 0L);
+        assertThat(detalle.getDistribucionNotas()).containsEntry("4.5", 3L).containsEntry("3.0", 1L).containsEntry("5.0", 0L);
         assertThat(detalle.getRitmoMedio()).isEqualTo(2.0);
         assertThat(detalle.getEtiquetasPopulares()).containsExactly("ADICTIVO");
     }

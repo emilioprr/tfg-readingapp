@@ -84,6 +84,9 @@ class BorradoCuentaRepositoryTest {
                 .esPublica(true).tieneSpoiler(false).texto("Cita de Luis").fecha(LocalDateTime.now()).build());
         luis.getCitasGuardadas().add(citaDeAna);
         ana.getCitasGuardadas().add(citaDeLuis);
+        // Ana puntúa sin reseña un libro
+        em.persist(Valoracion.builder().usuario(ana).libro(libro).puntuacion(new java.math.BigDecimal("4"))
+                .fecha(LocalDateTime.now()).build());
         // Y se dan like mutuamente
         em.persist(LikeCita.builder().usuario(luis).anotacion(citaDeAna).fecha(LocalDateTime.now()).build());
         em.persist(LikeCita.builder().usuario(ana).anotacion(citaDeLuis).fecha(LocalDateTime.now()).build());
@@ -124,6 +127,7 @@ class BorradoCuentaRepositoryTest {
                 "SELECT COUNT(*) FROM reto WHERE id_creador = " + id,
                 "SELECT COUNT(*) FROM cita_guardada WHERE idusuario = " + id,
                 "SELECT COUNT(*) FROM like_cita WHERE idusuario = " + id,
+                "SELECT COUNT(*) FROM valoracion WHERE idusuario = " + id,
                 "SELECT COUNT(*) FROM anotacion WHERE idusuario = " + id}) {
             assertThat(contar(sql)).as(sql).isZero();
         }

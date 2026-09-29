@@ -37,12 +37,16 @@ public interface SeguimientoRepository extends JpaRepository<Seguimiento, Long> 
     Long sumPaginasByUsuarioEntreFechas(@Param("uid") Long uid, @Param("inicio") LocalDate inicio, @Param("fin") LocalDate fin);
 
     Long countByUsuarioIdusuarioAndEstado(Long idusuario, EstadoLectura estado);
-    Long countByUsuarioIdusuarioAndEstadoAndFechaBetween(Long idusuario, EstadoLectura estado, LocalDate inicio, LocalDate fin);
+    /** Para los retos: las lecturas antiguas (marcadas al puntuar) no cuentan. */
+    @Query("SELECT COUNT(s) FROM Seguimiento s WHERE s.usuario.idusuario = :idusuario AND s.estado = :estado " +
+            "AND s.lecturaAntigua = false AND s.fecha BETWEEN :inicio AND :fin")
+    Long countByUsuarioIdusuarioAndEstadoAndFechaBetween(@Param("idusuario") Long idusuario, @Param("estado") EstadoLectura estado,
+                                                         @Param("inicio") LocalDate inicio, @Param("fin") LocalDate fin);
 
     @Query("SELECT COUNT(s) FROM Seguimiento s WHERE s.usuario.idusuario = :uid AND s.libro.autor.idautor = :aid AND s.estado = :estado")
     Long countByUsuarioIdusuarioAndLibroAutorIdautorAndEstado(@Param("uid") Long uid, @Param("aid") Long aid, @Param("estado") EstadoLectura estado);
 
-    @Query("SELECT COUNT(s) FROM Seguimiento s WHERE s.usuario.idusuario = :uid AND s.libro.autor.idautor = :aid AND s.estado = :estado AND s.fecha BETWEEN :inicio AND :fin")
+    @Query("SELECT COUNT(s) FROM Seguimiento s WHERE s.usuario.idusuario = :uid AND s.libro.autor.idautor = :aid AND s.estado = :estado AND s.lecturaAntigua = false AND s.fecha BETWEEN :inicio AND :fin")
     Long countByUsuarioIdusuarioAndLibroAutorIdautorAndEstadoAndFechaBetween(@Param("uid") Long uid, @Param("aid") Long aid, @Param("estado") EstadoLectura estado, @Param("inicio") LocalDate inicio, @Param("fin") LocalDate fin);
 
     @Query("SELECT COUNT(DISTINCT s.libro.idlibro) FROM Seguimiento s " +
@@ -64,7 +68,7 @@ public interface SeguimientoRepository extends JpaRepository<Seguimiento, Long> 
      */
     @Query("SELECT s FROM Seguimiento s WHERE s.usuario IN " +
             "(SELECT seg FROM Usuario u JOIN u.seguidos seg WHERE u.idusuario = :idusuario) " +
-            "AND s.fecha >= :desde " +
+            "AND s.fecha >= :desde AND s.lecturaAntigua = false " +
             "AND (s.estado = 'LEIDO' OR s.estado = 'PENDIENTE' OR (s.estado = 'LEYENDO' AND s.numPagina = 0)) " +
             "ORDER BY s.fecha DESC, s.idseguimiento DESC")
     List<Seguimiento> findActividadDeSeguidos(@Param("idusuario") Long idusuario, @Param("desde") LocalDate desde,

@@ -30,6 +30,7 @@ public class ResenaService {
     private final NotificacionService notificacionService;
     private final SeguimientoRepository seguimientoRepository;
     private final NotificacionRepository notificacionRepository;
+    private final ValoracionRepository valoracionRepository;
 
     @Transactional
     public ResenaDTO.Response crear(ResenaDTO.CreateRequest request) {
@@ -70,6 +71,8 @@ public class ResenaService {
 
         // Los seguidores ya la ven en su feed de actividad: no se les notifica
         resena = resenaRepository.save(resena);
+        // Si lo había puntuado sin reseña, la nota pasa a la reseña (no se cuenta dos veces)
+        valoracionRepository.borrar(usuario.getIdusuario(), libro.getIdlibro());
 
         return toResponse(resena);
     }

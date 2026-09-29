@@ -33,6 +33,7 @@ public class BorradoCuentaRepository {
             "DELETE FROM resena_etiqueta WHERE idresena IN " + SUS_RESENAS,
             "DELETE FROM resena WHERE idusuario = :id",
             "DELETE FROM recomendacion WHERE idusuario_emisor = :id OR idusuario_receptor = :id",
+            "DELETE FROM valoracion WHERE idusuario = :id",
             // Retos: su participación en retos de otros y los retos que creó (con sus participantes)
             "DELETE FROM participante_reto WHERE id_usuario = :id OR id_reto IN " + SUS_RETOS,
             "DELETE FROM reto WHERE id_creador = :id",

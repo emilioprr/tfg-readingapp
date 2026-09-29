@@ -24,7 +24,7 @@ public class ActividadLecturaRepository {
         Set<LocalDate> dias = new HashSet<>();
 
         List<?> progreso = entityManager.createNativeQuery(
-                        "SELECT DISTINCT fecha FROM seguimiento WHERE idusuario = ?1 AND fecha >= ?2 " +
+                        "SELECT DISTINCT fecha FROM seguimiento WHERE idusuario = ?1 AND fecha >= ?2 AND lectura_antigua = false " +
                                 "AND ((estado = 'LEYENDO' AND num_pagina > 0) OR estado = 'LEIDO')")
                 .setParameter(1, idusuario)
                 .setParameter(2, desde)

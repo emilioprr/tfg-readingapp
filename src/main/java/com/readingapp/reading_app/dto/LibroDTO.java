@@ -62,6 +62,8 @@ public class LibroDTO {
         private Long idautor;
         private Double notaMedia;
         private Integer numResenas;
+        /** Reseñas públicas + puntuaciones sin reseña: las que cuentan para la nota media. */
+        private Integer numValoraciones;
         private Double ritmoMedio;
         private Map<String, Long> distribucionNotas;
         private List<String> etiquetasPopulares;

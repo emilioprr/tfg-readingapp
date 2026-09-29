@@ -43,6 +43,7 @@ class ResenaServiceTest {
     @Mock private NotificacionService notificacionService;
     @Mock private SeguimientoRepository seguimientoRepository;
     @Mock private NotificacionRepository notificacionRepository;
+    @Mock private ValoracionRepository valoracionRepository;
 
     @InjectMocks private ResenaService resenaService;
 
@@ -182,6 +183,16 @@ class ResenaServiceTest {
             resenaService.crear(peticion("4"));
 
             verifyNoInteractions(notificacionService);
+        }
+
+        @Test
+        @DisplayName("Si lo había puntuado sin reseña, esa puntuación se borra (pasa a la reseña)")
+        void resenaSustituyeValoracion() {
+            leidoVeces(1, 0);
+
+            resenaService.crear(peticion("4"));
+
+            verify(valoracionRepository).borrar(ID_USUARIO, ID_LIBRO);
         }
     }
 

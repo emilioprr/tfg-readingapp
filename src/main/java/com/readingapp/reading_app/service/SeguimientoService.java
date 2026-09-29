@@ -178,6 +178,7 @@ public class SeguimientoService {
                 .porcentaje(porcentaje)
                 .portadaLibro(seguimiento.getLibro().getPortada())
                 .nombreAutor(seguimiento.getLibro().getAutor().getNombre())
+                .lecturaAntigua(Boolean.TRUE.equals(seguimiento.getLecturaAntigua()))
                 .build();
     }
 }

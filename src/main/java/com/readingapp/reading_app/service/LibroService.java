@@ -9,6 +9,7 @@ import com.readingapp.reading_app.repository.LibroRepository;
 import com.readingapp.reading_app.repository.AutorRepository;
 import com.readingapp.reading_app.repository.ResenaRepository;
 import com.readingapp.reading_app.repository.UsuarioRepository;
+import com.readingapp.reading_app.repository.ValoracionRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -18,7 +19,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -31,6 +31,8 @@ public class LibroService {
     private final UsuarioRepository usuarioRepository;
     private final NotificacionService notificacionService;
     private final ResenaRepository resenaRepository;
+    private final ValoracionRepository valoracionRepository;
+    private final NotasLibros notasLibros;
     private final GoogleBooksService googleBooksService;
 
     @Transactional
@@ -71,7 +73,7 @@ public class LibroService {
 
     public Page<LibroDTO.Response> buscarPorTitulo(String titulo, Pageable pageable) {
         Page<Libro> pagina = libroRepository.findByTituloContainingIgnoreCase(titulo, pageable);
-        Map<Long, double[]> notas = notasDe(pagina.getContent());
+        Map<Long, NotasLibros.Nota> notas = notasDe(pagina.getContent());
         return pagina.map(l -> toResumen(l, notas));
     }
 
@@ -106,6 +108,7 @@ public class LibroService {
         if (!libroRepository.existsById(id)) {
             throw new EntityNotFoundException("Libro no encontrado");
         }
+        valoracionRepository.borrarDeLibro(id);
         libroRepository.deleteById(id);
     }
 
@@ -153,12 +156,13 @@ public class LibroService {
         for (double d = 0.5; d <= 5.0; d += 0.5) {
             dist.put(String.valueOf(d), 0L);
         }
-        List<Object[]> rows = resenaRepository.findDistribucionByLibro(idlibro);
+        // Reseñas y puntuaciones sin reseña se suman en la misma barra
+        List<Object[]> rows = new ArrayList<>(resenaRepository.findDistribucionByLibro(idlibro));
+        rows.addAll(valoracionRepository.findDistribucionByLibro(idlibro));
         for (Object[] row : rows) {
-            String key = row[0].toString();
-            if (key.endsWith(".0")) key = key.substring(0, key.length() - 2) + ".0";
-            long count = ((Number) row[1]).longValue();
-            dist.put(key, count);
+            if (row[0] == null) continue;
+            String key = String.valueOf(((Number) row[0]).doubleValue());
+            dist.merge(key, ((Number) row[1]).longValue(), Long::sum);
         }
         return dist;
     }
@@ -188,23 +192,17 @@ public class LibroService {
 
     /** Listados: datos básicos y nota media, con una sola consulta de notas para todos los libros. */
     private List<LibroDTO.Response> toResumenes(List<Libro> libros) {
-        Map<Long, double[]> notas = notasDe(libros);
+        Map<Long, NotasLibros.Nota> notas = notasDe(libros);
         return libros.stream().map(l -> toResumen(l, notas)).toList();
     }
 
-    /** idlibro -> {nota media sobre 5, nº de reseñas públicas}. */
-    private Map<Long, double[]> notasDe(List<Libro> libros) {
-        Map<Long, double[]> notas = new HashMap<>();
-        if (libros.isEmpty()) return notas;
-        for (Object[] fila : resenaRepository.findNotasMediasPorLibros(libros.stream().map(Libro::getIdlibro).toList())) {
-            double media = ((Number) fila[1]).doubleValue();
-            notas.put((Long) fila[0], new double[]{Math.round(media * 10.0) / 10.0, ((Number) fila[2]).doubleValue()});
-        }
-        return notas;
+    /** idlibro -> nota media, nº de valoraciones y nº de reseñas públicas. */
+    private Map<Long, NotasLibros.Nota> notasDe(List<Libro> libros) {
+        return notasLibros.de(libros.stream().map(Libro::getIdlibro).toList());
     }
 
-    private LibroDTO.Response toResumen(Libro libro, Map<Long, double[]> notas) {
-        double[] nota = notas.get(libro.getIdlibro());
+    private LibroDTO.Response toResumen(Libro libro, Map<Long, NotasLibros.Nota> notas) {
+        NotasLibros.Nota nota = notas.get(libro.getIdlibro());
         return LibroDTO.Response.builder()
                 .idlibro(libro.getIdlibro())
                 .idapiexterna(libro.getIdapiexterna())
@@ -217,8 +215,9 @@ public class LibroService {
                 .genero(libro.getGenero())
                 .nombreAutor(libro.getAutor().getNombre())
                 .idautor(libro.getAutor().getIdautor())
-                .notaMedia(nota != null ? nota[0] : null)
-                .numResenas(nota != null ? (int) nota[1] : 0)
+                .notaMedia(nota != null ? nota.media() : null)
+                .numResenas(nota != null ? (int) nota.resenas() : 0)
+                .numValoraciones(nota != null ? (int) nota.valoraciones() : 0)
                 .build();
     }
 }

@@ -26,6 +26,14 @@ public class Seguimiento {
     @Column(nullable = false)
     private EstadoLectura estado = EstadoLectura.LEYENDO;
 
+    /**
+     * Libro marcado como leído al puntuarlo desde su ficha (leído hace tiempo, sin seguimiento).
+     * Cuenta en la estantería y en "libros leídos", pero no en retos, racha ni actividad.
+     */
+    @Column(name = "lectura_antigua", nullable = false, columnDefinition = "boolean default false")
+    @Builder.Default
+    private Boolean lecturaAntigua = false;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "idusuario", nullable = false)
     private Usuario usuario;

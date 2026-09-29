@@ -5,7 +5,6 @@ import com.readingapp.reading_app.dto.CatalogoDTO;
 import com.readingapp.reading_app.model.Libro;
 import com.readingapp.reading_app.model.enums.Categoria;
 import com.readingapp.reading_app.repository.LibroRepository;
-import com.readingapp.reading_app.repository.ResenaRepository;
 import com.readingapp.reading_app.repository.SeguimientoRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -36,11 +35,11 @@ public class CatalogoService {
     private static final double NOTA_MIN_VALORADOS = 3.5; // sobre 5
 
     private final LibroRepository libroRepository;
-    private final ResenaRepository resenaRepository;
+    private final NotasLibros notasLibros;
     private final SeguimientoRepository seguimientoRepository;
     private final Clock clock;
 
-    /** Nota media (sobre 5) y nº de reseñas públicas de un libro. */
+    /** Nota media (sobre 5) y nº de valoraciones (reseñas públicas + puntuaciones sin reseña) de un libro. */
     private record Nota(double media, int total) {}
 
     @Transactional(readOnly = true)
@@ -138,10 +137,7 @@ public class CatalogoService {
 
     private Map<Long, Nota> notasPorLibro() {
         Map<Long, Nota> notas = new HashMap<>();
-        for (Object[] fila : resenaRepository.findNotasMediasPorLibro()) {
-            double media = ((Number) fila[1]).doubleValue();
-            notas.put((Long) fila[0], new Nota(Math.round(media * 10.0) / 10.0, ((Number) fila[2]).intValue()));
-        }
+        notasLibros.todas().forEach((id, n) -> notas.put(id, new Nota(n.media(), (int) n.valoraciones())));
         return notas;
     }
 

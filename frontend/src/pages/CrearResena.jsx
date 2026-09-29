@@ -52,8 +52,29 @@ export default function CrearResena() {
         } catch (err) { console.error('Error:', err) }
     }, [idresena])
 
+    // Si ya lo había puntuado desde la ficha (sin reseña), se parte de esa nota: al publicar pasa a la reseña
+    const cargarValoracion = useCallback(async () => {
+        try {
+            const res = await api.get(`/valoraciones/libro/${idlibro}/mia`)
+            if (res.status === 200 && res.data?.puntuacion) {
+                setPuntuacion(Number(res.data.puntuacion))
+                setBloqueadoEstrellas(true)
+            }
+        } catch (err) { console.error('Error:', err) }
+    }, [idlibro])
+
     useEffect(() => { cargarLibro() }, [cargarLibro, idlibro])
-    useEffect(() => { if (esEdicion) cargarResena() }, [cargarResena, esEdicion, idresena])
+    useEffect(() => { if (esEdicion) cargarResena(); else cargarValoracion() }, [cargarResena, cargarValoracion, esEdicion, idresena])
+
+    // Al terminar un libro se puede dejar solo la nota, sin escribir la reseña
+    const soloPuntuar = async () => {
+        setError('')
+        if (puntuacion === 0) { setError('Elige una puntuación'); return }
+        try {
+            await api.put(`/valoraciones/libro/${idlibro}`, { puntuacion })
+            navigate(`/libro/${idlibro}`)
+        } catch (err) { setError(err.response?.data?.mensaje || 'Error al guardar la puntuación') }
+    }
 
     const toggleEtiqueta = (et) => { setEtiquetas(prev => prev.includes(et) ? prev.filter(e => e !== et) : [...prev, et]) }
 
@@ -161,6 +182,12 @@ export default function CrearResena() {
                         <button type="submit" className="w-full bg-terra hover:bg-terra-hover text-white font-semibold py-2.5 rounded-lg transition-colors">
                             {esEdicion ? 'Guardar cambios' : 'Publicar reseña'}
                         </button>
+                        {!esEdicion && (
+                            <button type="button" onClick={soloPuntuar}
+                                    className="w-full -mt-3 border border-dark-border hover:border-terra hover:text-terra text-dark-muted py-2.5 rounded-lg text-sm transition-colors">
+                                Solo puntuar, sin escribir reseña
+                            </button>
+                        )}
                     </form>
                 </div>
             </div>

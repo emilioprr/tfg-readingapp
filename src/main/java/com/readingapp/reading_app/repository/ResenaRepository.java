@@ -22,14 +22,15 @@ public interface ResenaRepository extends JpaRepository<Resena, Long> {
     long countByUsuarioIdusuario(Long idusuario);
     long countByUsuarioIdusuarioAndEsPublicaTrue(Long idusuario);
 
-    /** [idlibro, media de puntuación, nº de reseñas] de las reseñas públicas, por libro. */
-    @Query("SELECT r.libro.idlibro, AVG(r.puntuacion), COUNT(r) FROM Resena r WHERE r.esPublica = true GROUP BY r.libro.idlibro")
-    List<Object[]> findNotasMediasPorLibro();
+    /** [idlibro, suma de puntuaciones, nº con puntuación, nº de reseñas] de las reseñas públicas, por libro (ver NotasLibros). */
+    @Query("SELECT r.libro.idlibro, SUM(r.puntuacion), COUNT(r.puntuacion), COUNT(r) FROM Resena r " +
+            "WHERE r.esPublica = true GROUP BY r.libro.idlibro")
+    List<Object[]> findSumasNotasPorLibro();
 
     /** Igual que la anterior pero solo para los libros indicados (para listados). */
-    @Query("SELECT r.libro.idlibro, AVG(r.puntuacion), COUNT(r) FROM Resena r " +
+    @Query("SELECT r.libro.idlibro, SUM(r.puntuacion), COUNT(r.puntuacion), COUNT(r) FROM Resena r " +
             "WHERE r.esPublica = true AND r.libro.idlibro IN :ids GROUP BY r.libro.idlibro")
-    List<Object[]> findNotasMediasPorLibros(@Param("ids") java.util.Collection<Long> ids);
+    List<Object[]> findSumasNotasPorLibros(@Param("ids") java.util.Collection<Long> ids);
     @Query("SELECT r FROM Resena r WHERE r.libro.idlibro = :idlibro AND r.esPublica = true ORDER BY SIZE(r.likes) DESC")
     Page<Resena> findByLibroIdlibroAndEsPublicaTrueOrderByLikesDesc(@Param("idlibro") Long idlibro, Pageable pageable);
     @Query("SELECT r FROM Resena r WHERE r.usuario.idusuario = :idusuario AND r.esPublica = true ORDER BY SIZE(r.likes) DESC")

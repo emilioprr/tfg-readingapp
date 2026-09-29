@@ -5,6 +5,7 @@ import Estrellas from '../components/Estrellas'
 import ResenaCard from '../components/ResenaCard'
 import api from '../api/axios'
 import SpoilerOculto from '../components/SpoilerOculto'
+import PuntuarLibro from '../components/PuntuarLibro'
 
 export default function LibroDetalle() {
     const { id } = useParams()
@@ -13,6 +14,7 @@ export default function LibroDetalle() {
     const [libro, setLibro] = useState(null)
     const [resenas, setResenas] = useState([])
     const [estadoLibro, setEstadoLibro] = useState(null)
+    const [lecturaAntigua, setLecturaAntigua] = useState(false)
     const [esFavorito, setEsFavorito] = useState(false)
     const [numFavoritos, setNumFavoritos] = useState(0)
     const [mostrarConfirmacion, setMostrarConfirmacion] = useState(false)
@@ -49,7 +51,9 @@ export default function LibroDetalle() {
         try {
             const res = await api.get(`/seguimientos/usuario/${usuario.id}/libro/${id}`)
             const datos = res.data || []
-            if (datos.length > 0) setEstadoLibro(datos[datos.length - 1].estado)
+            const ultimo = datos.length > 0 ? datos[datos.length - 1] : null
+            setEstadoLibro(ultimo ? ultimo.estado : null)
+            setLecturaAntigua(!!ultimo?.lecturaAntigua)
         } catch (err) { console.error('Error:', err) }
     }, [id, usuario])
 
@@ -90,9 +94,10 @@ export default function LibroDetalle() {
     const cargarMisResenas = useCallback(async () => {
         if (!usuario) return
         try {
-            const res = await api.get(`/resenas/libro/${id}?size=50`)
+            // Tus reseñas (también las privadas), no solo las públicas del libro
+            const res = await api.get(`/resenas/usuario/${usuario.id}?size=200`)
             const todas = res.data.content || res.data || []
-            setMisResenas(todas.filter(r => r.idusuario === usuario.id))
+            setMisResenas(todas.filter(r => r.idlibro === parseInt(id)))
         } catch (err) { console.error('Error:', err) }
     }, [id, usuario])
 
@@ -177,6 +182,8 @@ export default function LibroDetalle() {
     const distKeys = ['0.5', '1.0', '1.5', '2.0', '2.5', '3.0', '3.5', '4.0', '4.5', '5.0']
     const maxDist = Math.max(...distKeys.map(k => dist[k] || 0), 1)
     const notaMedia = libro.notaMedia // sobre 5
+    // Tu reseña más reciente de este libro (si lo has releído puede haber varias)
+    const miResena = [...misResenas].sort((a, b) => new Date(b.fechaCreacion) - new Date(a.fechaCreacion))[0]
     const formatoNota = (n) => n.toLocaleString('es-ES', { minimumFractionDigits: 1, maximumFractionDigits: 1 })
 
     return (
@@ -191,6 +198,10 @@ export default function LibroDetalle() {
                         <div className="w-52 h-80 bg-dark-elevated rounded-sm flex items-center justify-center text-dark-muted shadow-xl">
                             Sin portada
                         </div>
+                    )}
+                    {usuario && (
+                        <PuntuarLibro idlibro={id} estado={estadoLibro} lecturaAntigua={lecturaAntigua} miResena={miResena}
+                                      onCambio={() => { cargarLibro(); cargarEstado(); cargarMisResenas(); cargarResenas() }} />
                     )}
                 </div>
 
@@ -220,7 +231,7 @@ export default function LibroDetalle() {
                                         <span className="text-terra text-4xl leading-none">★</span>
                                         <span className="text-dark-text text-4xl font-bold leading-none tracking-tight">{formatoNota(notaMedia)}</span>
                                         <span className="text-dark-muted text-sm self-end mb-0.5 ml-1">
-                                            {libro.numResenas} {libro.numResenas === 1 ? 'reseña' : 'reseñas'}
+                                            {libro.numValoraciones} {libro.numValoraciones === 1 ? 'valoración' : 'valoraciones'}
                                         </span>
                                     </>
                                 ) : (
@@ -323,7 +334,7 @@ export default function LibroDetalle() {
             </div>
 
             {/* Estadísticas de reseñas */}
-            {libro.numResenas > 0 && (
+            {libro.numValoraciones > 0 && (
                 <div className="bg-dark-card rounded-2xl p-6 mb-10">
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-0 sm:divide-x divide-dark-border">
                         {/* Distribución de notas: histograma compacto de 0,5 a 5 estrellas */}
@@ -337,11 +348,11 @@ export default function LibroDetalle() {
                                         <div key={k} className="relative h-full flex items-end group">
                                             <div className={`w-3 rounded-sm transition-colors ${count > 0 ? 'bg-terra/80 group-hover:bg-terra' : 'bg-dark-border'}`}
                                                  style={{ height: `${alto}%` }} />
-                                            {/* Al pasar el ratón: nº de reseñas con esa nota, encima de la barra */}
+                                            {/* Al pasar el ratón: nº de valoraciones con esa nota, encima de la barra */}
                                             <div className="absolute left-1/2 -translate-x-1/2 mb-1.5 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity z-10"
                                                  style={{ bottom: `${alto}%` }}>
                                                 <div className="bg-dark-elevated border border-dark-border text-dark-text text-[11px] rounded-md px-2 py-1 whitespace-nowrap shadow-lg">
-                                                    <span className="font-semibold">{count}</span> {count === 1 ? 'reseña' : 'reseñas'}
+                                                    <span className="font-semibold">{count}</span> {count === 1 ? 'valoración' : 'valoraciones'}
                                                     <span className="text-dark-muted"> · {k.replace('.', ',')}★</span>
                                                 </div>
                                             </div>
@@ -364,7 +375,7 @@ export default function LibroDetalle() {
                             </div>
                             <div className="mt-2"><Estrellas puntuacion={notaMedia} /></div>
                             <span className="text-dark-muted text-xs mt-1">
-                                {libro.numResenas} {libro.numResenas === 1 ? 'reseña' : 'reseñas'}
+                                {libro.numValoraciones} {libro.numValoraciones === 1 ? 'valoración' : 'valoraciones'}
                             </span>
                         </div>
 

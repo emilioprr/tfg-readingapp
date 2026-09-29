@@ -6,6 +6,7 @@ import com.readingapp.reading_app.model.Libro;
 import com.readingapp.reading_app.repository.LibroRepository;
 import com.readingapp.reading_app.repository.ResenaRepository;
 import com.readingapp.reading_app.repository.SeguimientoRepository;
+import com.readingapp.reading_app.repository.ValoracionRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -30,6 +31,7 @@ class CatalogoServiceTest {
 
     @Mock private LibroRepository libroRepository;
     @Mock private ResenaRepository resenaRepository;
+    @Mock private ValoracionRepository valoracionRepository;
     @Mock private SeguimientoRepository seguimientoRepository;
 
     private CatalogoService catalogoService;
@@ -42,10 +44,11 @@ class CatalogoServiceTest {
     void setUp() {
         ZoneId zona = ZoneId.of("Europe/Madrid");
         Clock reloj = Clock.fixed(LocalDate.of(2026, 9, 28).atStartOfDay(zona).toInstant(), zona);
-        catalogoService = new CatalogoService(libroRepository, resenaRepository, seguimientoRepository, reloj);
+        catalogoService = new CatalogoService(libroRepository, new NotasLibros(resenaRepository, valoracionRepository), seguimientoRepository, reloj);
 
         lenient().when(libroRepository.findAllConAutor()).thenReturn(libros);
-        lenient().when(resenaRepository.findNotasMediasPorLibro()).thenReturn(List.of());
+        lenient().when(resenaRepository.findSumasNotasPorLibro()).thenReturn(List.of());
+        lenient().when(valoracionRepository.findSumasPorLibro()).thenReturn(List.of());
         lenient().when(libroRepository.findPopulares(any(), any())).thenReturn(List.of());
     }
 
@@ -122,7 +125,7 @@ class CatalogoServiceTest {
 
     private CatalogoService servicioEnDia(LocalDate dia) {
         ZoneId zona = ZoneId.of("Europe/Madrid");
-        return new CatalogoService(libroRepository, resenaRepository, seguimientoRepository,
+        return new CatalogoService(libroRepository, new NotasLibros(resenaRepository, valoracionRepository), seguimientoRepository,
                 Clock.fixed(dia.atTime(10, 0).atZone(zona).toInstant(), zona));
     }
 
