@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import LibroCard from '../components/LibroCard'
+import ActividadSeguidos from '../components/ActividadSeguidos'
 import { useRacha } from '../context/RachaContext'
 import api from '../api/axios'
 
@@ -426,6 +427,9 @@ export default function Inicio() {
                     </div>
                 </div>
             )}
+
+            {/* Actividad de las personas que sigues */}
+            <ActividadSeguidos />
 
             {/* Modal finalizar */}
             {mostrarFinalizarModal && (

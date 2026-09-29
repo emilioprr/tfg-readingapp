@@ -23,6 +23,13 @@ public interface ParticipanteRetoRepository extends JpaRepository<ParticipanteRe
 
     List<ParticipanteReto> findByRetoIdreto(Long idreto);
 
+    /** Retos conseguidos recientemente por las personas que sigue un usuario (feed de actividad). */
+    @Query("SELECT p FROM ParticipanteReto p WHERE p.retoCumplido = true AND p.fechaCumplimiento >= :desde " +
+            "AND p.usuario IN (SELECT seg FROM Usuario u JOIN u.seguidos seg WHERE u.idusuario = :idusuario) " +
+            "ORDER BY p.fechaCumplimiento DESC")
+    List<ParticipanteReto> findRetosCumplidosDeSeguidos(@Param("idusuario") Long idusuario,
+                                                        @Param("desde") java.time.LocalDateTime desde, Pageable pageable);
+
     // Para retos activos de un usuario (paginado)
     /** Retos en curso de un usuario: sin completar y sin haber terminado (los caducados desaparecen). */
     @Query("SELECT p FROM ParticipanteReto p WHERE p.usuario.idusuario = :idusuario " +

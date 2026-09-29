@@ -57,6 +57,19 @@ public interface SeguimientoRepository extends JpaRepository<Seguimiento, Long> 
 
     long countByUsuarioIdusuarioAndLibroIdlibroAndEstado(Long idusuario, Long idlibro, EstadoLectura estado);
 
+    /**
+     * Momentos destacados de las personas que sigue un usuario, para su feed de actividad:
+     * empezar un libro (LEYENDO en la página 0), terminarlo y añadirlo a "Quiero leer".
+     * Los avances de página no se incluyen para no llenar el feed.
+     */
+    @Query("SELECT s FROM Seguimiento s WHERE s.usuario IN " +
+            "(SELECT seg FROM Usuario u JOIN u.seguidos seg WHERE u.idusuario = :idusuario) " +
+            "AND s.fecha >= :desde " +
+            "AND (s.estado = 'LEIDO' OR s.estado = 'PENDIENTE' OR (s.estado = 'LEYENDO' AND s.numPagina = 0)) " +
+            "ORDER BY s.fecha DESC, s.idseguimiento DESC")
+    List<Seguimiento> findActividadDeSeguidos(@Param("idusuario") Long idusuario, @Param("desde") LocalDate desde,
+                                              org.springframework.data.domain.Pageable pageable);
+
     /** Libros cuyo estado ACTUAL (último seguimiento) es el indicado, del más reciente al más antiguo. */
     @Query("SELECT s FROM Seguimiento s WHERE s.usuario.idusuario = :idusuario " +
             "AND s.estado = :estado " +

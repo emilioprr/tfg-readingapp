@@ -18,6 +18,7 @@ import CategoriaCatalogo from './pages/CategoriaCatalogo'
 import Conexiones from './pages/Conexiones'
 import Ajustes from './pages/Ajustes'
 import Citas from './pages/Citas'
+import Actividad from './pages/Actividad'
 import EnviarRecomendacion from './pages/EnviarRecomendacion'
 import CrearAnotacion from './pages/CrearAnotacion'
 import CrearReto from './pages/CrearReto'
@@ -57,6 +58,7 @@ function App() {
                             <Route path="/conexiones" element={<Conexiones/>}/>
                             <Route path="/ajustes" element={<Ajustes/>}/>
                             <Route path="/citas" element={<Citas/>}/>
+                            <Route path="/actividad" element={<Actividad/>}/>
                             <Route path="/autor/:id" element={<AutorDetalle/>}/>
                             <Route path="/notificaciones" element={<Notificaciones/>}/>
                             <Route path="/retos" element={<Retos/>}/>
