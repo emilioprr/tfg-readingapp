@@ -45,6 +45,9 @@ export default function Notificaciones() {
             case 'NUEVA_RECOMENDACION':
                 if (n.idlibro) navigate(`/libro/${n.idlibro}`)
                 break
+            case 'LIKE_CITA':
+                navigate('/perfil?tab=anotaciones')
+                break
             case 'RETO_CUMPLIDO':
                 navigate('/retos')
                 break
@@ -82,6 +85,8 @@ export default function Notificaciones() {
                                         <><span className="text-terra font-medium">{n.nombreUsuarioOrigen}</span> te ha recomendado <span className="text-terra font-medium">{n.tituloLibro}</span></>
                                     ) : n.tipo === 'LIKE_RESENA' && n.nombreUsuarioOrigen ? (
                                         <><span className="text-terra font-medium">{n.nombreUsuarioOrigen}</span> le ha gustado tu reseña</>
+                                    ) : n.tipo === 'LIKE_CITA' && n.nombreUsuarioOrigen ? (
+                                        <>A <span className="text-terra font-medium">{n.nombreUsuarioOrigen}</span> le ha gustado tu cita{n.tituloLibro && <> de <span className="text-terra font-medium">{n.tituloLibro}</span></>}</>
                                     ) : n.tipo === 'NUEVO_LIBRO_AUTOR' && n.tituloLibro ? (
                                         <>Nuevo libro: <span className="text-terra font-medium">{n.tituloLibro}</span></>
                                     ) : (

@@ -6,5 +6,6 @@ public enum TipoNotificacion {
     NUEVO_SEGUIDOR,
     NUEVA_RESENA_SEGUIDO,
     RETO_CUMPLIDO,
-    NUEVO_LIBRO_AUTOR
+    NUEVO_LIBRO_AUTOR,
+    LIKE_CITA
 }

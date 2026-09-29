@@ -7,7 +7,7 @@ import java.util.List;
 public class CitaDTO {
 
     @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
-    /*Una cita del muro: el texto, de qué libro es, quién la compartió y si la tienes guardada.*/
+    /*Una cita del muro: el texto, de qué libro es, quién la compartió, sus likes y veces guardada, y si tú la has likeado o guardado.*/
     public static class Response {
         private Long idanotacion;
         private String texto;
@@ -22,6 +22,9 @@ public class CitaDTO {
         private String portadaLibro;
         private String nombreAutor;
         private Boolean guardada;
+        private Boolean likeada;
+        private Long likes;
+        private Long vecesGuardada;
     }
 
     @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder

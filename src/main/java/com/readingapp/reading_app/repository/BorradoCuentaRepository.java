@@ -26,7 +26,8 @@ public class BorradoCuentaRepository {
             // Notificaciones suyas, provocadas por él o que apuntan a algo que se va a borrar
             "DELETE FROM notificacion WHERE idusuario = :id OR idusuario_origen = :id " +
                     "OR idresena IN " + SUS_RESENAS + " OR idrecomendacion IN " + SUS_RECOMENDACIONES +
-                    " OR idreto IN " + SUS_RETOS,
+                    " OR idreto IN " + SUS_RETOS +
+                    " OR idanotacion IN (SELECT idanotacion FROM anotacion WHERE idusuario = :id)",
             // Reseñas: likes (suyos y de otros a sus reseñas), etiquetas y las propias reseñas
             "DELETE FROM likea WHERE idusuario = :id OR idresena IN " + SUS_RESENAS,
             "DELETE FROM resena_etiqueta WHERE idresena IN " + SUS_RESENAS,
@@ -40,6 +41,9 @@ public class BorradoCuentaRepository {
             "DELETE FROM lista WHERE idusuario = :id",
             // Citas guardadas: las que guardó él y las suyas que guardaron otros
             "DELETE FROM cita_guardada WHERE idusuario = :id " +
+                    "OR idanotacion IN (SELECT idanotacion FROM anotacion WHERE idusuario = :id)",
+            // Likes a citas: los que dio él y los que recibieron sus citas
+            "DELETE FROM like_cita WHERE idusuario = :id " +
                     "OR idanotacion IN (SELECT idanotacion FROM anotacion WHERE idusuario = :id)",
             "DELETE FROM anotacion WHERE idusuario = :id",
             "DELETE FROM favorito WHERE idusuario = :id",

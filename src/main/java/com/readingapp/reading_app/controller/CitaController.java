@@ -13,11 +13,12 @@ public class CitaController {
 
     private final CitaService citaService;
 
-    /*Citas públicas de la comunidad.*/
+    /*Citas públicas de la comunidad. orden = "populares" (más likes de la semana) o "recientes".*/
     @GetMapping
-    public ResponseEntity<CitaDTO.Pagina> comunidad(@RequestParam(defaultValue = "0") int page,
+    public ResponseEntity<CitaDTO.Pagina> comunidad(@RequestParam(defaultValue = "populares") String orden,
+                                                    @RequestParam(defaultValue = "0") int page,
                                                     @RequestParam(defaultValue = "20") int size) {
-        return ResponseEntity.ok(citaService.obtenerComunidad(Math.max(page, 0), Math.min(Math.max(size, 1), 50)));
+        return ResponseEntity.ok(citaService.obtenerComunidad(orden, Math.max(page, 0), Math.min(Math.max(size, 1), 50)));
     }
 
     /*Citas guardadas por un usuario (pestaña "Citas" de su perfil).*/
@@ -37,6 +38,18 @@ public class CitaController {
     @DeleteMapping("/{id}/guardar")
     public ResponseEntity<Void> quitar(@PathVariable Long id) {
         citaService.quitar(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{id}/like")
+    public ResponseEntity<Void> darLike(@PathVariable Long id) {
+        citaService.darLike(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/{id}/like")
+    public ResponseEntity<Void> quitarLike(@PathVariable Long id) {
+        citaService.quitarLike(id);
         return ResponseEntity.noContent().build();
     }
 }

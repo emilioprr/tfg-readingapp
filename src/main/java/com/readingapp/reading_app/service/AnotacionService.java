@@ -10,6 +10,8 @@ import com.readingapp.reading_app.model.enums.EstadoLectura;
 import com.readingapp.reading_app.model.enums.TipoAnotacion;
 import com.readingapp.reading_app.repository.AnotacionRepository;
 import com.readingapp.reading_app.repository.LibroRepository;
+import com.readingapp.reading_app.repository.LikeCitaRepository;
+import com.readingapp.reading_app.repository.NotificacionRepository;
 import com.readingapp.reading_app.repository.SeguimientoRepository;
 import com.readingapp.reading_app.repository.UsuarioRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -31,6 +33,8 @@ public class AnotacionService {
     private final UsuarioRepository usuarioRepository;
     private final LibroRepository libroRepository;
     private final SeguimientoRepository seguimientoRepository;
+    private final LikeCitaRepository likeCitaRepository;
+    private final NotificacionRepository notificacionRepository;
 
     @Transactional
     public AnotacionDTO.Response crear(AnotacionDTO.CreateRequest request) {
@@ -119,6 +123,8 @@ public class AnotacionService {
                 .orElseThrow(() -> new EntityNotFoundException("Anotación no encontrada con id: " + id));
         SecurityUtils.validarUsuarioOAdmin(anotacion.getUsuario().getIdusuario());
         anotacionRepository.borrarDeCitasGuardadas(id);
+        likeCitaRepository.borrarDeAnotacion(id);
+        notificacionRepository.deleteByAnotacionIdanotacion(id);
         anotacionRepository.deleteById(id);
     }
 

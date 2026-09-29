@@ -52,5 +52,9 @@ public class Notificacion {
     @ManyToOne
     @JoinColumn(name = "idreto")
     private Reto reto;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "idanotacion")
+    private Anotacion anotacion;
 }
 

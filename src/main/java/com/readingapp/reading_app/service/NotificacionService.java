@@ -87,6 +87,26 @@ public class NotificacionService {
         notificacionRepository.save(notificacion);
     }
 
+    /** Avisa al autor de una cita de que a alguien le ha gustado; una sola vez por persona, aunque quite y vuelva a dar like. */
+    @Transactional
+    public void crearNotificacionLikeCita(Anotacion cita, Usuario usuarioOrigen) {
+        if (notificacionRepository.existsByTipoAndAnotacionIdanotacionAndUsuarioOrigenIdusuario(
+                TipoNotificacion.LIKE_CITA, cita.getIdanotacion(), usuarioOrigen.getIdusuario())) {
+            return;
+        }
+        Notificacion notificacion = Notificacion.builder()
+                .tipo(TipoNotificacion.LIKE_CITA)
+                .mensaje("A " + usuarioOrigen.getNombre() + " le ha gustado tu cita de " + cita.getLibro().getTitulo())
+                .usuario(cita.getUsuario())
+                .anotacion(cita)
+                .libro(cita.getLibro())
+                .usuarioOrigen(usuarioOrigen)
+                .fecha(LocalDateTime.now())
+                .leida(false)
+                .build();
+        notificacionRepository.save(notificacion);
+    }
+
     @Transactional
     public void crearNotificacionRecomendacion(Recomendacion recomendacion) {
         Notificacion notificacion = Notificacion.builder()
@@ -179,6 +199,7 @@ public class NotificacionService {
                 .nombreUsuarioOrigen(notificacion.getUsuarioOrigen() != null ? notificacion.getUsuarioOrigen().getNombre() : null)
                 .idlibro(notificacion.getLibro() != null ? notificacion.getLibro().getIdlibro() : null)
                 .tituloLibro(notificacion.getLibro() != null ? notificacion.getLibro().getTitulo() : null)
+                .idanotacion(notificacion.getAnotacion() != null ? notificacion.getAnotacion().getIdanotacion() : null)
                 .build();
     }
 }

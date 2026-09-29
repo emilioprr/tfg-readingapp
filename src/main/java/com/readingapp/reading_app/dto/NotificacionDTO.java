@@ -19,6 +19,7 @@ public class NotificacionDTO {
         private String nombreUsuarioOrigen;
         private Long idlibro;
         private String tituloLibro;
+        private Long idanotacion;
     }
 
     @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder

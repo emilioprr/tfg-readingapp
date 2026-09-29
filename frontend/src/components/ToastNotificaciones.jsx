@@ -11,6 +11,8 @@ const formatearMensaje = (n) => {
             return { icono: '⭐', titulo: 'Nueva reseña', texto: `${n.nombreUsuarioOrigen} ha reseñado ${n.tituloLibro || 'un libro'}` }
         case 'LIKE_RESENA':
             return { icono: '❤️', titulo: 'Nuevo like', texto: `A ${n.nombreUsuarioOrigen} le gustó tu reseña` }
+        case 'LIKE_CITA':
+            return { icono: '❤️', titulo: 'Nuevo like', texto: `A ${n.nombreUsuarioOrigen} le gustó tu cita` }
         case 'NUEVA_RECOMENDACION':
             return { icono: '📚', titulo: 'Recomendación', texto: `${n.nombreUsuarioOrigen} te recomienda ${n.tituloLibro || 'un libro'}` }
         case 'RETO_CUMPLIDO':
@@ -25,6 +27,7 @@ const getDestino = (n) => {
         case 'NUEVO_SEGUIDOR': return `/usuario/${n.idusuarioOrigen}`
         case 'NUEVA_RESENA_SEGUIDO': return n.idresena ? `/resena/${n.idresena}` : null
         case 'LIKE_RESENA': return n.idresena ? `/resena/${n.idresena}` : null
+        case 'LIKE_CITA': return '/perfil?tab=anotaciones'
         case 'NUEVA_RECOMENDACION': return n.idlibro ? `/libro/${n.idlibro}` : null
         case 'RETO_CUMPLIDO': return '/retos'
         default: return '/notificaciones'
@@ -52,7 +55,7 @@ export default function ToastNotificaciones() {
         }
         const sinVer = noLeidas.filter(n =>
             !ultimaComprobacion.current.includes(n.idnotificacion) &&
-            ['NUEVO_SEGUIDOR', 'NUEVA_RECOMENDACION', 'LIKE_RESENA'].includes(n.tipo))
+            ['NUEVO_SEGUIDOR', 'NUEVA_RECOMENDACION', 'LIKE_RESENA', 'LIKE_CITA'].includes(n.tipo))
         ultimaComprobacion.current = ids
 
         sinVer.forEach(n => {

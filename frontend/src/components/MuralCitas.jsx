@@ -50,7 +50,9 @@ export default function MuralCitas({ perfilId, esMio, usuario }) {
             if (esMio && cita.guardada) {
                 setCitas(prev => prev.filter(c => c.idanotacion !== cita.idanotacion))
             } else {
-                setCitas(prev => prev.map(c => c.idanotacion === cita.idanotacion ? { ...c, guardada: !c.guardada } : c))
+                setCitas(prev => prev.map(c => c.idanotacion === cita.idanotacion
+                    ? { ...c, guardada: !c.guardada, vecesGuardada: Math.max((c.vecesGuardada || 0) + (c.guardada ? -1 : 1), 0) }
+                    : c))
             }
         } catch (err) { alert(err.response?.data?.mensaje || 'Error') }
     }

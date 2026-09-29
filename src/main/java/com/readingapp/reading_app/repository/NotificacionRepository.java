@@ -16,4 +16,6 @@ public interface NotificacionRepository extends JpaRepository<Notificacion, Long
     Page<Notificacion> findByUsuarioIdusuarioAndTipoOrderByFechaDesc(Long idusuario, TipoNotificacion tipo, Pageable pageable);
     long countByUsuarioIdusuarioAndLeidaFalse(Long idusuario);
     void deleteByResenaIdresena(Long idresena);
+    void deleteByAnotacionIdanotacion(Long idanotacion);
+    boolean existsByTipoAndAnotacionIdanotacionAndUsuarioOrigenIdusuario(TipoNotificacion tipo, Long idanotacion, Long idusuarioOrigen);
 }

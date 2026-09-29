@@ -37,6 +37,7 @@ class PermisosServiceTest {
     @Mock private SeguimientoRepository seguimientoRepository;
     @Mock private ListaRepository listaRepository;
     @Mock private AnotacionRepository anotacionRepository;
+    @Mock private LikeCitaRepository likeCitaRepository;
     @Mock private ResenaRepository resenaRepository;
     @Mock private RecomendacionRepository recomendacionRepository;
     @Mock private RetoRepository retoRepository;

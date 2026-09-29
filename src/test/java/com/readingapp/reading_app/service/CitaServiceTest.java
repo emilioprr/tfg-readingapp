@@ -4,9 +4,12 @@ import com.readingapp.reading_app.dto.CitaDTO;
 import com.readingapp.reading_app.model.Anotacion;
 import com.readingapp.reading_app.model.Autor;
 import com.readingapp.reading_app.model.Libro;
+import com.readingapp.reading_app.model.LikeCita;
 import com.readingapp.reading_app.model.Usuario;
 import com.readingapp.reading_app.model.enums.TipoAnotacion;
 import com.readingapp.reading_app.repository.AnotacionRepository;
+import com.readingapp.reading_app.repository.NotificacionRepository;
+import com.readingapp.reading_app.model.enums.TipoNotificacion;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -15,6 +18,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -29,13 +33,14 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /*Muro de citas contra una base de datos real (H2).*/
 @DataJpaTest
-@Import(CitaService.class)
-@DisplayName("CitaService - muro de citas y citas guardadas")
+@Import({CitaService.class, NotificacionService.class})
+@DisplayName("CitaService - muro de citas, likes y citas guardadas")
 class CitaServiceTest {
 
     @Autowired private TestEntityManager em;
     @Autowired private CitaService citaService;
     @Autowired private AnotacionRepository anotacionRepository;
+    @Autowired private NotificacionRepository notificacionRepository;
 
     private Usuario ana, luis;
     private Libro libro;
@@ -80,7 +85,7 @@ class CitaServiceTest {
         anotacion(ana, TipoAnotacion.CITA, true, "Segunda cita");
         em.flush();
 
-        assertThat(textos(citaService.obtenerComunidad(0, 20))).containsExactly("Segunda cita", "Primera cita");
+        assertThat(textos(citaService.obtenerComunidad("recientes", 0, 20))).containsExactly("Segunda cita", "Primera cita");
     }
 
     @Test
@@ -91,7 +96,7 @@ class CitaServiceTest {
 
         citaService.guardar(cita.getIdanotacion());
         em.flush();
-        assertThat(citaService.obtenerComunidad(0, 20).getCitas().get(0).getGuardada()).isTrue();
+        assertThat(citaService.obtenerComunidad("recientes", 0, 20).getCitas().get(0).getGuardada()).isTrue();
         assertThat(textos(citaService.obtenerGuardadas(ana.getIdusuario(), 0, 20))).containsExactly("Una cita bonita");
 
         citaService.quitar(cita.getIdanotacion());
@@ -156,13 +161,107 @@ class CitaServiceTest {
         assertThat(anotacionRepository.findById(cita.getIdanotacion())).isEmpty();
     }
 
+    private CitaDTO.Response buscar(CitaDTO.Pagina pagina, Long idanotacion) {
+        return pagina.getCitas().stream().filter(c -> c.getIdanotacion().equals(idanotacion)).findFirst().orElseThrow();
+    }
+
+    private void like(Usuario u, Anotacion cita, LocalDateTime fecha) {
+        em.persist(LikeCita.builder().usuario(u).anotacion(cita).fecha(fecha).build());
+    }
+
+    @Test
+    @DisplayName("Dar y quitar like actualiza el contador y la marca; dar like dos veces cuenta una")
+    void darYQuitarLike() {
+        Anotacion cita = anotacion(luis, TipoAnotacion.CITA, true, "Cita para likear");
+        em.flush();
+
+        citaService.darLike(cita.getIdanotacion());
+        citaService.darLike(cita.getIdanotacion());
+        em.flush();
+        CitaDTO.Response r = buscar(citaService.obtenerComunidad("recientes", 0, 20), cita.getIdanotacion());
+        assertThat(r.getLikes()).isEqualTo(1);
+        assertThat(r.getLikeada()).isTrue();
+
+        citaService.quitarLike(cita.getIdanotacion());
+        em.flush();
+        r = buscar(citaService.obtenerComunidad("recientes", 0, 20), cita.getIdanotacion());
+        assertThat(r.getLikes()).isZero();
+        assertThat(r.getLikeada()).isFalse();
+    }
+
+    @Test
+    @DisplayName("Dar like avisa al autor de la cita una sola vez, aunque se quite y se vuelva a dar")
+    void likeNotificaAlAutor() {
+        Anotacion cita = anotacion(luis, TipoAnotacion.CITA, true, "Cita de Luis");
+        em.flush();
+
+        citaService.darLike(cita.getIdanotacion());
+        citaService.quitarLike(cita.getIdanotacion());
+        em.flush();
+        citaService.darLike(cita.getIdanotacion());
+        em.flush();
+
+        var avisos = notificacionRepository.findByUsuarioIdusuarioAndTipoOrderByFechaDesc(
+                luis.getIdusuario(), TipoNotificacion.LIKE_CITA, PageRequest.of(0, 10)).getContent();
+        assertThat(avisos).hasSize(1);
+        assertThat(avisos.get(0).getUsuarioOrigen().getIdusuario()).isEqualTo(ana.getIdusuario());
+        assertThat(avisos.get(0).getAnotacion().getIdanotacion()).isEqualTo(cita.getIdanotacion());
+    }
+
+    @Test
+    @DisplayName("No se puede dar like a citas privadas de otros ni a las propias")
+    void noLikeAPrivadasNiPropias() {
+        Anotacion privada = anotacion(luis, TipoAnotacion.CITA, false, "Privada");
+        Anotacion propia = anotacion(ana, TipoAnotacion.CITA, true, "Mía");
+        em.flush();
+
+        assertThatThrownBy(() -> citaService.darLike(privada.getIdanotacion())).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> citaService.darLike(propia.getIdanotacion())).isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    @DisplayName("Populares: primero las más likeadas de la última semana; los likes antiguos no cuentan")
+    void ordenPopulares() {
+        Usuario eva = usuario("eva");
+        Usuario leo = usuario("leo");
+        Anotacion antigua = anotacion(luis, TipoAnotacion.CITA, true, "Muy likeada hace un mes");
+        Anotacion semanal = anotacion(luis, TipoAnotacion.CITA, true, "Likeada esta semana");
+        Anotacion reciente = anotacion(luis, TipoAnotacion.CITA, true, "Sin likes, la más nueva");
+        LocalDateTime haceUnMes = LocalDateTime.now().minusDays(30);
+        like(ana, antigua, haceUnMes);
+        like(leo, antigua, haceUnMes);
+        like(eva, antigua, haceUnMes);
+        like(ana, semanal, LocalDateTime.now().minusDays(2));
+        em.flush();
+
+        CitaDTO.Pagina populares = citaService.obtenerComunidad("populares", 0, 20);
+        assertThat(textos(populares)).containsExactly("Likeada esta semana", "Sin likes, la más nueva", "Muy likeada hace un mes");
+        // El contador que se muestra es el total, no solo el de la semana
+        assertThat(buscar(populares, antigua.getIdanotacion()).getLikes()).isEqualTo(3);
+        assertThat(populares.getHayMas()).isFalse();
+    }
+
+    @Test
+    @DisplayName("Cada cita indica cuántas veces se ha guardado")
+    void vecesGuardada() {
+        Anotacion cita = anotacion(luis, TipoAnotacion.CITA, true, "Guardada por dos");
+        em.flush();
+        luis.getCitasGuardadas().add(cita);
+        citaService.guardar(cita.getIdanotacion());
+        em.flush();
+
+        assertThat(buscar(citaService.obtenerComunidad("recientes", 0, 20), cita.getIdanotacion()).getVecesGuardada()).isEqualTo(2);
+    }
+
     @Test
     @DisplayName("La paginación indica si hay más citas")
     void paginacion() {
         for (int i = 0; i < 3; i++) anotacion(luis, TipoAnotacion.CITA, true, "Cita " + i);
         em.flush();
 
-        assertThat(citaService.obtenerComunidad(0, 2).getHayMas()).isTrue();
-        assertThat(citaService.obtenerComunidad(1, 2).getHayMas()).isFalse();
+        assertThat(citaService.obtenerComunidad("recientes", 0, 2).getHayMas()).isTrue();
+        assertThat(citaService.obtenerComunidad("recientes", 1, 2).getHayMas()).isFalse();
+        assertThat(citaService.obtenerComunidad("populares", 0, 2).getHayMas()).isTrue();
+        assertThat(citaService.obtenerComunidad("populares", 1, 2).getHayMas()).isFalse();
     }
 }

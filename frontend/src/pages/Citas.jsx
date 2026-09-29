@@ -1,14 +1,21 @@
 import { useState, useEffect } from 'react'
-import { Link, Navigate } from 'react-router-dom'
+import { Link, Navigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import TarjetaCita from '../components/TarjetaCita'
 import api from '../api/axios'
 
 const TAMANIO = 20
 
-/** Muro de citas: frases de los libros compartidas por la comunidad, que se pueden guardar en el perfil. */
+const ORDENES = [
+    { key: 'populares', label: 'Populares esta semana' },
+    { key: 'recientes', label: 'Recientes' },
+]
+
+/** Muro de citas: frases de los libros compartidas por la comunidad, que se pueden likear y colgar en el perfil. */
 export default function Citas() {
     const { usuario } = useAuth()
+    const [searchParams, setSearchParams] = useSearchParams()
+    const orden = searchParams.get('orden') === 'recientes' ? 'recientes' : 'populares'
     const [citas, setCitas] = useState([])
     const [pagina, setPagina] = useState(0)
     const [hayMas, setHayMas] = useState(false)
@@ -19,7 +26,7 @@ export default function Citas() {
         const cargar = async () => {
             setCargando(true)
             try {
-                const res = await api.get(`/citas?page=0&size=${TAMANIO}`)
+                const res = await api.get(`/citas?orden=${orden}&page=0&size=${TAMANIO}`)
                 setCitas(res.data.citas || [])
                 setPagina(0)
                 setHayMas(res.data.hayMas)
@@ -27,11 +34,11 @@ export default function Citas() {
             finally { setCargando(false) }
         }
         cargar()
-    }, [usuario])
+    }, [orden, usuario])
 
     const cargarMas = async () => {
         try {
-            const res = await api.get(`/citas?page=${pagina + 1}&size=${TAMANIO}`)
+            const res = await api.get(`/citas?orden=${orden}&page=${pagina + 1}&size=${TAMANIO}`)
             setCitas(prev => [...prev, ...(res.data.citas || [])])
             setPagina(p => p + 1)
             setHayMas(res.data.hayMas)
@@ -42,7 +49,9 @@ export default function Citas() {
         try {
             if (cita.guardada) await api.delete(`/citas/${cita.idanotacion}/guardar`)
             else await api.post(`/citas/${cita.idanotacion}/guardar`)
-            setCitas(prev => prev.map(c => c.idanotacion === cita.idanotacion ? { ...c, guardada: !c.guardada } : c))
+            setCitas(prev => prev.map(c => c.idanotacion === cita.idanotacion
+                ? { ...c, guardada: !c.guardada, vecesGuardada: Math.max((c.vecesGuardada || 0) + (c.guardada ? -1 : 1), 0) }
+                : c))
         } catch (err) { alert(err.response?.data?.mensaje || 'Error') }
     }
 
@@ -56,6 +65,17 @@ export default function Citas() {
                 el <Link to="/perfil?tab=citas" className="text-terra hover:text-terra-hover transition-colors">mural de tu perfil</Link>.
                 Para compartir una, crea una anotación de tipo cita y hazla pública.
             </p>
+
+            <div className="flex gap-2 mb-6 border-b border-dark-border">
+                {ORDENES.map((o) => (
+                    <button key={o.key} onClick={() => setSearchParams(o.key === 'populares' ? {} : { orden: o.key })}
+                            className={`px-4 py-2.5 text-sm font-medium transition-colors relative ${
+                                orden === o.key ? 'text-terra' : 'text-dark-muted hover:text-dark-text'}`}>
+                        {o.label}
+                        {orden === o.key && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-terra rounded-full" />}
+                    </button>
+                ))}
+            </div>
 
             {cargando ? <p className="text-dark-muted">Cargando...</p> : citas.length === 0 ? (
                 <div className="bg-dark-card rounded-2xl py-12 px-6 text-center">
