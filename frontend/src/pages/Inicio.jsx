@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import LibroCard from '../components/LibroCard'
 import ActividadSeguidos from '../components/ActividadSeguidos'
 import { useRacha } from '../context/RachaContext'
+import { useNotificaciones } from '../context/NotificacionesContext'
 import api from '../api/axios'
 
 export default function Inicio() {
@@ -15,7 +16,6 @@ export default function Inicio() {
     const [retoIndex, setRetoIndex] = useState(0)
     const [popularesAmigos, setPopularesAmigos] = useState([])
     const [loading, setLoading] = useState(true)
-    const [retoCumplido, setRetoCumplido] = useState(null)
     const [editandoProgreso, setEditandoProgreso] = useState(false)
     const [nuevaPagina, setNuevaPagina] = useState('')
     const [errorProgreso, setErrorProgreso] = useState('')
@@ -24,19 +24,14 @@ export default function Inicio() {
     const [mostrarAnotacionModal, setMostrarAnotacionModal] = useState(false)
     const [librosPopulares, setLibrosPopulares] = useState([])
     const { refrescarRacha } = useRacha()
+    // Tras registrar lectura se piden las notificaciones al momento: si se cumple un reto, sale su aviso
+    const { refrescar: refrescarNotificaciones } = useNotificaciones()
 
     useEffect(() => {
         if (retoIndex >= retosActivos.length) {
             setRetoIndex(0)
         }
     }, [retoIndex, retosActivos])
-
-    useEffect(() => {
-        if (retoCumplido) {
-            const timer = setTimeout(() => setRetoCumplido(null), 5000)
-            return () => clearTimeout(timer)
-        }
-    }, [retoCumplido])
 
     const cargarLeyendo = useCallback(async () => {
         try {
@@ -107,21 +102,12 @@ export default function Inicio() {
                     idlibro: libroActual.idlibro,
                 })
                 cargarRetos()
+                refrescarNotificaciones()
                 navigate(`/libro/${libroActual.idlibro}/resena`)
             } else {
                 cargarLeyendo()
                 cargarRetos()
-
-                try {
-                    const res = await api.get(`/notificaciones/usuario/${usuario.id}?size=5`)
-                    const notis = res.data.content || res.data || []
-                    const retoNotif = notis.find(n => !n.leida && n.tipo === 'RETO_CUMPLIDO')
-                    if (retoNotif) {
-                        setRetoCumplido(retoNotif.mensaje)
-                        await api.put(`/notificaciones/${retoNotif.idnotificacion}/leida`)
-                    }
-                } catch { /* silencioso */ }
-
+                refrescarNotificaciones()
                 setMostrarAnotacionModal(true)
             }
         } catch (err) {
@@ -137,6 +123,7 @@ export default function Inicio() {
                 idusuario: usuario.id,
                 idlibro: libroActual.idlibro,
             })
+            refrescarNotificaciones()
             navigate(`/libro/${libroActual.idlibro}/resena`)
         } catch (err) {
             alert(err.response?.data?.mensaje || 'Error')
@@ -487,19 +474,6 @@ export default function Inicio() {
                                 Sí, anotar
                             </button>
                         </div>
-                    </div>
-                </div>
-            )}
-
-            {retoCumplido && (
-                <div className="fixed top-6 right-6 z-50 animate-slide-in">
-                    <div className="bg-dark-card border border-terra/40 rounded-xl p-4 shadow-2xl flex items-center gap-4 max-w-sm">
-                        <div className="text-3xl">🎉</div>
-                        <div>
-                            <p className="text-dark-text font-semibold text-sm">¡Reto completado!</p>
-                            <p className="text-terra text-sm">{retoCumplido}</p>
-                        </div>
-                        <button onClick={() => setRetoCumplido(null)} className="text-dark-muted hover:text-dark-text text-sm ml-2">✕</button>
                     </div>
                 </div>
             )}

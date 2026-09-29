@@ -67,10 +67,13 @@ function TarjetaActivo({ p, onAbandonar }) {
                     <h3 className="text-dark-text font-medium">{p.tituloReto}</h3>
                     <Etiquetas tipo={p.tipoReto} modalidad={p.modalidadReto} />
                 </div>
-                <button onClick={() => onAbandonar(p.idreto)}
-                        className="text-red-400/60 hover:text-red-400 text-xs transition-colors">
-                    Abandonar
-                </button>
+                {/* Un reto personal es un compromiso contigo mismo: no se abandona */}
+                {esGrupal && (
+                    <button onClick={() => onAbandonar(p.idreto)}
+                            className="text-red-400/60 hover:text-red-400 text-xs transition-colors">
+                        Abandonar
+                    </button>
+                )}
             </div>
             <div className="mt-4">
                 <BarraProgreso porcentaje={p.porcentaje} />
@@ -171,10 +174,13 @@ export default function Retos() {
     }
 
     // Explorar: oficiales y colaborativos para todos; compartidos solo de amigos
-    const idsActivos = new Set(activos.map(a => a.idreto))
-    const explorables = disponibles.filter(r => !idsActivos.has(r.idreto))
+    // Fuera los retos en los que ya estás, tanto en curso como completados
+    const idsMios = new Set([...activos.map(a => a.idreto), ...logros.map(l => l.idreto)])
+    const explorables = disponibles.filter(r => !idsMios.has(r.idreto))
     const comunidad = explorables.filter(r => r.modalidad === 'PREDEFINIDO' || r.modalidad === 'COLABORATIVO')
-    const deAmigos = explorables.filter(r => r.modalidad === 'COMPARTIDO' && seguidos.includes(r.idCreador))
+    // Los tuyos también, por si creaste alguno antes de que el creador participara automáticamente
+    const deAmigos = explorables.filter(r => r.modalidad === 'COMPARTIDO'
+        && (seguidos.includes(r.idCreador) || r.idCreador === usuario.id))
 
     const tabs = [
         { key: 'activos', label: `Activos${activos.length ? ` (${activos.length})` : ''}` },

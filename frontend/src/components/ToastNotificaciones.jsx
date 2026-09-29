@@ -55,7 +55,7 @@ export default function ToastNotificaciones() {
         }
         const sinVer = noLeidas.filter(n =>
             !ultimaComprobacion.current.includes(n.idnotificacion) &&
-            ['NUEVO_SEGUIDOR', 'NUEVA_RECOMENDACION', 'LIKE_RESENA', 'LIKE_CITA'].includes(n.tipo))
+            ['NUEVO_SEGUIDOR', 'NUEVA_RECOMENDACION', 'LIKE_RESENA', 'LIKE_CITA', 'RETO_CUMPLIDO'].includes(n.tipo))
         ultimaComprobacion.current = ids
 
         sinVer.forEach(n => {

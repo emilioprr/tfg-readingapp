@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useRacha } from '../context/RachaContext'
+import { useNotificaciones } from '../context/NotificacionesContext'
 import api from '../api/axios'
 
 export default function Timer() {
@@ -19,6 +20,7 @@ export default function Timer() {
     const [guardando, setGuardando] = useState(false)
     const [guardado, setGuardado] = useState(false)
     const { refrescarRacha } = useRacha()
+    const { refrescar: refrescarNotificaciones } = useNotificaciones()
 
     const intervalRef = useRef(null)
     const segundosRef = useRef(0)
@@ -143,6 +145,7 @@ export default function Timer() {
                 duracionMinutos: minutosLeidos,
             })
             refrescarRacha()
+            refrescarNotificaciones() // por si la sesión completa un reto de horas
             setSesionTerminada(true)
             setGuardado(true)
         } catch (err) {

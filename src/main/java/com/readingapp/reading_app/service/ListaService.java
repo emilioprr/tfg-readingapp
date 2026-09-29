@@ -93,7 +93,9 @@ public class ListaService {
         SecurityUtils.validarUsuario(lista.getUsuario().getIdusuario());
         Libro libro = libroRepository.findById(idlibro)
                 .orElseThrow(() -> new EntityNotFoundException("Libro no encontrado"));
-        lista.getLibros().add(libro);
+        if (!lista.getLibros().add(libro)) {
+            throw new IllegalArgumentException("Este libro ya está en la lista");
+        }
         listaRepository.save(lista);
     }
 

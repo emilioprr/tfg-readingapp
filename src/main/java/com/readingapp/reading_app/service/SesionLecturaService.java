@@ -18,19 +18,12 @@ public class SesionLecturaService {
 
     private final SesionLecturaRepository sesionLecturaRepository;
     private final UsuarioRepository usuarioRepository;
-    private final LibroRepository libroRepository;
     private final RetoService retoService;
 
     @Transactional
     public SesionLecturaDTO.Response registrar(SesionLecturaDTO.CreateRequest request) {
         Usuario usuario = usuarioRepository.findById(request.getIdusuario())
                 .orElseThrow(() -> new EntityNotFoundException("Usuario no encontrado"));
-        Libro libro = null;
-        if (request.getIdlibro() != null) {
-            libro = libroRepository.findById(request.getIdlibro())
-                    .orElseThrow(() -> new EntityNotFoundException("Libro no encontrado"));
-        }
-
         int minutos = request.getDuracionMinutos() != null ? request.getDuracionMinutos() : 0;
         if (minutos < 1 || minutos > SesionLecturaDTO.MAX_MINUTOS_SESION) {
             throw new IllegalArgumentException("Una sesión de lectura debe durar entre 1 minuto y 12 horas");
@@ -40,7 +33,6 @@ public class SesionLecturaService {
 
         SesionLectura sesion = SesionLectura.builder()
                 .usuario(usuario)
-                .libro(libro)
                 .inicio(ahora.minusMinutes(request.getDuracionMinutos()))
                 .fin(ahora)
                 .duracionMinutos(request.getDuracionMinutos())
@@ -72,8 +64,6 @@ public class SesionLecturaService {
                 .idsesion(sesion.getIdsesion())
                 .idusuario(sesion.getUsuario().getIdusuario())
                 .nombreUsuario(sesion.getUsuario().getNombre())
-                .idlibro(sesion.getLibro() != null ? sesion.getLibro().getIdlibro() : null)
-                .tituloLibro(sesion.getLibro() != null ? sesion.getLibro().getTitulo() : null)
                 .inicio(sesion.getInicio().toString())
                 .fin(sesion.getFin() != null ? sesion.getFin().toString() : null)
                 .duracionMinutos(sesion.getDuracionMinutos())

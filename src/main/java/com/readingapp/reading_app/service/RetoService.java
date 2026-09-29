@@ -72,7 +72,9 @@ public class RetoService {
 
         reto = retoRepository.save(reto);
 
-        if (request.getModalidad() == ModalidadReto.PERSONAL && creador != null) {
+        // Quien crea un reto personal o "con amigos" participa en él desde el principio
+        if ((request.getModalidad() == ModalidadReto.PERSONAL || request.getModalidad() == ModalidadReto.COMPARTIDO)
+                && creador != null) {
             ParticipanteReto participante = ParticipanteReto.builder()
                     .reto(reto)
                     .usuario(creador)
@@ -114,7 +116,8 @@ public class RetoService {
                 .build();
 
         participante = participanteRetoRepository.save(participante);
-        return toParticipanteResponse(participante, reto.getMeta());
+        // Se calcula al momento (solo cuenta lo leído desde que te unes, que puede incluir algo de hoy)
+        return recalcular(reto, participante);
     }
 
     public RetoDTO.Response obtenerPorId(Long id) {
@@ -152,14 +155,18 @@ public class RetoService {
         ParticipanteReto participante = participanteRetoRepository
                 .findByRetoIdretoAndUsuarioIdusuario(idreto, idusuario)
                 .orElseThrow(() -> new EntityNotFoundException("No participas en este reto"));
+        return recalcular(reto, participante);
+    }
 
+    private RetoDTO.ParticipanteResponse recalcular(Reto reto, ParticipanteReto participante) {
+        Long idreto = reto.getIdreto();
         // Un reto completado o ya terminado no cambia
         if (participante.getRetoCumplido() || reto.getFechaFin().isBefore(LocalDate.now(clock))) {
             return toParticipanteResponse(participante, reto.getMeta());
         }
 
         // Calcular progreso individual
-        int nuevoProgreso = calcularProgreso(reto, idusuario);
+        int nuevoProgreso = calcularProgreso(reto, participante);
         participante.setProgreso(nuevoProgreso);
         participante = participanteRetoRepository.save(participante);
 
@@ -249,15 +256,23 @@ public class RetoService {
 
     // --- Cálculo de progreso ---
 
-    private int calcularProgreso(Reto reto, Long idusuario) {
-        LocalDate inicio = reto.getFechaInicio();
+    /**
+     * Progreso de un participante: solo cuenta lo leído desde que se unió al reto (o desde que empezó el reto,
+     * si se unió antes), para que unirse a un reto no lo complete con lecturas anteriores.
+     */
+    private int calcularProgreso(Reto reto, ParticipanteReto participante) {
+        Long idusuario = participante.getUsuario().getIdusuario();
+        LocalDateTime union = participante.getFechaUnion();
+        LocalDateTime desde = union != null && union.isAfter(reto.getFechaInicio().atStartOfDay())
+                ? union : reto.getFechaInicio().atStartOfDay();
+        LocalDate inicio = desde.toLocalDate();
         LocalDate fin = reto.getFechaFin();
 
         return switch (reto.getTipo()) {
             case PAGINAS -> seguimientoRepository.sumPaginasByUsuarioEntreFechas(idusuario, inicio, fin).intValue();
             case HORAS -> sesionLecturaRepository.sumMinutosByUsuarioEntreFechas(
                     idusuario,
-                    inicio.atStartOfDay(),
+                    desde,
                     fin.plusDays(1).atStartOfDay()
             );
             case LIBROS -> seguimientoRepository

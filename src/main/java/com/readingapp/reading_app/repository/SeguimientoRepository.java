@@ -14,7 +14,8 @@ import java.util.Optional;
 @Repository
 public interface SeguimientoRepository extends JpaRepository<Seguimiento, Long> {
     List<Seguimiento> findByUsuarioIdusuario(Long idusuario);
-    List<Seguimiento> findByUsuarioIdusuarioAndLibroIdlibro(Long idusuario, Long idlibro);
+    /** Historial de un libro, del primer al último seguimiento (el último es el estado actual). */
+    List<Seguimiento> findByUsuarioIdusuarioAndLibroIdlibroOrderByIdseguimientoAsc(Long idusuario, Long idlibro);
     List<Seguimiento> findByUsuarioIdusuarioAndEstado(Long idusuario, EstadoLectura estado);
     Optional<Seguimiento> findTopByUsuarioIdusuarioAndLibroIdlibroOrderByFechaDesc(Long idusuario, Long idlibro);
 

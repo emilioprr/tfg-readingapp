@@ -123,7 +123,7 @@ public class SeguimientoService {
     }
 
     public List<SeguimientoDTO.Response> obtenerHistorialLibro(Long idusuario, Long idlibro) {
-        return seguimientoRepository.findByUsuarioIdusuarioAndLibroIdlibro(idusuario, idlibro).stream()
+        return seguimientoRepository.findByUsuarioIdusuarioAndLibroIdlibroOrderByIdseguimientoAsc(idusuario, idlibro).stream()
                 .map(this::toResponse)
                 .toList();
     }

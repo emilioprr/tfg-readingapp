@@ -130,11 +130,11 @@ class RetoServiceTest {
         }
 
         @Test
-        @DisplayName("Un reto compartido no añade participantes al crearse")
-        void compartidoSinParticipantes() {
+        @DisplayName("Un reto compartido añade al creador como participante (si no, desaparecería para él)")
+        void compartidoAnadeCreador() {
             retoService.crear(peticion(ModalidadReto.COMPARTIDO, HOY.plusDays(30)));
 
-            verify(participanteRetoRepository, never()).save(any());
+            verify(participanteRetoRepository).save(argThat(p -> p.getUsuario() == usuario && p.getProgreso() == 0));
         }
 
         @Test
@@ -196,6 +196,29 @@ class RetoServiceTest {
 
             assertThat(res.getProgreso()).isZero();
             assertThat(res.getRetoCumplido()).isFalse();
+        }
+
+        @Test
+        @DisplayName("Al unirse, el progreso se calcula al momento")
+        void unirseCalculaProgreso() {
+            reto(1L, TipoReto.LIBROS, ModalidadReto.COMPARTIDO, 5);
+            when(participanteRetoRepository.existsByRetoIdretoAndUsuarioIdusuario(1L, ID_USUARIO)).thenReturn(false);
+            librosLeidos(2);
+
+            assertThat(retoService.unirse(1L, ID_USUARIO).getProgreso()).isEqualTo(2);
+        }
+
+        @Test
+        @DisplayName("Solo cuenta lo leído desde que te unes, no desde que empezó el reto")
+        void progresoDesdeLaUnion() {
+            Reto reto = reto(1L, TipoReto.LIBROS, ModalidadReto.PREDEFINIDO, 5); // empezó hace 10 días
+            participante(reto, usuario, false); // se unió hoy
+            librosLeidos(1);
+
+            retoService.recalcularProgreso(1L, ID_USUARIO);
+
+            verify(seguimientoRepository).countByUsuarioIdusuarioAndEstadoAndFechaBetween(
+                    ID_USUARIO, EstadoLectura.LEIDO, HOY, reto.getFechaFin());
         }
 
         @Test

@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
 
+/** Sesión de lectura del temporizador: solo tiempo (cuenta para la racha y los retos de horas), sin libro. */
 @Entity
 @Table(name = "sesion_lectura")
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
@@ -24,9 +25,5 @@ public class SesionLectura {
     @ManyToOne
     @JoinColumn(name = "id_usuario", nullable = false)
     private Usuario usuario;
-
-    @ManyToOne(optional = true)
-    @JoinColumn(name = "id_libro")
-    private Libro libro;
 }
 

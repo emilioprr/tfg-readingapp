@@ -90,14 +90,15 @@ class ListaServiceTest {
     }
 
     @Test
-    @DisplayName("Añadir dos veces el mismo libro no lo duplica")
+    @DisplayName("Añadir dos veces el mismo libro avisa de que ya estaba y no lo duplica")
     void agregarLibroDosVeces() {
         Lista l = lista();
         when(libroRepository.findById(10L)).thenReturn(Optional.of(libro));
 
         listaService.agregarLibro(20L, 10L);
-        listaService.agregarLibro(20L, 10L);
 
+        assertThatThrownBy(() -> listaService.agregarLibro(20L, 10L))
+                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("ya está en la lista");
         assertThat(l.getLibros()).hasSize(1);
     }
 
