@@ -27,6 +27,15 @@ public class UsuarioDTO {
     }
 
     @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
+    public static class CambiarPasswordRequest {
+        @NotBlank(message = "La contraseña actual es obligatoria")
+        private String actual;
+        @NotBlank(message = "La nueva contraseña es obligatoria")
+        @Size(min = 6, message = "La contraseña debe tener al menos 6 caracteres")
+        private String nueva;
+    }
+
+    @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
     /*Para darse de baja hay que confirmar la contraseña.*/
     public static class EliminarCuentaRequest {
         @NotBlank(message = "La contraseña es obligatoria")

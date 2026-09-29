@@ -92,11 +92,74 @@ class UsuarioServiceTest {
         @Test
         @DisplayName("No puede haber dos usuarios con el mismo email")
         void emailRepetido() {
-            when(usuarioRepository.existsByEmail("ana@test.com")).thenReturn(true);
+            when(usuarioRepository.existsByEmailIgnoreCase("ana@test.com")).thenReturn(true);
 
             assertThatThrownBy(() -> usuarioService.registrar(peticion("ana2", "ana@test.com")))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("email");
+        }
+    }
+
+    @Test
+    @DisplayName("El email se guarda en minúsculas y sin espacios")
+    void emailEnMinusculas() {
+        UsuarioDTO.RegistroRequest r = new UsuarioDTO.RegistroRequest();
+        r.setNombre("ana");
+        r.setEmail("  Ana@Gmail.COM ");
+        r.setPassword("secreta123");
+        ArgumentCaptor<Usuario> guardado = ArgumentCaptor.forClass(Usuario.class);
+
+        usuarioService.registrar(r);
+
+        verify(usuarioRepository).save(guardado.capture());
+        assertThat(guardado.getValue().getEmail()).isEqualTo("ana@gmail.com");
+        verify(usuarioRepository).existsByEmailIgnoreCase("ana@gmail.com");
+    }
+
+    @Nested
+    @DisplayName("Cambiar contraseña")
+    class CambiarPassword {
+
+        private Usuario ana;
+
+        @BeforeEach
+        void setUp() {
+            ana = usuario(1L, "ana");
+            ana.setPassword("$hash-vieja");
+            when(usuarioRepository.findById(1L)).thenReturn(Optional.of(ana));
+        }
+
+        @Test
+        @DisplayName("Con la contraseña actual correcta se guarda la nueva cifrada")
+        void cambiaConLaActualCorrecta() {
+            when(passwordEncoder.matches("vieja", "$hash-vieja")).thenReturn(true);
+            when(passwordEncoder.matches("nueva123", "$hash-vieja")).thenReturn(false);
+            when(passwordEncoder.encode("nueva123")).thenReturn("$hash-nueva");
+
+            usuarioService.cambiarPassword(1L, "vieja", "nueva123");
+
+            assertThat(ana.getPassword()).isEqualTo("$hash-nueva");
+        }
+
+        @Test
+        @DisplayName("Si la contraseña actual es incorrecta no cambia nada")
+        void actualIncorrecta() {
+            when(passwordEncoder.matches("mala", "$hash-vieja")).thenReturn(false);
+
+            assertThatThrownBy(() -> usuarioService.cambiarPassword(1L, "mala", "nueva123"))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("actual");
+            assertThat(ana.getPassword()).isEqualTo("$hash-vieja");
+        }
+
+        @Test
+        @DisplayName("La nueva contraseña debe ser distinta de la actual")
+        void nuevaIgualQueActual() {
+            when(passwordEncoder.matches("vieja", "$hash-vieja")).thenReturn(true);
+
+            assertThatThrownBy(() -> usuarioService.cambiarPassword(1L, "vieja", "vieja"))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("distinta");
         }
     }
 

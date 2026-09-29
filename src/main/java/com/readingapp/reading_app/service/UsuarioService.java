@@ -32,6 +32,7 @@ public class UsuarioService {
 
     @Transactional
     public UsuarioDTO.Response registrar(UsuarioDTO.RegistroRequest request) {
+        request.setEmail(normalizarEmail(request.getEmail()));
         if (request.getNombre().contains(" ")) {
             throw new IllegalArgumentException("El nombre no puede contener espacios");
         }
@@ -40,7 +41,7 @@ public class UsuarioService {
             throw new IllegalArgumentException("Ya existe un usuario con ese nombre");
         }
 
-        if (usuarioRepository.existsByEmail(request.getEmail())) {
+        if (usuarioRepository.existsByEmailIgnoreCase(request.getEmail())) {
             throw new IllegalArgumentException("Ya existe un usuario con ese email");
         }
 
@@ -158,6 +159,25 @@ public class UsuarioService {
             throw new EntityNotFoundException("Usuario no encontrado");
         }
         borradoCuentaRepository.borrarCuenta(id);
+    }
+
+    /*Cambio de contraseña: hay que dar la actual.*/
+    @Transactional
+    public void cambiarPassword(Long id, String actual, String nueva) {
+        Usuario usuario = buscarPorId(id);
+        if (actual == null || !passwordEncoder.matches(actual, usuario.getPassword())) {
+            throw new IllegalArgumentException("La contraseña actual no es correcta");
+        }
+        if (passwordEncoder.matches(nueva, usuario.getPassword())) {
+            throw new IllegalArgumentException("La nueva contraseña debe ser distinta de la actual");
+        }
+        usuario.setPassword(passwordEncoder.encode(nueva));
+        usuarioRepository.save(usuario);
+    }
+
+    /*Emails en minúsculas y sin espacios, para que "Ana@Gmail.com" y "ana@gmail.com" sean la misma cuenta.*/
+    public static String normalizarEmail(String email) {
+        return email == null ? null : email.trim().toLowerCase();
     }
 
     /*El propio usuario se da de baja: debe confirmar su contraseña.*/

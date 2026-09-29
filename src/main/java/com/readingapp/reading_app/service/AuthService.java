@@ -19,7 +19,7 @@ public class AuthService {
     private final UsuarioService usuarioService;
 
     public AuthDTO.AuthResponse login(AuthDTO.LoginRequest request) {
-        Usuario usuario = usuarioRepository.findByEmail(request.getEmail())
+        Usuario usuario = usuarioRepository.findByEmailIgnoreCase(UsuarioService.normalizarEmail(request.getEmail()))
                 .orElseThrow(() -> new IllegalArgumentException("Email o contraseña incorrectos"));
 
         if (!passwordEncoder.matches(request.getPassword(), usuario.getPassword())) {

@@ -50,6 +50,14 @@ public class UsuarioController {
         return ResponseEntity.noContent().build();
     }
 
+    @PutMapping("/{id}/password")
+    public ResponseEntity<Void> cambiarPassword(@PathVariable Long id,
+                                                @Valid @RequestBody UsuarioDTO.CambiarPasswordRequest request) {
+        SecurityUtils.validarUsuario(id);
+        usuarioService.cambiarPassword(id, request.getActual(), request.getNueva());
+        return ResponseEntity.noContent().build();
+    }
+
     /*El propio usuario se da de baja confirmando su contraseña.*/
     @PostMapping("/{id}/eliminar-cuenta")
     public ResponseEntity<Void> eliminarCuentaPropia(@PathVariable Long id,
