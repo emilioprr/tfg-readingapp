@@ -6,6 +6,7 @@ import com.readingapp.reading_app.model.Lista;
 import com.readingapp.reading_app.model.Usuario;
 import com.readingapp.reading_app.model.enums.EstadoLectura;
 import com.readingapp.reading_app.repository.ListaRepository;
+import com.readingapp.reading_app.repository.BorradoCuentaRepository;
 import com.readingapp.reading_app.repository.ResenaRepository;
 import com.readingapp.reading_app.repository.SeguimientoRepository;
 import com.readingapp.reading_app.repository.UsuarioRepository;
@@ -27,6 +28,7 @@ public class UsuarioService {
     private final NotificacionService notificacionService;
     private final SeguimientoRepository seguimientoRepository;
     private final ResenaRepository resenaRepository;
+    private final BorradoCuentaRepository borradoCuentaRepository;
 
     @Transactional
     public UsuarioDTO.Response registrar(UsuarioDTO.RegistroRequest request) {
@@ -149,12 +151,23 @@ public class UsuarioService {
                 .toList();
     }
 
+    /*Borra la cuenta y todo lo que depende de ella (uso de administrador).*/
     @Transactional
     public void eliminar(Long id) {
         if (!usuarioRepository.existsById(id)) {
             throw new EntityNotFoundException("Usuario no encontrado");
         }
-        usuarioRepository.deleteById(id);
+        borradoCuentaRepository.borrarCuenta(id);
+    }
+
+    /*El propio usuario se da de baja: debe confirmar su contraseña.*/
+    @Transactional
+    public void eliminarCuentaPropia(Long id, String password) {
+        Usuario usuario = buscarPorId(id);
+        if (password == null || !passwordEncoder.matches(password, usuario.getPassword())) {
+            throw new IllegalArgumentException("La contraseña no es correcta");
+        }
+        borradoCuentaRepository.borrarCuenta(id);
     }
 
     public Usuario buscarPorId(Long id) {

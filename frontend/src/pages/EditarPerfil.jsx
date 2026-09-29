@@ -56,6 +56,64 @@ export default function EditarPerfil() {
                 </div>
                 <button type="submit" className="w-full bg-terra hover:bg-terra-hover text-white font-semibold py-2.5 rounded-lg transition-colors">Guardar cambios</button>
             </form>
+
+            <EliminarCuenta />
+        </div>
+    )
+}
+
+/** Baja de la cuenta: pide la contraseña y borra todos los datos del usuario. */
+function EliminarCuenta() {
+    const { usuario, logout } = useAuth()
+    const [abierto, setAbierto] = useState(false)
+    const [password, setPassword] = useState('')
+    const [error, setError] = useState('')
+    const [borrando, setBorrando] = useState(false)
+
+    const eliminar = async (e) => {
+        e.preventDefault()
+        setError('')
+        setBorrando(true)
+        try {
+            await api.post(`/usuarios/${usuario.id}/eliminar-cuenta`, { password })
+            logout() // limpia la sesión y vuelve a la portada
+        } catch (err) {
+            setError(err.response?.data?.mensaje || 'No se ha podido eliminar la cuenta')
+            setBorrando(false)
+        }
+    }
+
+    return (
+        <div className="mt-12 pt-6 border-t border-dark-border">
+            <h2 className="text-sm font-semibold text-red-400 mb-1">Eliminar cuenta</h2>
+            <p className="text-dark-muted text-sm mb-4">
+                Se borrarán para siempre tu perfil, tus reseñas, anotaciones, listas, estanterías, retos y recomendaciones.
+                No se puede deshacer.
+            </p>
+            {!abierto ? (
+                <button onClick={() => setAbierto(true)}
+                        className="border border-red-400/40 text-red-400 hover:bg-red-400/10 px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                    Eliminar mi cuenta
+                </button>
+            ) : (
+                <form onSubmit={eliminar} className="bg-red-400/5 border border-red-400/30 rounded-xl p-4 space-y-3">
+                    <label className="block text-dark-text text-sm">Escribe tu contraseña para confirmar</label>
+                    <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoFocus required
+                           autoComplete="current-password"
+                           className="w-full bg-dark-elevated border border-dark-border rounded-lg px-4 py-2.5 text-dark-text focus:border-red-400 focus:outline-none transition-colors" />
+                    {error && <p className="text-red-400 text-sm">{error}</p>}
+                    <div className="flex gap-3">
+                        <button type="submit" disabled={borrando || !password}
+                                className="bg-red-500 hover:bg-red-600 text-white font-semibold px-4 py-2 rounded-lg text-sm transition-colors disabled:opacity-50">
+                            {borrando ? 'Eliminando...' : 'Eliminar definitivamente'}
+                        </button>
+                        <button type="button" onClick={() => { setAbierto(false); setPassword(''); setError('') }}
+                                className="text-dark-muted hover:text-dark-text px-3 py-2 text-sm transition-colors">
+                            Cancelar
+                        </button>
+                    </div>
+                </form>
+            )}
         </div>
     )
 }

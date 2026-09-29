@@ -42,10 +42,20 @@ public class UsuarioController {
         return ResponseEntity.ok(usuarioService.actualizar(id, request));
     }
 
+    /*Borrado de una cuenta por un administrador.*/
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminar(@PathVariable Long id) {
-        SecurityUtils.validarUsuarioOAdmin(id);
+        SecurityUtils.validarAdmin();
         usuarioService.eliminar(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    /*El propio usuario se da de baja confirmando su contraseña.*/
+    @PostMapping("/{id}/eliminar-cuenta")
+    public ResponseEntity<Void> eliminarCuentaPropia(@PathVariable Long id,
+                                                     @Valid @RequestBody UsuarioDTO.EliminarCuentaRequest request) {
+        SecurityUtils.validarUsuario(id);
+        usuarioService.eliminarCuentaPropia(id, request.getPassword());
         return ResponseEntity.noContent().build();
     }
 
