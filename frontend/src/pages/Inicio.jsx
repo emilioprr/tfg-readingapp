@@ -164,10 +164,10 @@ export default function Inicio() {
                 <p className="text-dark-muted mt-1">¿Qué vas a leer hoy?</p>
             </div>
 
-            {/* Grid principal */}
-            <div className="flex gap-5 mb-12">
+            {/* Grid principal: en móvil, una tarjeta debajo de otra */}
+            <div className="flex flex-col lg:flex-row gap-5 mb-12">
                 {/* Leyendo ahora — 3/4 */}
-                <div className="flex-[3] bg-dark-card rounded-2xl p-6 min-h-[280px]">
+                <div className="flex-[3] min-w-0 bg-dark-card rounded-2xl p-4 sm:p-6 min-h-[280px]">
                     <div className="flex items-center justify-between mb-5">
                         <h2 className="text-lg font-semibold text-dark-text">Leyendo ahora</h2>
                         {leyendo.length > 1 && (
@@ -186,30 +186,30 @@ export default function Inicio() {
                         </div>
                     ) : (
                         <div>
-                            <div className="flex gap-6 relative">
+                            <div className="flex gap-4 sm:gap-6 relative">
                                 <Link to={`/libro/${libroActual.idlibro}`} className="flex-shrink-0">
                                     {libroActual.portadaLibro ? (
                                         <img src={libroActual.portadaLibro} alt={libroActual.tituloLibro}
-                                             className="w-32 h-48 object-cover shadow-lg rounded-sm" />
+                                             className="w-24 h-36 sm:w-32 sm:h-48 object-cover shadow-lg rounded-sm" />
                                     ) : (
-                                        <div className="w-32 h-48 bg-dark-elevated flex items-center justify-center text-dark-muted text-sm shadow-lg rounded-sm">
+                                        <div className="w-24 h-36 sm:w-32 sm:h-48 bg-dark-elevated flex items-center justify-center text-dark-muted text-sm shadow-lg rounded-sm">
                                             Sin portada
                                         </div>
                                     )}
                                 </Link>
 
-                                <div className="flex-1 flex flex-col justify-between">
+                                <div className="flex-1 min-w-0 flex flex-col justify-between">
                                     <div>
                                         <div className="flex items-start justify-between">
-                                            <div className="flex-1 min-w-0 pr-4">
+                                            <div className="flex-1 min-w-0 pr-2 sm:pr-4">
                                                 <Link to={`/libro/${libroActual.idlibro}`}
-                                                      className="text-xl font-bold text-dark-text hover:text-terra transition-colors block mb-1">
+                                                      className="text-lg sm:text-xl font-bold text-dark-text hover:text-terra transition-colors block mb-1">
                                                     {libroActual.tituloLibro}
                                                 </Link>
                                                 <p className="text-dark-muted text-sm">{libroActual.nombreAutor || ''}</p>
                                             </div>
 
-                                            <div className="flex items-center gap-2">
+                                            <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
                                                 <Link to={`/libro/${libroActual.idlibro}/anotaciones`}
                                                       className="text-dark-muted hover:text-terra transition-colors p-1" title="Nueva anotación">
                                                     <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -310,7 +310,7 @@ export default function Inicio() {
                 </div>
 
                 {/* Retos activos — 1/4 */}
-                <div className="flex-[1] bg-dark-card rounded-2xl p-6 min-h-[280px]">
+                <div className="flex-[1] min-w-0 bg-dark-card rounded-2xl p-4 sm:p-6 min-h-[280px]">
                     <div className="flex items-center justify-between mb-5">
                         <h2 className="text-lg font-semibold text-dark-text">Retos</h2>
                         <Link to="/retos" className="text-xs text-dark-muted hover:text-terra transition-colors">Ver todos</Link>

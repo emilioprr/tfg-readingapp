@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import api from '../api/axios'
 import logoBookmark from '../assets/logo.png'
@@ -12,11 +12,16 @@ export default function Navbar() {
     const [busqueda, setBusqueda] = useState('')
     const [buscadorAbierto, setBuscadorAbierto] = useState(false)
     const [menuAbierto, setMenuAbierto] = useState(false)
+    const [menuMovilAbierto, setMenuMovilAbierto] = useState(false)
     const { numNoLeidas: noLeidas } = useNotificaciones()
     const menuRef = useRef()
     const buscadorRef = useRef()
     const inputRef = useRef()
     const navigate = useNavigate()
+    const location = useLocation()
+
+    // Al cambiar de página se cierra el menú móvil
+    useEffect(() => { setMenuMovilAbierto(false) }, [location.pathname])
 
     useEffect(() => {
         const handleClickFuera = (e) => {
@@ -54,20 +59,36 @@ export default function Navbar() {
         setBuscadorAbierto(false)
     }
 
+    // Sin sesión solo se muestra lo que funciona sin cuenta: libros y reseñas públicas
+    const secciones = [
+        { ruta: '/catalogo', nombre: 'Libros' },
+        { ruta: '/resenas', nombre: 'Reseñas' },
+        ...(usuario ? [
+            { ruta: '/citas', nombre: 'Citas' },
+            { ruta: '/listas', nombre: 'Listas' },
+            { ruta: '/calendario', nombre: 'Calendario' },
+            { ruta: '/timer', nombre: 'Sesión de lectura' },
+            { ruta: '/retos', nombre: 'Retos' },
+            // En móvil el icono del sobre no cabe en la barra: va en el menú
+            { ruta: '/recomendaciones', nombre: 'Recomendaciones', soloMovil: true },
+            ...(usuario.rol === 'ADMIN' ? [{ ruta: '/admin', nombre: 'Admin' }] : []),
+        ] : []),
+    ]
+
     const handleMenuClick = (ruta) => {
         setMenuAbierto(false)
         navigate(ruta)
     }
 
     return (
-        <nav className="bg-dark-card/80 backdrop-blur-md border-b border-dark-border sticky top-0 z-50 px-6 py-3">
+        <nav className="bg-dark-card/80 backdrop-blur-md border-b border-dark-border sticky top-0 z-50 px-4 sm:px-6 py-3">
             <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
                 <Link to="/" className="text-white text-xl font-bold tracking-tight flex-shrink-0 flex items-center gap-1">
                     Bookmark
-                    <img alt="Logo Bookmark" src={logoBookmark} className="w-9 h-9 object-contain" />
+                    <img alt="Logo Bookmark" src={logoBookmark} className="w-7 h-7 sm:w-9 sm:h-9 object-contain" />
                 </Link>
 
-                <div className="flex items-center gap-5 flex-shrink-0">
+                <div className="flex items-center gap-2.5 sm:gap-5 min-w-0">
                     {/* Buscador desplegable */}
                     <div className="relative" ref={buscadorRef}>
                         {buscadorAbierto ? (
@@ -75,10 +96,10 @@ export default function Navbar() {
                                 <input
                                     ref={inputRef}
                                     type="text"
-                                    placeholder="Buscar libros..."
+                                    placeholder="Buscar libros, autores o usuarios"
                                     value={busqueda}
                                     onChange={(e) => setBusqueda(e.target.value)}
-                                    className="w-56 bg-dark-elevated border border-dark-border rounded-full pl-4 pr-9 py-1.5 text-sm text-dark-text placeholder-dark-muted focus:border-terra focus:outline-none transition-all"
+                                    className="w-44 sm:w-64 bg-dark-elevated border border-dark-border rounded-full pl-4 pr-9 py-1.5 text-sm text-dark-text placeholder-dark-muted focus:border-terra focus:outline-none transition-all"
                                 />
                                 <button type="submit" className="absolute right-2.5 top-1/2 -translate-y-1/2 text-dark-muted hover:text-terra transition-colors">
                                     <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -95,24 +116,17 @@ export default function Navbar() {
                         )}
                     </div>
 
-                    {/* Sin sesión solo se muestra lo que funciona sin cuenta: libros y reseñas públicas */}
-                    <Link to="/catalogo" className="text-dark-muted hover:text-dark-text text-sm font-medium transition-colors">Libros</Link>
-                    <Link to="/resenas" className="text-dark-muted hover:text-dark-text text-sm font-medium transition-colors">Reseñas</Link>
+                    {/* Secciones: en pantallas grandes, en la barra; en móvil, en el menú ☰ */}
+                    <div className="hidden lg:flex items-center gap-5">
+                        {secciones.filter(s => !s.soloMovil).map((s) => (
+                            <Link key={s.ruta} to={s.ruta} className="text-dark-muted hover:text-dark-text text-sm font-medium transition-colors">{s.nombre}</Link>
+                        ))}
+                    </div>
                     {usuario ? (
                         <>
-                            <Link to="/citas" className="text-dark-muted hover:text-dark-text text-sm font-medium transition-colors">Citas</Link>
-                            <Link to="/listas" className="text-dark-muted hover:text-dark-text text-sm font-medium transition-colors">Listas</Link>
-                            <Link to="/calendario" className="text-dark-muted hover:text-dark-text text-sm font-medium transition-colors">Diario</Link>
-                            <Link to="/timer" className="text-dark-muted hover:text-dark-text text-sm font-medium transition-colors">Sesión de Lectura</Link>
-                            <Link to="/retos" className="text-dark-muted hover:text-dark-text text-sm font-medium transition-colors">Retos</Link>
-
-                            {usuario.rol === 'ADMIN' && (
-                                <Link to="/admin" className="text-dark-muted hover:text-dark-text text-sm font-medium transition-colors">Admin</Link>
-                            )}
                             <RachaNavbar />
-
                             {/* Recomendaciones — sobre/carta */}
-                            <Link to="/recomendaciones" className="text-dark-muted hover:text-dark-text transition-colors" title="Recomendaciones">
+                            <Link to="/recomendaciones" className="hidden sm:block text-dark-muted hover:text-dark-text transition-colors" title="Recomendaciones">
                                 <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
                                 </svg>
@@ -128,10 +142,11 @@ export default function Navbar() {
                                             {usuario.nombre?.charAt(0).toUpperCase()}
                                         </div>
                                     )}
+                                    {/* Punto de notificaciones sin leer: están dentro de este desplegable */}
                                     {noLeidas > 0 && (
                                         <span className="absolute -top-1 -right-1 w-3 h-3 bg-terra rounded-full border-2 border-dark-card" />
                                     )}
-                                    <svg xmlns="http://www.w3.org/2000/svg" className={`w-3 h-3 text-dark-muted transition-transform ${menuAbierto ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                    <svg xmlns="http://www.w3.org/2000/svg" className={`hidden sm:block w-3 h-3 text-dark-muted transition-transform ${menuAbierto ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                                         <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
                                     </svg>
                                 </button>
@@ -212,12 +227,38 @@ export default function Navbar() {
                         </>
                     ) : (
                         <>
-                            <Link to="/login" className="text-dark-text/80 hover:text-dark-text text-sm font-medium transition-colors">Iniciar sesión</Link>
-                            <Link to="/registro" className="bg-terra hover:bg-terra-hover text-white font-semibold px-4 py-1.5 rounded-lg text-sm transition-colors">Crear cuenta</Link>
+                            <Link to="/login" className="text-dark-text/80 hover:text-dark-text text-sm font-medium transition-colors whitespace-nowrap">Iniciar sesión</Link>
+                            <Link to="/registro" className="hidden sm:inline-block bg-terra hover:bg-terra-hover text-white font-semibold px-4 py-1.5 rounded-lg text-sm transition-colors">Crear cuenta</Link>
                         </>
                     )}
+
+                    {/* Menú de secciones en móvil */}
+                    <button onClick={() => setMenuMovilAbierto(v => !v)} className="lg:hidden text-dark-muted hover:text-dark-text transition-colors"
+                            aria-label="Menú" aria-expanded={menuMovilAbierto}>
+                        <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            {menuMovilAbierto
+                                ? <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                : <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />}
+                        </svg>
+                    </button>
                 </div>
             </div>
+
+            {menuMovilAbierto && (
+                <div className="lg:hidden max-w-7xl mx-auto mt-3 pt-2 border-t border-dark-border grid grid-cols-2 gap-1">
+                    {secciones.map((s) => (
+                        <Link key={s.ruta} to={s.ruta}
+                              className={`${s.soloMovil ? 'sm:hidden ' : ''}px-3 py-2.5 rounded-lg text-dark-text hover:bg-dark-elevated text-sm font-medium transition-colors`}>
+                            {s.nombre}
+                        </Link>
+                    ))}
+                    {!usuario && (
+                        <Link to="/registro" className="sm:hidden px-3 py-2.5 rounded-lg text-terra hover:bg-dark-elevated text-sm font-semibold transition-colors">
+                            Crear cuenta
+                        </Link>
+                    )}
+                </div>
+            )}
         </nav>
     )
 }

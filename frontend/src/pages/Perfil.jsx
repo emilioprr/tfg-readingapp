@@ -33,8 +33,11 @@ export default function Perfil() {
     const [siguiendo, setSiguiendo] = useState(false)
     const [loading, setLoading] = useState(true)
     const [listasPublicas, setListasPublicas] = useState([])
-    const [searchParams] = useSearchParams()
-    const [tab, setTab] = useState(searchParams.get('tab') || 'libros')
+    // La pestaña va en la URL (?tab=...): así los enlaces del menú funcionan aunque ya estés en el perfil,
+    // y recargar la página mantiene la pestaña
+    const [searchParams, setSearchParams] = useSearchParams()
+    const tab = searchParams.get('tab') || 'libros'
+    const setTab = (t) => setSearchParams(t === 'libros' ? {} : { tab: t }, { replace: true })
     const [leyendoLibros, setLeyendoLibros] = useState([])
     const [leidosLibros, setLeidosLibros] = useState([])
     const [pendientesLibros, setPendientesLibros] = useState([])
@@ -321,10 +324,11 @@ export default function Perfil() {
             </div>
 
             {/* Tabs */}
-            <div className="flex gap-2 mb-8 border-b border-dark-border justify-center">
+            {/* En móvil las pestañas no caben: se desplazan con el dedo */}
+            <div className="flex gap-1 sm:gap-2 mb-8 border-b border-dark-border overflow-x-auto [scrollbar-width:none] sm:justify-center">
                 {tabs.map((t) => (
                     <button key={t.key} onClick={() => setTab(t.key)}
-                            className={`px-4 py-2.5 text-sm font-medium transition-colors relative ${
+                            className={`px-3 sm:px-4 py-2.5 text-sm font-medium transition-colors relative whitespace-nowrap flex-shrink-0 ${
                                 tab === t.key ? 'text-terra' : 'text-dark-muted hover:text-dark-text'
                             }`}>
                         {t.label}

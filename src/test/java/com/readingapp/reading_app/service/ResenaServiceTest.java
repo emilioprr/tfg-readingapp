@@ -245,6 +245,46 @@ class ResenaServiceTest {
         }
     }
 
+    // ===== Eliminar =====
+
+    @Nested
+    @DisplayName("Eliminar una reseña")
+    class Eliminar {
+
+        private Resena resena;
+
+        @BeforeEach
+        void setUp() {
+            resena = Resena.builder().idresena(50L).puntuacion(new BigDecimal("4")).texto("Muy bueno")
+                    .usuario(autor).libro(libro).likes(new HashSet<>()).etiquetas(new HashSet<>()).build();
+            when(resenaRepository.findById(50L)).thenReturn(Optional.of(resena));
+        }
+
+        @Test
+        @DisplayName("Si borras tu única reseña del libro, su nota se queda como puntuación sin reseña")
+        void conservaLaNota() {
+            autenticarComo(ID_USUARIO);
+            when(resenaRepository.countByUsuarioIdusuarioAndLibroIdlibro(ID_USUARIO, ID_LIBRO)).thenReturn(1L);
+
+            resenaService.eliminar(50L);
+
+            verify(valoracionRepository).save(argThat(v -> v.getPuntuacion().compareTo(new BigDecimal("4")) == 0
+                    && v.getUsuario() == autor && v.getLibro() == libro));
+            verify(resenaRepository).deleteById(50L);
+        }
+
+        @Test
+        @DisplayName("Si tienes otra reseña del libro (relectura), no se crea puntuación suelta")
+        void conOtraResenaNoConserva() {
+            autenticarComo(ID_USUARIO);
+            when(resenaRepository.countByUsuarioIdusuarioAndLibroIdlibro(ID_USUARIO, ID_LIBRO)).thenReturn(2L);
+
+            resenaService.eliminar(50L);
+
+            verify(valoracionRepository, never()).save(any());
+        }
+    }
+
     // ===== Likes =====
 
     @Nested

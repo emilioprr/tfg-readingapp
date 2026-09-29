@@ -177,11 +177,15 @@ export default function ResenaDetalle() {
                         {usuario && (usuario.id === resena.idusuario || usuario.rol === 'ADMIN') && (
                             <button onClick={async () => {
                                 if (!window.confirm('¿Eliminar esta reseña?')) return
-                                setEliminada(true)
                                 try {
                                     await api.delete(`/resenas/${id}`)
-                                } catch { /* si falla, igualmente se sale de la reseña */ }
-                                navigate('/', { replace: true })
+                                } catch (err) {
+                                    alert(err.response?.data?.mensaje || 'No se ha podido eliminar la reseña')
+                                    return
+                                }
+                                setEliminada(true)
+                                // De vuelta a la ficha del libro (tu nota se queda como puntuación sin reseña)
+                                navigate(`/libro/${resena.idlibro}`, { replace: true })
                             }}
                                     className="text-red-400/60 hover:text-red-400 text-sm transition-colors">
                                 Eliminar

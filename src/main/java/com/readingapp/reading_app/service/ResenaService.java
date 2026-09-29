@@ -6,6 +6,7 @@ import com.readingapp.reading_app.model.Libro;
 import com.readingapp.reading_app.model.Resena;
 import com.readingapp.reading_app.model.Seguimiento;
 import com.readingapp.reading_app.model.Usuario;
+import com.readingapp.reading_app.model.Valoracion;
 import com.readingapp.reading_app.model.enums.EstadoLectura;
 import com.readingapp.reading_app.repository.*;
 import jakarta.persistence.EntityNotFoundException;
@@ -121,6 +122,7 @@ public class ResenaService {
     public void eliminar(Long id) {
         Resena resena = buscarPorId(id);
         SecurityUtils.validarUsuarioOAdmin(resena.getUsuario().getIdusuario());
+        conservarNotaSinResena(resena);
         notificacionRepository.deleteByResenaIdresena(id);
         resena.getLikes().clear();
         resena.getEtiquetas().clear();
@@ -148,6 +150,22 @@ public class ResenaService {
         Resena resena = buscarPorId(resenaId);
         usuario.getResenasLikeadas().remove(resena);
         usuarioRepository.save(usuario);
+    }
+
+    /**
+     * Si borras tu única reseña de un libro, su nota se queda como puntuación sin reseña:
+     * borrar el texto no significa que ya no quieras puntuarlo. (Si la borra un admin, no.)
+     */
+    private void conservarNotaSinResena(Resena resena) {
+        Long idusuario = resena.getUsuario().getIdusuario();
+        Long idlibro = resena.getLibro().getIdlibro();
+        if (resena.getPuntuacion() == null || !SecurityUtils.esUsuarioActual(idusuario)
+                || resenaRepository.countByUsuarioIdusuarioAndLibroIdlibro(idusuario, idlibro) > 1
+                || valoracionRepository.findByUsuarioIdusuarioAndLibroIdlibro(idusuario, idlibro).isPresent()) {
+            return;
+        }
+        valoracionRepository.save(Valoracion.builder().usuario(resena.getUsuario()).libro(resena.getLibro())
+                .puntuacion(resena.getPuntuacion()).fecha(LocalDateTime.now()).build());
     }
 
     /** La nota va de 0,5 en 0,5 (medias estrellas); el rango 0,5-5 lo valida el DTO. */

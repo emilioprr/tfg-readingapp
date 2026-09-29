@@ -41,8 +41,9 @@ export default function Registro() {
                 </div>
                 <div className="mb-6">
                     <label className="block text-dark-muted text-sm mb-1">Contraseña</label>
-                    <input type="password" value={password} onChange={(e) => setPassword(e.target.value)}
+                    <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} minLength={6}
                            className="w-full bg-dark-elevated border border-dark-border rounded-lg px-4 py-2.5 text-dark-text focus:border-terra focus:outline-none transition-colors" required />
+                    <p className="text-dark-muted text-xs mt-1">Mínimo 6 caracteres</p>
                 </div>
                 <button type="submit" className="w-full bg-terra hover:bg-terra-hover text-white font-semibold py-2.5 rounded-lg transition-colors">Registrarse</button>
                 <p className="text-dark-muted text-sm mt-4 text-center">

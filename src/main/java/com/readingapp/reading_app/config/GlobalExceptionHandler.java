@@ -44,6 +44,8 @@ public class GlobalExceptionHandler {
         body.put("timestamp", LocalDateTime.now().toString());
         body.put("status", HttpStatus.BAD_REQUEST.value());
         body.put("errores", errores);
+        // El frontend muestra "mensaje": sin él solo se vería un error genérico sin decir qué campo falla
+        body.put("mensaje", String.join(". ", errores.values()));
         return ResponseEntity.badRequest().body(body);
     }
 

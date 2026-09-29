@@ -36,7 +36,10 @@ export default function Calendario() {
 
     const getLibrosDelDia = (dia) => {
         const fecha = `${anio}-${String(mes + 1).padStart(2, '0')}-${String(dia).padStart(2, '0')}`
-        const segsDelDia = seguimientos.filter(s => s.fecha === fecha)
+        // Solo días de lectura de verdad: avanzar páginas o terminar un libro (como la racha).
+        // Añadir a "Quiero leer", empezar en la página 0 o marcarlo como leído hace tiempo no es leer ese día.
+        const segsDelDia = seguimientos.filter(s => s.fecha === fecha && (
+            (s.estado === 'LEYENDO' && s.numPagina > 0) || (s.estado === 'LEIDO' && !s.lecturaAntigua)))
         const vistos = new Set()
         return segsDelDia.filter(s => {
             if (vistos.has(s.idlibro)) return false

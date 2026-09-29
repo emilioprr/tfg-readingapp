@@ -4,17 +4,46 @@ import { useAuth } from '../context/AuthContext'
 import { useNotificaciones } from '../context/NotificacionesContext'
 import api from '../api/axios'
 
+const TAMANIO = 20
+
 export default function Notificaciones() {
     const { usuario } = useAuth()
     const { refrescar } = useNotificaciones()
     const navigate = useNavigate()
     const [notificaciones, setNotificaciones] = useState([])
     const [loading, setLoading] = useState(true)
+    const [pagina, setPagina] = useState(0)
+    const [hayMas, setHayMas] = useState(false)
 
     const cargarNotificaciones = useCallback(async () => {
-        try { const res = await api.get(`/notificaciones/usuario/${usuario.id}?size=20`); setNotificaciones(res.data.content || res.data || []) }
+        try {
+            const res = await api.get(`/notificaciones/usuario/${usuario.id}?page=0&size=${TAMANIO}`)
+            const datos = res.data.content || res.data || []
+            setNotificaciones(datos)
+            setPagina(0)
+            setHayMas(datos.length === TAMANIO)
+        }
         catch (err) { console.error('Error:', err) } finally { setLoading(false) }
     }, [usuario])
+
+    const cargarMas = async () => {
+        try {
+            const res = await api.get(`/notificaciones/usuario/${usuario.id}?page=${pagina + 1}&size=${TAMANIO}`)
+            const datos = res.data.content || res.data || []
+            setNotificaciones(prev => [...prev, ...datos])
+            setPagina(p => p + 1)
+            setHayMas(datos.length === TAMANIO)
+        } catch (err) { console.error('Error:', err) }
+    }
+
+    const eliminar = async (e, id) => {
+        e.stopPropagation() // que no abra la notificación
+        try {
+            await api.delete(`/notificaciones/${id}`)
+            setNotificaciones(prev => prev.filter(n => n.idnotificacion !== id))
+            refrescar()
+        } catch (err) { alert(err.response?.data?.mensaje || 'Error al eliminar') }
+    }
 
     useEffect(() => { cargarNotificaciones() }, [cargarNotificaciones])
 
@@ -84,7 +113,7 @@ export default function Notificaciones() {
                                     ) : n.tipo === 'NUEVA_RECOMENDACION' && n.nombreUsuarioOrigen && n.tituloLibro ? (
                                         <><span className="text-terra font-medium">{n.nombreUsuarioOrigen}</span> te ha recomendado <span className="text-terra font-medium">{n.tituloLibro}</span></>
                                     ) : n.tipo === 'LIKE_RESENA' && n.nombreUsuarioOrigen ? (
-                                        <><span className="text-terra font-medium">{n.nombreUsuarioOrigen}</span> le ha gustado tu reseña</>
+                                        <>A <span className="text-terra font-medium">{n.nombreUsuarioOrigen}</span> le ha gustado tu reseña</>
                                     ) : n.tipo === 'LIKE_CITA' && n.nombreUsuarioOrigen ? (
                                         <>A <span className="text-terra font-medium">{n.nombreUsuarioOrigen}</span> le ha gustado tu cita{n.tituloLibro && <> de <span className="text-terra font-medium">{n.tituloLibro}</span></>}</>
                                     ) : n.tipo === 'NUEVO_LIBRO_AUTOR' && n.tituloLibro ? (
@@ -93,11 +122,23 @@ export default function Notificaciones() {
                                         n.mensaje
                                     )}
                                 </p>
-                                {!n.leida && <span className="w-2 h-2 bg-terra rounded-full flex-shrink-0 ml-2" />}
+                                <div className="flex items-center gap-3 flex-shrink-0 ml-2">
+                                    {!n.leida && <span className="w-2 h-2 bg-terra rounded-full" />}
+                                    <button onClick={(e) => eliminar(e, n.idnotificacion)} title="Eliminar notificación"
+                                            className="text-dark-muted hover:text-red-400 transition-colors text-sm">✕</button>
+                                </div>
                             </div>
                             <p className="text-xs text-dark-muted mt-1">{new Date(n.fecha).toLocaleString()}</p>
                         </div>
                     ))}
+                    {hayMas && (
+                        <div className="flex justify-center pt-4">
+                            <button onClick={cargarMas}
+                                    className="border border-dark-border hover:border-terra hover:text-terra text-dark-muted px-6 py-2 rounded-lg text-sm transition-colors">
+                                Cargar más
+                            </button>
+                        </div>
+                    )}
                 </div>
             )}
         </div>
