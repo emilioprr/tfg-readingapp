@@ -109,13 +109,14 @@ export default function Navbar() {
                         )}
                     </div>
 
+                    {/* Sin sesión solo se muestra lo que funciona sin cuenta: libros y reseñas públicas */}
                     <Link to="/catalogo" className="text-dark-muted hover:text-dark-text text-sm font-medium transition-colors">Libros</Link>
                     <Link to="/resenas" className="text-dark-muted hover:text-dark-text text-sm font-medium transition-colors">Reseñas</Link>
-                    <Link to="/listas" className="text-dark-muted hover:text-dark-text text-sm font-medium transition-colors">Listas</Link>
-                    <Link to="/calendario" className="text-dark-muted hover:text-dark-text text-sm font-medium transition-colors">Diario</Link>
-                    <Link to="/timer" className="text-dark-muted hover:text-dark-text text-sm font-medium transition-colors">Sesión de Lectura</Link>
                     {usuario ? (
                         <>
+                            <Link to="/listas" className="text-dark-muted hover:text-dark-text text-sm font-medium transition-colors">Listas</Link>
+                            <Link to="/calendario" className="text-dark-muted hover:text-dark-text text-sm font-medium transition-colors">Diario</Link>
+                            <Link to="/timer" className="text-dark-muted hover:text-dark-text text-sm font-medium transition-colors">Sesión de Lectura</Link>
                             <Link to="/retos" className="text-dark-muted hover:text-dark-text text-sm font-medium transition-colors">Retos</Link>
 
                             {usuario.rol === 'ADMIN' && (
@@ -215,7 +216,10 @@ export default function Navbar() {
                             </div>
                         </>
                     ) : (
-                        <Link to="/login" className="text-terra hover:text-terra-hover text-sm font-medium transition-colors">Iniciar sesión</Link>
+                        <>
+                            <Link to="/login" className="text-dark-text/80 hover:text-dark-text text-sm font-medium transition-colors">Iniciar sesión</Link>
+                            <Link to="/registro" className="bg-terra hover:bg-terra-hover text-white font-semibold px-4 py-1.5 rounded-lg text-sm transition-colors">Crear cuenta</Link>
+                        </>
                     )}
                 </div>
             </div>

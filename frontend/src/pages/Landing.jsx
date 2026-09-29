@@ -1,29 +1,14 @@
 import { Link } from 'react-router-dom'
-import logoBookmark from '../assets/logo.png';
+import Navbar from '../components/Navbar'
+import logoBookmark from '../assets/logo.png'
 
 export default function Landing() {
     return (
         <div className="min-h-screen bg-dark-base">
-            {/* Navbar */}
-            <nav className="absolute top-0 left-0 right-0 z-50 px-6 py-4">
-                <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <span className="text-white text-2xl font-bold tracking-tight flex items-center gap-1">
-            Bookmark
-            <img alt="Logo Bookmark" src={logoBookmark} className="w-9 h-9 object-contain" />
-          </span>
-                    <div className="flex items-center gap-6">
-                        <Link to="/login" className="text-dark-text/80 hover:text-dark-text text-sm font-medium transition-colors">
-                            Iniciar sesión
-                        </Link>
-                        <Link to="/registro" className="bg-terra hover:bg-terra-hover text-white font-semibold px-5 py-2 rounded-lg text-sm transition-colors">
-                            Crear cuenta
-                        </Link>
-                    </div>
-                </div>
-            </nav>
+            <Navbar />
 
             {/* Hero */}
-            <div className="relative min-h-screen flex items-center justify-center overflow-hidden">
+            <div className="relative min-h-[calc(100vh-4rem)] flex items-center justify-center overflow-hidden">
                 <div className="absolute inset-0 grid grid-cols-8 gap-1 opacity-15 blur-sm scale-110">
                     {Array.from({ length: 40 }).map((_, i) => (
                         <div key={i} className="bg-dark-elevated rounded aspect-[2/3]" />
@@ -42,10 +27,16 @@ export default function Landing() {
                     <p className="text-xl text-dark-muted leading-relaxed mb-10">
                         Descubre qué leen tus amigos.
                     </p>
-                    <Link to="/registro"
-                          className="bg-terra hover:bg-terra-hover text-white font-semibold px-10 py-4 rounded-lg text-lg transition-colors inline-block">
-                        Empieza gratis
-                    </Link>
+                    <div className="flex flex-wrap items-center justify-center gap-4">
+                        <Link to="/registro"
+                              className="bg-terra hover:bg-terra-hover text-white font-semibold px-10 py-4 rounded-lg text-lg transition-colors inline-block">
+                            Empieza gratis
+                        </Link>
+                        <Link to="/catalogo"
+                              className="border border-dark-border hover:border-terra hover:text-terra text-dark-text font-semibold px-8 py-4 rounded-lg text-lg transition-colors inline-block">
+                            Explorar libros
+                        </Link>
+                    </div>
                 </div>
             </div>
 

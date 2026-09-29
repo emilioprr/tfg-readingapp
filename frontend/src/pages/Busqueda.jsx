@@ -161,7 +161,7 @@ export default function Busqueda() {
     const tabs = [
         { key: 'libros', label: 'Libros' },
         { key: 'autores', label: 'Autores' },
-        { key: 'usuarios', label: 'Usuarios' },
+        ...(usuario ? [{ key: 'usuarios', label: 'Usuarios' }] : []),
     ]
 
     if (!query) return <p className="text-dark-muted">Escribe algo para buscar</p>

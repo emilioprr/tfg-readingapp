@@ -41,8 +41,9 @@ export default function ResenaCard({ resena: resenaInicial, mostrarLibro = true,
         } catch (err) { console.error('Error:', err) }
     }
 
+    // El detalle de una reseña requiere cuenta
     const irADetalle = () => {
-        navigate(`/resena/${resena.idresena}`)
+        navigate(usuario ? `/resena/${resena.idresena}` : '/login')
     }
 
     const eliminarResena = async (e) => {
