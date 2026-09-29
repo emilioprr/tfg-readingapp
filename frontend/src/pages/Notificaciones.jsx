@@ -1,10 +1,12 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { useNotificaciones } from '../context/NotificacionesContext'
 import api from '../api/axios'
 
 export default function Notificaciones() {
     const { usuario } = useAuth()
+    const { refrescar } = useNotificaciones()
     const navigate = useNavigate()
     const [notificaciones, setNotificaciones] = useState([])
     const [loading, setLoading] = useState(true)
@@ -17,12 +19,12 @@ export default function Notificaciones() {
     useEffect(() => { cargarNotificaciones() }, [cargarNotificaciones])
 
     const marcarLeida = async (id) => {
-        try { await api.put(`/notificaciones/${id}/leida`); setNotificaciones(prev => prev.map(n => n.idnotificacion === id ? { ...n, leida: true } : n)) }
+        try { await api.put(`/notificaciones/${id}/leida`); setNotificaciones(prev => prev.map(n => n.idnotificacion === id ? { ...n, leida: true } : n)); refrescar() }
         catch (err) { console.error('Error:', err) }
     }
 
     const marcarTodasLeidas = async () => {
-        try { await api.put(`/notificaciones/usuario/${usuario.id}/leer-todas`); setNotificaciones(prev => prev.map(n => ({ ...n, leida: true }))) }
+        try { await api.put(`/notificaciones/usuario/${usuario.id}/leer-todas`); setNotificaciones(prev => prev.map(n => ({ ...n, leida: true }))); refrescar() }
         catch (err) { console.error('Error:', err) }
     }
 

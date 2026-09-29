@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import api from '../api/axios'
 import logoBookmark from '../assets/logo.png'
 import { RachaNavbar } from './Racha'
+import { useNotificaciones } from '../context/NotificacionesContext'
 
 export default function Navbar() {
     const { usuario, logout } = useAuth()
@@ -11,7 +12,7 @@ export default function Navbar() {
     const [busqueda, setBusqueda] = useState('')
     const [buscadorAbierto, setBuscadorAbierto] = useState(false)
     const [menuAbierto, setMenuAbierto] = useState(false)
-    const [noLeidas, setNoLeidas] = useState(0)
+    const { numNoLeidas: noLeidas } = useNotificaciones()
     const menuRef = useRef()
     const buscadorRef = useRef()
     const inputRef = useRef()
@@ -41,24 +42,9 @@ export default function Navbar() {
         }
     }, [usuario])
 
-    const cargarNoLeidas = useCallback(async () => {
-        try {
-            const res = await api.get(`/notificaciones/usuario/${usuario.id}/no-leidas`)
-            const datos = res.data.content || res.data || []
-            setNoLeidas(typeof datos === 'number' ? datos : datos.length || 0)
-        } catch (err) {
-            console.error('Error cargando no leídas:', err)
-        }
-    }, [usuario])
-
     useEffect(() => {
-        if (usuario) {
-            cargarAvatar()
-            cargarNoLeidas()
-            const interval = setInterval(cargarNoLeidas, 30000)
-            return () => clearInterval(interval)
-        }
-    }, [cargarAvatar, cargarNoLeidas, usuario])
+        if (usuario) cargarAvatar()
+    }, [cargarAvatar, usuario])
 
     const handleBuscar = (e) => {
         e.preventDefault()

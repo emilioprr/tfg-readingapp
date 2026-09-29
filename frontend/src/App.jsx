@@ -34,12 +34,14 @@ import Resenas from './pages/Resenas'
 import EstanteriaCompleta from './pages/EstanteriaCompleta'
 import ResenasLibro from './pages/ResenasLibro'
 import { RachaProvider } from './context/RachaContext'
+import { NotificacionesProvider } from './context/NotificacionesContext'
 
 
 function App() {
     return (
         <AuthProvider>
             <RachaProvider>
+            <NotificacionesProvider>
                 <BrowserRouter>
                     <Routes>
                         <Route path="/landing" element={<Landing/>}/>
@@ -79,6 +81,7 @@ function App() {
                         </Route>
                     </Routes>
                 </BrowserRouter>
+            </NotificacionesProvider>
             </RachaProvider>
         </AuthProvider>
     )

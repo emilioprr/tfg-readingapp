@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import api from '../api/axios'
+import { useNotificaciones } from '../context/NotificacionesContext'
 
 const formatearMensaje = (n) => {
     switch (n.tipo) {
@@ -33,57 +33,34 @@ const getDestino = (n) => {
 
 export default function ToastNotificaciones() {
     const { usuario } = useAuth()
+    const { noLeidas, cargadas } = useNotificaciones()
     const navigate = useNavigate()
     const [toasts, setToasts] = useState([])
     const ultimaComprobacion = useRef(null)
 
-    const comprobarNotificaciones = useCallback(async () => {
-        try {
-            const res = await api.get(`/notificaciones/usuario/${usuario.id}?size=5`)
-            const notis = res.data.content || res.data || []
-            const nuevas = notis.filter(n => !n.leida)
-
-            if (ultimaComprobacion.current === null) {
-                // Primera comprobación, no mostrar toasts
-                ultimaComprobacion.current = nuevas.map(n => n.idnotificacion)
-                return
-            }
-
-            const sinVer = nuevas.filter(n =>
-            !ultimaComprobacion.current.includes(n.idnotificacion) &&
-            ['NUEVO_SEGUIDOR', 'NUEVA_RECOMENDACION', 'LIKE_RESENA'].includes(n.tipo)
-            )
-
-            if (sinVer.length > 0) {
-                sinVer.forEach(n => {
-                    const toast = {
-                        id: n.idnotificacion,
-                        tipo: n.tipo,
-                        mensaje: formatearMensaje(n),
-                        destino: getDestino(n),
-                    }
-                    setToasts(prev => [...prev, toast])
-
-                    // Auto-eliminar después de 5 segundos
-                    setTimeout(() => {
-                        setToasts(prev => prev.filter(t => t.id !== n.idnotificacion))
-                    }, 5000)
-                })
-            }
-
-            ultimaComprobacion.current = nuevas.map(n => n.idnotificacion)
-        } catch { /* silencioso */ }
-    }, [usuario])
-
+    // Cada vez que llega la lista de no leídas, se avisa de las que no se habían visto aún
     useEffect(() => {
-        if (!usuario) return
+        if (!usuario || !cargadas) {
+            ultimaComprobacion.current = null
+            return
+        }
+        const ids = noLeidas.map(n => n.idnotificacion)
+        if (ultimaComprobacion.current === null) {
+            // Primera carga: lo que ya estaba sin leer no se anuncia
+            ultimaComprobacion.current = ids
+            return
+        }
+        const sinVer = noLeidas.filter(n =>
+            !ultimaComprobacion.current.includes(n.idnotificacion) &&
+            ['NUEVO_SEGUIDOR', 'NUEVA_RECOMENDACION', 'LIKE_RESENA'].includes(n.tipo))
+        ultimaComprobacion.current = ids
 
-        // Comprobar cada 15 segundos
-        const interval = setInterval(comprobarNotificaciones, 15000)
-        comprobarNotificaciones()
-
-        return () => clearInterval(interval)
-    }, [comprobarNotificaciones, usuario])
+        sinVer.forEach(n => {
+            setToasts(prev => [...prev, { id: n.idnotificacion, tipo: n.tipo, mensaje: formatearMensaje(n), destino: getDestino(n) }])
+            // Auto-eliminar después de 5 segundos
+            setTimeout(() => setToasts(prev => prev.filter(t => t.id !== n.idnotificacion)), 5000)
+        })
+    }, [noLeidas, cargadas, usuario])
 
     const handleClick = (toast) => {
         setToasts(prev => prev.filter(t => t.id !== toast.id))
