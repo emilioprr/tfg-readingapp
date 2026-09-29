@@ -87,6 +87,12 @@ class BorradoCuentaRepositoryTest {
         // Ana puntúa sin reseña un libro
         em.persist(Valoracion.builder().usuario(ana).libro(libro).puntuacion(new java.math.BigDecimal("4"))
                 .fecha(LocalDateTime.now()).build());
+        // Luis da like a una lista de Ana
+        Lista listaDeAna = em.persist(Lista.builder().nombre("De Ana").esPublica(true).usuario(ana)
+                .fechaCreacion(LocalDateTime.now()).libros(new HashSet<>()).build());
+        em.persist(LikeLista.builder().usuario(luis).lista(listaDeAna).fecha(LocalDateTime.now()).build());
+        em.persist(Notificacion.builder().usuario(ana).tipo(TipoNotificacion.LIKE_LISTA).lista(listaDeAna)
+                .usuarioOrigen(luis).fecha(LocalDateTime.now()).leida(false).build());
         // Y se dan like mutuamente
         em.persist(LikeCita.builder().usuario(luis).anotacion(citaDeAna).fecha(LocalDateTime.now()).build());
         em.persist(LikeCita.builder().usuario(ana).anotacion(citaDeLuis).fecha(LocalDateTime.now()).build());
@@ -128,6 +134,8 @@ class BorradoCuentaRepositoryTest {
                 "SELECT COUNT(*) FROM cita_guardada WHERE idusuario = " + id,
                 "SELECT COUNT(*) FROM like_cita WHERE idusuario = " + id,
                 "SELECT COUNT(*) FROM valoracion WHERE idusuario = " + id,
+                "SELECT COUNT(*) FROM like_lista WHERE idusuario = " + id
+                        + " OR idlista IN (SELECT idlista FROM lista WHERE idusuario = " + id + ")",
                 "SELECT COUNT(*) FROM anotacion WHERE idusuario = " + id}) {
             assertThat(contar(sql)).as(sql).isZero();
         }

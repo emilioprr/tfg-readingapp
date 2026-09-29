@@ -6,6 +6,8 @@ import com.readingapp.reading_app.model.Libro;
 import com.readingapp.reading_app.model.Lista;
 import com.readingapp.reading_app.model.Usuario;
 import com.readingapp.reading_app.repository.LibroRepository;
+import com.readingapp.reading_app.repository.LikeListaRepository;
+import com.readingapp.reading_app.model.LikeLista;
 import com.readingapp.reading_app.repository.ListaRepository;
 import com.readingapp.reading_app.repository.UsuarioRepository;
 import org.junit.jupiter.api.AfterEach;
@@ -36,6 +38,9 @@ class ListaServiceTest {
     @Mock private ListaRepository listaRepository;
     @Mock private LibroRepository libroRepository;
     @Mock private UsuarioRepository usuarioRepository;
+    @Mock private LikeListaRepository likeListaRepository;
+    @Mock private com.readingapp.reading_app.repository.NotificacionRepository notificacionRepository;
+    @Mock private NotificacionService notificacionService;
 
     @InjectMocks private ListaService listaService;
 
@@ -82,6 +87,71 @@ class ListaServiceTest {
     @DisplayName("Solo puedes consultar tus propias listas para un libro")
     void misListasParaLibroSoloPropias() {
         assertThatThrownBy(() -> listaService.obtenerMiasParaLibro(2L, 10L)).isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    @DisplayName("Dar like a una lista pública lo guarda una sola vez")
+    void likeAListaPublica() {
+        lista();
+        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(ana));
+
+        listaService.darLike(20L);
+        when(likeListaRepository.existsByUsuarioIdusuarioAndListaIdlista(1L, 20L)).thenReturn(true);
+        listaService.darLike(20L);
+
+        verify(likeListaRepository, times(1)).save(any(LikeLista.class));
+        // Es su propia lista: no se avisa a sí misma
+        verify(notificacionService, never()).crearNotificacionLikeLista(any(), any());
+    }
+
+    @Test
+    @DisplayName("Dar like a la lista de otro avisa a su autor")
+    void likeAvisaAlAutor() {
+        Usuario luis = Usuario.builder().idusuario(2L).nombre("luis").build();
+        Lista deLuis = Lista.builder().idlista(40L).nombre("De Luis").esPublica(true).usuario(luis).libros(new HashSet<>()).build();
+        when(listaRepository.findById(40L)).thenReturn(Optional.of(deLuis));
+        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(ana));
+
+        listaService.darLike(40L);
+
+        verify(notificacionService).crearNotificacionLikeLista(deLuis, ana);
+    }
+
+    @Test
+    @DisplayName("No se puede dar like a una lista privada de otro")
+    void noLikeAPrivadaAjena() {
+        Usuario luis = Usuario.builder().idusuario(2L).nombre("luis").build();
+        Lista privada = Lista.builder().idlista(30L).nombre("Secreta").esPublica(false).usuario(luis).libros(new HashSet<>()).build();
+        when(listaRepository.findById(30L)).thenReturn(Optional.of(privada));
+
+        assertThatThrownBy(() -> listaService.darLike(30L)).isInstanceOf(IllegalArgumentException.class);
+        verify(likeListaRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Las listas llevan su número de likes y si te gustan")
+    void listasConLikes() {
+        Lista l = Lista.builder().idlista(20L).nombre("Verano").esPublica(true).usuario(ana).libros(new HashSet<>()).build();
+        when(listaRepository.findByEsPublicaTrue()).thenReturn(List.of(l));
+        when(likeListaRepository.contarPorLista(List.of(20L))).thenReturn(List.<Object[]>of(new Object[]{20L, 3L}));
+        when(likeListaRepository.findIdsLikeadas(1L, List.of(20L))).thenReturn(List.of(20L));
+
+        ListaDTO.Response r = listaService.obtenerPublicas().get(0);
+
+        assertThat(r.getNumLikes()).isEqualTo(3);
+        assertThat(r.getLikeada()).isTrue();
+    }
+
+    @Test
+    @DisplayName("Al borrar una lista se borran antes sus likes")
+    void borrarListaBorraLikes() {
+        lista();
+
+        listaService.eliminar(20L);
+
+        verify(likeListaRepository).borrarDeLista(20L);
+        verify(notificacionRepository).deleteByListaIdlista(20L);
+        verify(listaRepository).deleteById(20L);
     }
 
     @Test

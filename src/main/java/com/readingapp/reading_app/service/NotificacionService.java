@@ -108,6 +108,25 @@ public class NotificacionService {
         notificacionRepository.save(notificacion);
     }
 
+    /** Avisa al autor de una lista de que a alguien le ha gustado; una sola vez por persona, aunque quite y vuelva a dar like. */
+    @Transactional
+    public void crearNotificacionLikeLista(Lista lista, Usuario usuarioOrigen) {
+        if (notificacionRepository.existsByTipoAndListaIdlistaAndUsuarioOrigenIdusuario(
+                TipoNotificacion.LIKE_LISTA, lista.getIdlista(), usuarioOrigen.getIdusuario())) {
+            return;
+        }
+        Notificacion notificacion = Notificacion.builder()
+                .tipo(TipoNotificacion.LIKE_LISTA)
+                .mensaje("A " + usuarioOrigen.getNombre() + " le ha gustado tu lista \"" + lista.getNombre() + "\"")
+                .usuario(lista.getUsuario())
+                .lista(lista)
+                .usuarioOrigen(usuarioOrigen)
+                .fecha(LocalDateTime.now())
+                .leida(false)
+                .build();
+        notificacionRepository.save(notificacion);
+    }
+
     @Transactional
     public void crearNotificacionRecomendacion(Recomendacion recomendacion) {
         Notificacion notificacion = Notificacion.builder()
@@ -188,6 +207,8 @@ public class NotificacionService {
                 .idlibro(notificacion.getLibro() != null ? notificacion.getLibro().getIdlibro() : null)
                 .tituloLibro(notificacion.getLibro() != null ? notificacion.getLibro().getTitulo() : null)
                 .idanotacion(notificacion.getAnotacion() != null ? notificacion.getAnotacion().getIdanotacion() : null)
+                .idlista(notificacion.getLista() != null ? notificacion.getLista().getIdlista() : null)
+                .nombreLista(notificacion.getLista() != null ? notificacion.getLista().getNombre() : null)
                 .build();
     }
 }

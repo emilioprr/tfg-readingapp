@@ -31,6 +31,9 @@ public class ListaDTO {
         private Long idusuario;
         private String nombreUsuario;
         private Integer numLibros;
+        private Long numLikes;
+        /** Si al usuario de la sesión le gusta esta lista. */
+        private Boolean likeada;
         /** Solo en "mis listas para un libro": si ese libro ya está en la lista. */
         private Boolean contieneLibro;
     }
@@ -45,5 +48,7 @@ public class ListaDTO {
         private Long idusuario;
         private String nombreUsuario;
         private List<LibroDTO.Response> libros;
+        private Long numLikes;
+        private Boolean likeada;
     }
 }

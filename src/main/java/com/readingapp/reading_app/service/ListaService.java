@@ -4,9 +4,12 @@ import com.readingapp.reading_app.config.SecurityUtils;
 import com.readingapp.reading_app.dto.LibroDTO;
 import com.readingapp.reading_app.dto.ListaDTO;
 import com.readingapp.reading_app.model.Libro;
+import com.readingapp.reading_app.model.LikeLista;
 import com.readingapp.reading_app.model.Lista;
 import com.readingapp.reading_app.model.Usuario;
+import com.readingapp.reading_app.repository.LikeListaRepository;
 import com.readingapp.reading_app.repository.ListaRepository;
+import com.readingapp.reading_app.repository.NotificacionRepository;
 import com.readingapp.reading_app.repository.LibroRepository;
 import com.readingapp.reading_app.repository.UsuarioRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -14,7 +17,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -23,6 +31,9 @@ public class ListaService {
     private final ListaRepository listaRepository;
     private final LibroRepository libroRepository;
     private final UsuarioRepository usuarioRepository;
+    private final LikeListaRepository likeListaRepository;
+    private final NotificacionRepository notificacionRepository;
+    private final NotificacionService notificacionService;
 
     @Transactional
     public ListaDTO.Response crear(Long usuarioId, ListaDTO.CreateRequest request) {
@@ -52,10 +63,9 @@ public class ListaService {
     /*El propio usuario ve todas sus listas; los demás solo las públicas.*/
     public List<ListaDTO.Response> obtenerPorUsuario(Long usuarioId) {
         boolean esPropio = SecurityUtils.esUsuarioActual(usuarioId);
-        return listaRepository.findByUsuarioIdusuario(usuarioId).stream()
+        return conLikes(listaRepository.findByUsuarioIdusuario(usuarioId).stream()
                 .filter(lista -> esPropio || lista.getEsPublica())
-                .map(this::toResponse)
-                .toList();
+                .toList());
     }
 
     /** Tus listas indicando en cuáles está ya un libro, para la ventana "Guardar en lista" de su ficha. */
@@ -72,9 +82,7 @@ public class ListaService {
     }
 
     public List<ListaDTO.Response> obtenerPublicas() {
-        return listaRepository.findByEsPublicaTrue().stream()
-                .map(this::toResponse)
-                .toList();
+        return conLikes(listaRepository.findByEsPublicaTrue());
     }
 
     @Transactional
@@ -94,7 +102,40 @@ public class ListaService {
         Lista lista = listaRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Lista no encontrada con id: " + id));
         SecurityUtils.validarUsuarioOAdmin(lista.getUsuario().getIdusuario());
+        likeListaRepository.borrarDeLista(id);
+        notificacionRepository.deleteByListaIdlista(id);
         listaRepository.deleteById(id);
+    }
+
+    // === LIKES ===
+
+    /** Da like a una lista pública (o propia). Dar like dos veces no hace nada. */
+    @Transactional
+    public void darLike(Long idlista) {
+        Lista lista = buscarPorId(idlista);
+        Long idusuario = SecurityUtils.getUsuarioAutenticadoId();
+        boolean propia = lista.getUsuario().getIdusuario().equals(idusuario);
+        if (!Boolean.TRUE.equals(lista.getEsPublica()) && !propia) {
+            throw new IllegalArgumentException("Esta lista es privada");
+        }
+        if (!likeListaRepository.existsByUsuarioIdusuarioAndListaIdlista(idusuario, idlista)) {
+            Usuario usuario = usuarioRepository.findById(idusuario)
+                    .orElseThrow(() -> new EntityNotFoundException("Usuario no encontrado"));
+            likeListaRepository.save(LikeLista.builder().usuario(usuario).lista(lista).fecha(LocalDateTime.now()).build());
+            if (!propia) notificacionService.crearNotificacionLikeLista(lista, usuario);
+        }
+    }
+
+    @Transactional
+    public void quitarLike(Long idlista) {
+        likeListaRepository.quitar(SecurityUtils.getUsuarioAutenticadoId(), idlista);
+    }
+
+    /** Listas que le gustan al usuario de la sesión (página "Likes"). */
+    @Transactional(readOnly = true)
+    public List<ListaDTO.Response> obtenerLikeadas(Long usuarioId) {
+        SecurityUtils.validarUsuario(usuarioId);
+        return conLikes(likeListaRepository.findListasLikeadas(usuarioId));
     }
 
     // === GESTIÓN DE LIBROS EN LISTA ===
@@ -126,6 +167,22 @@ public class ListaService {
     private Lista buscarPorId(Long id) {
         return listaRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Lista no encontrada con id: " + id));
+    }
+
+    /** Respuestas de varias listas con sus likes, con dos consultas para todas. */
+    private List<ListaDTO.Response> conLikes(List<Lista> listas) {
+        if (listas.isEmpty()) return List.of();
+        List<Long> ids = listas.stream().map(Lista::getIdlista).toList();
+        Map<Long, Long> likes = likeListaRepository.contarPorLista(ids).stream()
+                .collect(Collectors.toMap(f -> (Long) f[0], f -> ((Number) f[1]).longValue()));
+        Long idusuario = SecurityUtils.usuarioActualId();
+        Set<Long> mias = idusuario == null ? Set.of() : new HashSet<>(likeListaRepository.findIdsLikeadas(idusuario, ids));
+        return listas.stream().map(lista -> {
+            ListaDTO.Response r = toResponse(lista);
+            r.setNumLikes(likes.getOrDefault(lista.getIdlista(), 0L));
+            r.setLikeada(mias.contains(lista.getIdlista()));
+            return r;
+        }).toList();
     }
 
     private ListaDTO.Response toResponse(Lista lista) {
@@ -162,6 +219,10 @@ public class ListaService {
                 .idusuario(lista.getUsuario().getIdusuario())
                 .nombreUsuario(lista.getUsuario().getNombre())
                 .libros(libros)
+                .numLikes(likeListaRepository.contarPorLista(List.of(lista.getIdlista())).stream()
+                        .findFirst().map(f -> ((Number) f[1]).longValue()).orElse(0L))
+                .likeada(SecurityUtils.usuarioActualId() != null && likeListaRepository
+                        .existsByUsuarioIdusuarioAndListaIdlista(SecurityUtils.usuarioActualId(), lista.getIdlista()))
                 .build();
     }
 }

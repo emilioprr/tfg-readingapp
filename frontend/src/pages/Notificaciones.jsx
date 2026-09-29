@@ -77,6 +77,9 @@ export default function Notificaciones() {
             case 'LIKE_CITA':
                 navigate('/perfil?tab=anotaciones')
                 break
+            case 'LIKE_LISTA':
+                if (n.idlista) navigate(`/lista/${n.idlista}`)
+                break
             case 'RETO_CUMPLIDO':
                 navigate('/retos')
                 break
@@ -116,6 +119,8 @@ export default function Notificaciones() {
                                         <>A <span className="text-terra font-medium">{n.nombreUsuarioOrigen}</span> le ha gustado tu reseña</>
                                     ) : n.tipo === 'LIKE_CITA' && n.nombreUsuarioOrigen ? (
                                         <>A <span className="text-terra font-medium">{n.nombreUsuarioOrigen}</span> le ha gustado tu cita{n.tituloLibro && <> de <span className="text-terra font-medium">{n.tituloLibro}</span></>}</>
+                                    ) : n.tipo === 'LIKE_LISTA' && n.nombreUsuarioOrigen ? (
+                                        <>A <span className="text-terra font-medium">{n.nombreUsuarioOrigen}</span> le ha gustado tu lista{n.nombreLista && <> <span className="text-terra font-medium">{n.nombreLista}</span></>}</>
                                     ) : n.tipo === 'NUEVO_LIBRO_AUTOR' && n.tituloLibro ? (
                                         <>Nuevo libro: <span className="text-terra font-medium">{n.tituloLibro}</span></>
                                     ) : (

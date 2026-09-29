@@ -57,6 +57,26 @@ public class ListaController {
         return ResponseEntity.noContent().build();
     }
 
+    // === LIKES ===
+
+    @PostMapping("/{id}/like")
+    public ResponseEntity<Void> darLike(@PathVariable Long id) {
+        listaService.darLike(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/{id}/like")
+    public ResponseEntity<Void> quitarLike(@PathVariable Long id) {
+        listaService.quitarLike(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    /*Listas que te gustan (página "Likes").*/
+    @GetMapping("/likes/{usuarioId}")
+    public ResponseEntity<List<ListaDTO.Response>> likeadas(@PathVariable Long usuarioId) {
+        return ResponseEntity.ok(listaService.obtenerLikeadas(usuarioId));
+    }
+
     // === LIBROS EN LISTA ===
 
     @PostMapping("/{listaId}/libros/{libroId}")

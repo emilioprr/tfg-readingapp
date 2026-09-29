@@ -17,5 +17,7 @@ public interface NotificacionRepository extends JpaRepository<Notificacion, Long
     long countByUsuarioIdusuarioAndLeidaFalse(Long idusuario);
     void deleteByResenaIdresena(Long idresena);
     void deleteByAnotacionIdanotacion(Long idanotacion);
+    void deleteByListaIdlista(Long idlista);
+    boolean existsByTipoAndListaIdlistaAndUsuarioOrigenIdusuario(TipoNotificacion tipo, Long idlista, Long idusuarioOrigen);
     boolean existsByTipoAndAnotacionIdanotacionAndUsuarioOrigenIdusuario(TipoNotificacion tipo, Long idanotacion, Long idusuarioOrigen);
 }
