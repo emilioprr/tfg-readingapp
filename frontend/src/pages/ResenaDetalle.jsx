@@ -5,12 +5,6 @@ import Estrellas from '../components/Estrellas'
 import api from '../api/axios'
 import SpoilerOculto from '../components/SpoilerOculto'
 
-const ETIQUETAS_DISPONIBLES = [
-    'ADICTIVO', 'EMOTIVO', 'DIVERTIDO', 'PROFUNDO', 'LENTO',
-    'PREDECIBLE', 'ORIGINAL', 'CONFUSO', 'INSPIRADOR', 'OSCURO',
-    'ROMANTICO', 'TENSO', 'EDUCATIVO', 'POETICO', 'ATERRADOR'
-]
-
 export default function ResenaDetalle() {
     const { id } = useParams()
     const { usuario } = useAuth()
@@ -18,14 +12,6 @@ export default function ResenaDetalle() {
     const [liked, setLiked] = useState(false)
     const [loading, setLoading] = useState(true)
     const [eliminada, setEliminada] = useState(false)
-    const [editando, setEditando] = useState(false)
-    const [textoEdit, setTextoEdit] = useState('')
-    const [puntuacionEdit, setPuntuacionEdit] = useState(0)
-    const [ritmoEdit, setRitmoEdit] = useState(null)
-    const [etiquetasEdit, setEtiquetasEdit] = useState([])
-    const [esPublicaEdit, setEsPublicaEdit] = useState(true)
-    const [tieneSpoilerEdit, setTieneSpoilerEdit] = useState(false)
-    const [guardando, setGuardando] = useState(false)
     const navigate = useNavigate()
 
     const cargarResena = useCallback(async () => {
@@ -68,39 +54,6 @@ export default function ResenaDetalle() {
     }
 
 
-    const cancelarEdicion = () => {
-        setEditando(false)
-    }
-
-    const toggleEtiqueta = (et) => {
-        if (etiquetasEdit.includes(et)) {
-            setEtiquetasEdit(etiquetasEdit.filter(e => e !== et))
-        } else if (etiquetasEdit.length < 5) {
-            setEtiquetasEdit([...etiquetasEdit, et])
-        }
-    }
-
-    const guardarEdicion = async () => {
-        if (puntuacionEdit === 0) { alert('Selecciona una puntuación'); return }
-        setGuardando(true)
-        try {
-            await api.put(`/resenas/${id}`, {
-                texto: textoEdit,
-                puntuacion: puntuacionEdit,
-                ritmo: ritmoEdit,
-                etiquetas: etiquetasEdit,
-                esPublica: esPublicaEdit,
-                tieneSpoiler: tieneSpoilerEdit,
-            })
-            setEditando(false)
-            cargarResena()
-        } catch (err) {
-            alert(err.response?.data?.mensaje || 'Error al guardar')
-        } finally {
-            setGuardando(false)
-        }
-    }
-
     if (loading) return <p className="text-dark-muted">Cargando...</p>
     if (!resena) return <p className="text-red-400">Reseña no encontrada</p>
     if (eliminada) return <p className="text-dark-muted">Reseña eliminada</p>
@@ -142,12 +95,7 @@ export default function ResenaDetalle() {
                         <span className="text-dark-muted text-xs">{new Date(resena.fechaCreacion).toLocaleDateString()}</span>
                     </div>
 
-                    {/* Estrellas */}
-                    {editando ? (
-                        <Estrellas puntuacion={puntuacionEdit} interactivo={true} onChange={setPuntuacionEdit} />
-                    ) : (
-                        <Estrellas puntuacion={resena.puntuacion} />
-                    )}
+                    <Estrellas puntuacion={resena.puntuacion} />
 
                     {resena.leidopreviamente && (
                         <span className="inline-block mt-2 text-xs bg-dark-elevated text-dark-muted px-2 py-0.5 rounded">Relectura</span>
@@ -156,18 +104,7 @@ export default function ResenaDetalle() {
             </div>
 
             {/* Ritmo */}
-            {editando ? (
-                <div className="flex items-center gap-3 mb-5">
-                    <span className="text-dark-muted text-sm">Ritmo:</span>
-                    <div className="flex gap-1">
-                        {[1, 2, 3].map((r) => (
-                            <button key={r} onClick={() => setRitmoEdit(r)}
-                                    className={`text-lg transition-opacity ${ritmoEdit >= r ? 'opacity-100' : 'opacity-25'}`}>⚡</button>
-                        ))}
-                    </div>
-                    <span className="text-dark-muted text-sm">{ritmoLabels[ritmoEdit || 0]}</span>
-                </div>
-            ) : resena.ritmo ? (
+            {resena.ritmo ? (
                 <div className="flex items-center gap-3 mb-5">
                     <span className="text-dark-muted text-sm">Ritmo:</span>
                     <div className="flex gap-1">
@@ -180,18 +117,7 @@ export default function ResenaDetalle() {
             ) : null}
 
             {/* Etiquetas */}
-            {editando ? (
-                <div className="flex gap-2 flex-wrap mb-6">
-                    {ETIQUETAS_DISPONIBLES.map((et) => (
-                        <button key={et} onClick={() => toggleEtiqueta(et)}
-                                className={`text-xs px-3 py-1 rounded-full transition-colors ${
-                                    etiquetasEdit.includes(et) ? 'bg-terra text-white' : 'bg-dark-elevated text-dark-muted hover:text-dark-text'
-                                }`}>
-                            {et.charAt(0) + et.slice(1).toLowerCase()}
-                        </button>
-                    ))}
-                </div>
-            ) : resena.etiquetas?.length > 0 ? (
+            {resena.etiquetas?.length > 0 ? (
                 <div className="flex gap-2 flex-wrap mb-6">
                     {resena.etiquetas.map((et) => (
                         <span key={et} className="text-xs bg-terra/10 text-terra px-3 py-1 rounded-full">{et}</span>
@@ -201,11 +127,7 @@ export default function ResenaDetalle() {
 
             {/* Texto */}
             <div className="bg-dark-card rounded-2xl p-6 mb-6">
-                {editando ? (
-                    <textarea value={textoEdit} onChange={(e) => setTextoEdit(e.target.value)} rows={5}
-                              className="w-full bg-dark-elevated border border-dark-border rounded-lg px-4 py-2.5 text-dark-text focus:border-terra focus:outline-none transition-colors"
-                              placeholder="¿Qué te ha parecido?" />
-                ) : resena.texto ? (
+                {resena.texto ? (
                     <SpoilerOculto activo={resena.tieneSpoiler && usuario?.id !== resena.idusuario}>
                         <p className="text-dark-text/90 leading-relaxed">{resena.texto}</p>
                     </SpoilerOculto>
@@ -214,39 +136,8 @@ export default function ResenaDetalle() {
                 )}
             </div>
 
-            {/* Opciones de edición */}
-            {editando && (
-                <div className="flex items-center gap-6 mb-6">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                        <input type="checkbox" checked={tieneSpoilerEdit} onChange={(e) => setTieneSpoilerEdit(e.target.checked)}
-                               className="accent-terra" />
-                        <span className="text-dark-muted text-sm">Contiene spoilers</span>
-                    </label>
-                    <label className="flex items-center gap-2 cursor-pointer">
-                        <input type="checkbox" checked={esPublicaEdit} onChange={(e) => setEsPublicaEdit(e.target.checked)}
-                               className="accent-terra" />
-                        <span className="text-dark-muted text-sm">Pública</span>
-                    </label>
-                </div>
-            )}
-
-            {/* Botones de edición */}
-            {editando && (
-                <div className="flex gap-3 mb-6">
-                    <button onClick={guardarEdicion} disabled={guardando}
-                            className="bg-terra hover:bg-terra-hover text-white font-semibold px-6 py-2 rounded-lg transition-colors disabled:opacity-50">
-                        {guardando ? 'Guardando...' : 'Guardar cambios'}
-                    </button>
-                    <button onClick={cancelarEdicion}
-                            className="text-dark-muted hover:text-dark-text transition-colors px-4 py-2">
-                        Cancelar
-                    </button>
-                </div>
-            )}
-
             {/* Like + info */}
-            {!editando && (
-                <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
                         {usuario && resena.idusuario !== usuario.id && (
                             <button onClick={toggleLike} className="flex items-center gap-1.5 transition-colors">
@@ -297,8 +188,7 @@ export default function ResenaDetalle() {
                             </button>
                         )}
                     </div>
-                </div>
-            )}
+            </div>
         </div>
     )
 }

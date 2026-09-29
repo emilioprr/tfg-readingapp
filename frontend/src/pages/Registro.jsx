@@ -1,8 +1,11 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
 import api from '../api/axios'
 
 export default function Registro() {
+    const { login } = useAuth()
+    const navigate = useNavigate()
     const [nombre, setNombre] = useState('')
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
@@ -13,14 +16,9 @@ export default function Registro() {
         setError('')
         try {
             const res = await api.post('/auth/registro', { nombre, email, password })
-            localStorage.setItem('token', res.data.token)
-            localStorage.setItem('usuario', JSON.stringify({
-                id: res.data.idusuario,
-                nombre: res.data.nombre,
-                email: res.data.email,
-                rol: res.data.rol
-            }))
-            window.location.href = '/'
+            // Misma forma de iniciar sesión que en Login: el contexto guarda el token y el usuario
+            login(res.data)
+            navigate('/')
         } catch (err) {
             setError(err.response?.data?.mensaje || 'Error al registrarse')
         }
