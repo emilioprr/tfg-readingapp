@@ -57,10 +57,12 @@ public interface SeguimientoRepository extends JpaRepository<Seguimiento, Long> 
 
     long countByUsuarioIdusuarioAndLibroIdlibroAndEstado(Long idusuario, Long idlibro, EstadoLectura estado);
 
+    /** Libros cuyo estado ACTUAL (último seguimiento) es el indicado, del más reciente al más antiguo. */
     @Query("SELECT s FROM Seguimiento s WHERE s.usuario.idusuario = :idusuario " +
-            "AND s.estado = 'LEYENDO' " +
+            "AND s.estado = :estado " +
             "AND s.idseguimiento = (SELECT MAX(s2.idseguimiento) FROM Seguimiento s2 " +
             "WHERE s2.usuario.idusuario = s.usuario.idusuario " +
-            "AND s2.libro.idlibro = s.libro.idlibro)")
-    List<Seguimiento> findLibrosLeyendoActualmente(@Param("idusuario") Long idusuario);
+            "AND s2.libro.idlibro = s.libro.idlibro) " +
+            "ORDER BY s.idseguimiento DESC")
+    List<Seguimiento> findLibrosEnEstadoActual(@Param("idusuario") Long idusuario, @Param("estado") EstadoLectura estado);
 }

@@ -128,13 +128,14 @@ public class SeguimientoService {
                 .toList();
     }
 
+    /**
+     * Estanterías. "Leídos" incluye cada lectura (las relecturas cuentan); el resto muestra el estado
+     * actual de cada libro, para que un libro empezado desaparezca de "Quiero leer" o uno retomado de "Abandonados".
+     */
     public List<SeguimientoDTO.Response> obtenerPorEstado(Long idusuario, EstadoLectura estado) {
-        List<Seguimiento> seguimientos;
-        if (estado == EstadoLectura.LEYENDO) {
-            seguimientos = seguimientoRepository.findLibrosLeyendoActualmente(idusuario);
-        } else {
-            seguimientos = seguimientoRepository.findByUsuarioIdusuarioAndEstado(idusuario, estado);
-        }
+        List<Seguimiento> seguimientos = estado == EstadoLectura.LEIDO
+                ? seguimientoRepository.findByUsuarioIdusuarioAndEstado(idusuario, estado)
+                : seguimientoRepository.findLibrosEnEstadoActual(idusuario, estado);
         return seguimientos.stream()
                 .map(this::toResponse)
                 .toList();
