@@ -5,6 +5,7 @@ import ResenaCard from '../components/ResenaCard'
 import ListaCard from '../components/ListaCard'
 import api from '../api/axios'
 import SpoilerOculto from '../components/SpoilerOculto'
+import { Llama, colorLlama } from '../components/Racha'
 
 /** Formato corto para contadores: 950 → 950, 1.234 → 1,2K, 1.500.000 → 1,5M.
  *  Se trunca (no redondea) para no mostrar más de lo que hay, p. ej. 999.999 → 999,9K. */
@@ -38,6 +39,7 @@ export default function Perfil() {
     const [pendientesLibros, setPendientesLibros] = useState([])
     const [abandonadosLibros, setAbandonadosLibros] = useState([])
     const [estadisticas, setEstadisticas] = useState(null)
+    const [racha, setRacha] = useState(null)
     const [leyendoIndex, setLeyendoIndex] = useState(0)
 
 
@@ -153,10 +155,17 @@ export default function Perfil() {
         catch (err) { console.error('Error:', err) }
     }, [perfilId])
 
+    // Solo consulta: ver la racha de alguien no la modifica
+    const cargarRacha = useCallback(async () => {
+        try { const res = await api.get(`/racha/usuario/${perfilId}`); setRacha(res.data) }
+        catch (err) { console.error('Error:', err) }
+    }, [perfilId])
+
     useEffect(() => {
         if (perfilId) {
             cargarPerfil()
             cargarEstadisticas()
+            cargarRacha()
             setLeyendoIndex(0)
             cargarFavoritos()
             cargarLecturasRecientes()
@@ -169,7 +178,7 @@ export default function Perfil() {
             cargarListasPublicas()
             comprobarSiguiendo()
         }
-    }, [cargarAbandonadosLibros, cargarAnotaciones, cargarEstadisticas, cargarFavoritos, cargarLecturasRecientes, cargarLeidosLibros, cargarLeyendoLibros, cargarListasPublicas, cargarPendientesLibros, cargarPerfil, cargarResenas, comprobarSiguiendo, perfilId])
+    }, [cargarAbandonadosLibros, cargarAnotaciones, cargarEstadisticas, cargarRacha, cargarFavoritos, cargarLecturasRecientes, cargarLeidosLibros, cargarLeyendoLibros, cargarListasPublicas, cargarPendientesLibros, cargarPerfil, cargarResenas, comprobarSiguiendo, perfilId])
 
     if (loading) return <p className="text-dark-muted">Cargando...</p>
     if (!perfil) return <p className="text-red-400">Usuario no encontrado</p>
@@ -192,14 +201,24 @@ export default function Perfil() {
             {/* Header: foto y texto a la izquierda; estadísticas y lectura actual a la derecha */}
             <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-8 mb-10">
                 <div className="flex items-start gap-5 min-w-0">
-                    {perfil.avatar ? (
-                        <img src={perfil.avatar} alt={perfil.nombre}
-                             className="w-24 h-24 rounded-full object-cover ring-4 ring-dark-border flex-shrink-0" />
-                    ) : (
-                        <div className="w-24 h-24 bg-terra/20 rounded-full flex items-center justify-center text-terra text-4xl font-bold ring-4 ring-dark-border flex-shrink-0">
-                            {perfil.nombre?.charAt(0).toUpperCase()}
-                        </div>
-                    )}
+                    <div className="relative flex-shrink-0">
+                        {perfil.avatar ? (
+                            <img src={perfil.avatar} alt={perfil.nombre}
+                                 className="w-24 h-24 rounded-full object-cover ring-4 ring-dark-border" />
+                        ) : (
+                            <div className="w-24 h-24 bg-terra/20 rounded-full flex items-center justify-center text-terra text-4xl font-bold ring-4 ring-dark-border">
+                                {perfil.nombre?.charAt(0).toUpperCase()}
+                            </div>
+                        )}
+                        {/* Racha: insignia sobre el borde de la foto, abajo a la derecha */}
+                        {racha && (
+                            <span className="absolute -bottom-1 -right-2 flex items-center gap-0.5 bg-dark-card border-2 border-dark-border rounded-full pl-1 pr-2 py-0.5 shadow-lg"
+                                  title={`${racha.racha} ${racha.racha === 1 ? 'día' : 'días'} de racha`}>
+                                <Llama n={racha.racha} className="w-4 h-4" />
+                                <span className="font-bold text-sm leading-none" style={{ color: colorLlama(racha.racha) }}>{racha.racha}</span>
+                            </span>
+                        )}
+                    </div>
 
                     <div className="min-w-0">
                         <h1 className="text-3xl font-bold text-dark-text tracking-tight">{perfil.nombre}</h1>

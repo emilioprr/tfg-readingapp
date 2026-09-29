@@ -79,7 +79,7 @@ class RachaServiceTest {
         void sinActividad() {
             actividad(Set.of());
 
-            RachaDTO.Response res = rachaService.calcular(ID_USUARIO);
+            RachaDTO.Response res = rachaService.actualizar(ID_USUARIO);
 
             assertThat(res.getRacha()).isZero();
             assertThat(res.getHoyCompletado()).isFalse();
@@ -90,7 +90,7 @@ class RachaServiceTest {
         void soloHoy() {
             actividad(Set.of(HOY));
 
-            RachaDTO.Response res = rachaService.calcular(ID_USUARIO);
+            RachaDTO.Response res = rachaService.actualizar(ID_USUARIO);
 
             assertThat(res.getRacha()).isEqualTo(1);
             assertThat(res.getHoyCompletado()).isTrue();
@@ -101,7 +101,7 @@ class RachaServiceTest {
         void diasConsecutivos() {
             actividad(diasSeguidos(5, HOY));
 
-            assertThat(rachaService.calcular(ID_USUARIO).getRacha()).isEqualTo(5);
+            assertThat(rachaService.actualizar(ID_USUARIO).getRacha()).isEqualTo(5);
         }
 
         @Test
@@ -109,7 +109,7 @@ class RachaServiceTest {
         void rachaVivaSinLeerHoy() {
             actividad(diasSeguidos(3, HOY.minusDays(1)));
 
-            RachaDTO.Response res = rachaService.calcular(ID_USUARIO);
+            RachaDTO.Response res = rachaService.actualizar(ID_USUARIO);
 
             assertThat(res.getRacha()).isEqualTo(3);
             assertThat(res.getHoyCompletado()).isFalse();
@@ -120,13 +120,13 @@ class RachaServiceTest {
         void rachaRota() {
             actividad(diasSeguidos(4, HOY.minusDays(2)));
 
-            assertThat(rachaService.calcular(ID_USUARIO).getRacha()).isZero();
+            assertThat(rachaService.actualizar(ID_USUARIO).getRacha()).isZero();
         }
 
         @Test
         @DisplayName("Falla si el usuario no existe")
         void usuarioInexistente() {
-            assertThatThrownBy(() -> rachaService.calcular(999L))
+            assertThatThrownBy(() -> rachaService.actualizar(999L))
                     .isInstanceOf(EntityNotFoundException.class);
         }
     }
@@ -143,7 +143,7 @@ class RachaServiceTest {
             usuario.setProtectoresRacha(1);
             actividad(diasSeguidos(4, HOY.minusDays(2)));   // ayer no leyó
 
-            RachaDTO.Response res = rachaService.calcular(ID_USUARIO);
+            RachaDTO.Response res = rachaService.actualizar(ID_USUARIO);
 
             assertThat(res.getRacha()).isEqualTo(5);          // 4 días + ayer protegido
             assertThat(res.getProtectores()).isZero();
@@ -156,7 +156,7 @@ class RachaServiceTest {
             usuario.setProtectoresRacha(1);
             actividad(diasSeguidos(3, HOY.minusDays(3)));   // faltan 2 días
 
-            RachaDTO.Response res = rachaService.calcular(ID_USUARIO);
+            RachaDTO.Response res = rachaService.actualizar(ID_USUARIO);
 
             assertThat(res.getRacha()).isZero();
             assertThat(res.getProtectores()).isEqualTo(1);
@@ -168,7 +168,7 @@ class RachaServiceTest {
         void ganarProtectorA7Dias() {
             actividad(diasSeguidos(7, HOY));
 
-            RachaDTO.Response res = rachaService.calcular(ID_USUARIO);
+            RachaDTO.Response res = rachaService.actualizar(ID_USUARIO);
 
             assertThat(res.getNuevoProtector()).isTrue();
             assertThat(res.getProtectores()).isEqualTo(1);
@@ -181,7 +181,7 @@ class RachaServiceTest {
             usuario.setProtectoresRacha(2);
             actividad(diasSeguidos(14, HOY));
 
-            RachaDTO.Response res = rachaService.calcular(ID_USUARIO);
+            RachaDTO.Response res = rachaService.actualizar(ID_USUARIO);
 
             assertThat(res.getNuevoProtector()).isFalse();
             assertThat(res.getProtectores()).isEqualTo(2);
@@ -194,7 +194,7 @@ class RachaServiceTest {
             usuario.setFechaUltimoProtector(HOY);
             actividad(diasSeguidos(7, HOY));
 
-            RachaDTO.Response res = rachaService.calcular(ID_USUARIO);
+            RachaDTO.Response res = rachaService.actualizar(ID_USUARIO);
 
             assertThat(res.getNuevoProtector()).isFalse();
             assertThat(res.getProtectores()).isEqualTo(1);
@@ -205,7 +205,7 @@ class RachaServiceTest {
         void protectorPendienteDeAyer() {
             actividad(diasSeguidos(7, HOY.minusDays(1)));   // hoy aún no ha leído
 
-            RachaDTO.Response res = rachaService.calcular(ID_USUARIO);
+            RachaDTO.Response res = rachaService.actualizar(ID_USUARIO);
 
             assertThat(res.getRacha()).isEqualTo(7);
             assertThat(res.getNuevoProtector()).isTrue();
@@ -219,7 +219,7 @@ class RachaServiceTest {
             // Día 7 fue hace 2 días y nadie calculó la racha ese día; hoy la racha es 9
             actividad(diasSeguidos(9, HOY));
 
-            RachaDTO.Response res = rachaService.calcular(ID_USUARIO);
+            RachaDTO.Response res = rachaService.actualizar(ID_USUARIO);
 
             assertThat(res.getNuevoProtector()).isTrue();
             assertThat(res.getProtectores()).isEqualTo(1);
@@ -233,7 +233,7 @@ class RachaServiceTest {
             usuario.setFechaUltimoProtector(HOY.minusDays(2));   // premiado al llegar a 7
             actividad(diasSeguidos(9, HOY));
 
-            RachaDTO.Response res = rachaService.calcular(ID_USUARIO);
+            RachaDTO.Response res = rachaService.actualizar(ID_USUARIO);
 
             assertThat(res.getNuevoProtector()).isFalse();
             assertThat(res.getProtectores()).isEqualTo(1);
@@ -245,9 +245,9 @@ class RachaServiceTest {
             usuario.setProtectoresRacha(2);
             actividad(diasSeguidos(7, HOY));
 
-            rachaService.calcular(ID_USUARIO);   // llega a 7 con 2 protectores: no suma
+            rachaService.actualizar(ID_USUARIO);   // llega a 7 con 2 protectores: no suma
             usuario.setProtectoresRacha(1);      // más tarde gasta uno
-            RachaDTO.Response res = rachaService.calcular(ID_USUARIO);
+            RachaDTO.Response res = rachaService.actualizar(ID_USUARIO);
 
             assertThat(res.getNuevoProtector()).isFalse();
             assertThat(res.getProtectores()).isEqualTo(1);
@@ -258,10 +258,54 @@ class RachaServiceTest {
         void variosHitosPendientes() {
             actividad(diasSeguidos(21, HOY));   // hitos 7, 14 y 21 sin premiar
 
-            RachaDTO.Response res = rachaService.calcular(ID_USUARIO);
+            RachaDTO.Response res = rachaService.actualizar(ID_USUARIO);
 
             assertThat(res.getProtectores()).isEqualTo(RachaService.MAX_PROTECTORES);
             assertThat(usuario.getFechaUltimoProtector()).isEqualTo(HOY);
+        }
+    }
+
+    // ===== Consultar (perfil de otro usuario): no modifica nada =====
+
+    @Nested
+    @DisplayName("Consultar la racha sin modificarla")
+    class Consultar {
+
+        @Test
+        @DisplayName("Muestra la misma racha que vería el usuario, simulando el protector")
+        void simulaProtector() {
+            usuario.setProtectoresRacha(1);
+            actividad(diasSeguidos(4, HOY.minusDays(2)));   // ayer no leyó
+
+            RachaDTO.Response res = rachaService.consultar(ID_USUARIO);
+
+            assertThat(res.getRacha()).isEqualTo(5);
+        }
+
+        @Test
+        @DisplayName("No gasta protectores ni guarda días protegidos")
+        void noGastaProtectores() {
+            usuario.setProtectoresRacha(1);
+            actividad(diasSeguidos(4, HOY.minusDays(2)));
+
+            rachaService.consultar(ID_USUARIO);
+
+            assertThat(usuario.getProtectoresRacha()).isEqualTo(1);
+            assertThat(usuario.getDiasProtegidos()).isEmpty();
+            verify(usuarioRepository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("No concede protectores ni actualiza el récord")
+        void noConcedeNiActualizaRecord() {
+            actividad(diasSeguidos(7, HOY));
+
+            RachaDTO.Response res = rachaService.consultar(ID_USUARIO);
+
+            assertThat(res.getNuevoProtector()).isFalse();
+            assertThat(usuario.getFechaUltimoProtector()).isNull();
+            assertThat(usuario.getMejorRacha()).isZero();
+            verify(usuarioRepository, never()).save(any());
         }
     }
 
@@ -277,7 +321,7 @@ class RachaServiceTest {
             usuario.setMejorRacha(3);
             actividad(diasSeguidos(5, HOY));
 
-            RachaDTO.Response res = rachaService.calcular(ID_USUARIO);
+            RachaDTO.Response res = rachaService.actualizar(ID_USUARIO);
 
             assertThat(res.getMejorRacha()).isEqualTo(5);
             verify(usuarioRepository).save(usuario);
@@ -289,7 +333,7 @@ class RachaServiceTest {
             usuario.setMejorRacha(50);
             actividad(diasSeguidos(2, HOY));
 
-            assertThat(rachaService.calcular(ID_USUARIO).getMejorRacha()).isEqualTo(50);
+            assertThat(rachaService.actualizar(ID_USUARIO).getMejorRacha()).isEqualTo(50);
         }
 
         @Test
@@ -298,7 +342,7 @@ class RachaServiceTest {
             usuario.setMejorRacha(35);
             actividad(Set.of());   // racha actual perdida
 
-            RachaDTO.Response res = rachaService.calcular(ID_USUARIO);
+            RachaDTO.Response res = rachaService.actualizar(ID_USUARIO);
 
             assertThat(res.getRacha()).isZero();
             assertThat(res.getInsignias()).containsExactly(7, 30);
@@ -309,7 +353,7 @@ class RachaServiceTest {
         void sinInsignias() {
             actividad(diasSeguidos(6, HOY));
 
-            assertThat(rachaService.calcular(ID_USUARIO).getInsignias()).isEmpty();
+            assertThat(rachaService.actualizar(ID_USUARIO).getInsignias()).isEmpty();
         }
     }
 
@@ -325,7 +369,7 @@ class RachaServiceTest {
             // Lunes 21 leído, martes 22 no, miércoles 23 (hoy) aún no
             actividad(Set.of(LocalDate.of(2026, 9, 21)));
 
-            var semana = rachaService.calcular(ID_USUARIO).getSemana();
+            var semana = rachaService.actualizar(ID_USUARIO).getSemana();
 
             assertThat(semana).hasSize(7);
             assertThat(semana.get(0).getLetra()).isEqualTo("L");
@@ -343,7 +387,7 @@ class RachaServiceTest {
             usuario.setProtectoresRacha(1);
             actividad(diasSeguidos(3, HOY.minusDays(2)));   // martes 22 sin leer
 
-            var semana = rachaService.calcular(ID_USUARIO).getSemana();
+            var semana = rachaService.actualizar(ID_USUARIO).getSemana();
 
             assertThat(semana.get(1).getEstado()).isEqualTo("PROTEGIDO");
         }

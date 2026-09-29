@@ -28,8 +28,25 @@ public class RachaService {
     private final ActividadLecturaRepository actividadLecturaRepository;
     private final Clock clock;
 
+    /**
+     * Recalcula y GUARDA la racha del usuario: gasta protectores en los días perdidos, concede los ganados
+     * y actualiza el récord. Solo la lanza el propio usuario (al entrar en la app o al registrar lectura).
+     */
     @Transactional
-    public RachaDTO.Response calcular(Long idusuario) {
+    public RachaDTO.Response actualizar(Long idusuario) {
+        return calcular(idusuario, true);
+    }
+
+    /**
+     * Racha de cualquier usuario SIN modificar nada (para verla en su perfil). Muestra el mismo número
+     * que vería él: se simula el uso de protectores, pero no se gastan ni se conceden.
+     */
+    @Transactional(readOnly = true)
+    public RachaDTO.Response consultar(Long idusuario) {
+        return calcular(idusuario, false);
+    }
+
+    private RachaDTO.Response calcular(Long idusuario, boolean guardar) {
         Usuario usuario = usuarioRepository.findById(idusuario)
                 .orElseThrow(() -> new EntityNotFoundException("Usuario no encontrado"));
 
@@ -37,7 +54,8 @@ public class RachaService {
         LocalDate ayer = hoy.minusDays(1);
 
         Set<LocalDate> actividad = actividadLecturaRepository.diasConActividad(idusuario, hoy.minusDays(400));
-        Set<LocalDate> protegidos = usuario.getDiasProtegidos();
+        // Copia: al consultar no debe tocarse la colección de la entidad (se guardaría al hacer flush)
+        Set<LocalDate> protegidos = new HashSet<>(usuario.getDiasProtegidos());
         int protectores = valor(usuario.getProtectoresRacha());
 
         // 1. Cubrir días perdidos con protectores
@@ -83,15 +101,18 @@ public class RachaService {
         if (hitosPendientes > 0) {
             int antes = protectores;
             protectores = Math.min(MAX_PROTECTORES, protectores + hitosPendientes);
-            usuario.setFechaUltimoProtector(ultimoHito);
-            nuevoProtector = protectores > antes;
+            if (guardar) usuario.setFechaUltimoProtector(ultimoHito);
+            nuevoProtector = guardar && protectores > antes;
         }
 
-        // 4. Récord y guardado
+        // 4. Récord y guardado (solo al actualizar)
         int mejor = Math.max(valor(usuario.getMejorRacha()), racha);
-        usuario.setMejorRacha(mejor);
-        usuario.setProtectoresRacha(protectores);
-        usuarioRepository.save(usuario);
+        if (guardar) {
+            usuario.setDiasProtegidos(protegidos);
+            usuario.setMejorRacha(mejor);
+            usuario.setProtectoresRacha(protectores);
+            usuarioRepository.save(usuario);
+        }
 
         // 5. Semana actual
         LocalDate lunes = hoy.with(DayOfWeek.MONDAY);
