@@ -3,6 +3,8 @@ import { useRacha } from '../context/RachaContext.jsx'
 
 const HITOS = [7, 30, 100, 365]
 
+// Función de utilidad compartida con otros componentes de la racha
+// eslint-disable-next-line react-refresh/only-export-components
 export const colorLlama = (n) =>
     n >= 100 ? '#a855f7' : n >= 30 ? '#ef4444' : n >= 1 ? '#f97316' : '#5a5a5a'
 
@@ -77,7 +79,7 @@ export function RachaCelebracion() {
         const t1 = setTimeout(() => setNumero(celebracion.racha), 600)
         const t2 = setTimeout(cerrarCelebracion, 4500)
         return () => { clearTimeout(t1); clearTimeout(t2) }
-    }, [celebracion])
+    }, [celebracion, cerrarCelebracion])
 
     if (!celebracion) return null
     const n = celebracion.racha

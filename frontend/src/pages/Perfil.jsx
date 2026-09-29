@@ -1,9 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import {useParams, Link, useSearchParams} from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import Estrellas from '../components/Estrellas'
 import ResenaCard from '../components/ResenaCard'
-import LibroCard from '../components/LibroCard'
 import ListaCard from '../components/ListaCard'
 import api from '../api/axios'
 import SpoilerOculto from '../components/SpoilerOculto'
@@ -43,47 +41,29 @@ export default function Perfil() {
     const [leyendoIndex, setLeyendoIndex] = useState(0)
 
 
-    useEffect(() => {
-        if (perfilId) {
-            cargarPerfil()
-            cargarEstadisticas()
-            setLeyendoIndex(0)
-            cargarFavoritos()
-            cargarLecturasRecientes()
-            cargarResenas()
-            cargarAnotaciones()
-            cargarLeyendoLibros()
-            cargarLeidosLibros()
-            cargarPendientesLibros()
-            cargarAbandonadosLibros()
-            cargarListasPublicas()
-            comprobarSiguiendo()
-        }
-    }, [perfilId])
-
-    const cargarPerfil = async () => {
+    const cargarPerfil = useCallback(async () => {
         try { const res = await api.get(`/usuarios/${perfilId}`); setPerfil(res.data) }
         catch (err) { console.error('Error:', err) }
         finally { setLoading(false) }
-    }
+    }, [perfilId])
 
-    const cargarFavoritos = async () => {
+    const cargarFavoritos = useCallback(async () => {
         try {
             const res = await api.get(`/libros/favoritos/${perfilId}`)
             const datos = res.data || []
             datos.sort((a, b) => a.idlibro - b.idlibro)
             setFavoritos(datos)
         } catch (err) { console.error('Error:', err) }
-    }
+    }, [perfilId])
 
-    const cargarLecturasRecientes = async () => {
+    const cargarLecturasRecientes = useCallback(async () => {
         try {
             const res = await api.get(`/seguimientos/usuario/${perfilId}/estado/LEIDO`)
             setLecturasRecientes(res.data || [])
         } catch (err) { console.error('Error:', err) }
-    }
+    }, [perfilId])
 
-    const cargarResenas = async () => {
+    const cargarResenas = useCallback(async () => {
         try {
             const endpoint = esMio
                 ? `/resenas/usuario/${perfilId}?size=20`
@@ -93,16 +73,16 @@ export default function Perfil() {
             datos.sort((a, b) => new Date(b.fechaCreacion) - new Date(a.fechaCreacion))
             setResenas(datos)
         } catch (err) { console.error('Error:', err) }
-    }
+    }, [esMio, perfilId])
 
-    const cargarAnotaciones = async () => {
+    const cargarAnotaciones = useCallback(async () => {
         try {
             const res = await api.get(`/anotaciones/usuario/${perfilId}`)
             setAnotaciones(res.data.content || res.data || [])
         } catch (err) { console.error('Error:', err) }
-    }
+    }, [perfilId])
 
-    const cargarListasPublicas = async () => {
+    const cargarListasPublicas = useCallback(async () => {
         try {
             const res = await api.get(`/listas/usuario/${perfilId}`)
             const listas = res.data.content || res.data || []
@@ -113,7 +93,7 @@ export default function Perfil() {
                 setListasPublicas(listas.filter(l => l.esPublica && !l.esAutomatica))
             }
         } catch (err) { console.error('Error:', err) }
-    }
+    }, [perfilId, usuario])
 
     const toggleSeguir = async () => {
         try {
@@ -131,47 +111,65 @@ export default function Perfil() {
         } catch (err) { alert(err.response?.data?.mensaje || 'Error') }
     }
 
-    const comprobarSiguiendo = async () => {
+    const comprobarSiguiendo = useCallback(async () => {
         if (!usuario || esMio) return
         try {
             const res = await api.get(`/usuarios/${usuario.id}/seguidos`)
             const seguidos = res.data || []
             setSiguiendo(seguidos.some(u => u.idusuario === perfilId))
         } catch (err) { console.error('Error:', err) }
-    }
+    }, [esMio, perfilId, usuario])
 
-    const cargarLeyendoLibros = async () => {
+    const cargarLeyendoLibros = useCallback(async () => {
         try {
             const res = await api.get(`/seguimientos/usuario/${perfilId}/estado/LEYENDO`)
             setLeyendoLibros(res.data || [])
         } catch (err) { console.error('Error:', err) }
-    }
+    }, [perfilId])
 
-    const cargarLeidosLibros = async () => {
+    const cargarLeidosLibros = useCallback(async () => {
         try {
             const res = await api.get(`/seguimientos/usuario/${perfilId}/estado/LEIDO`)
             setLeidosLibros(res.data || [])
         } catch (err) { console.error('Error:', err) }
-    }
+    }, [perfilId])
 
-    const cargarPendientesLibros = async () => {
+    const cargarPendientesLibros = useCallback(async () => {
         try {
             const res = await api.get(`/seguimientos/usuario/${perfilId}/estado/PENDIENTE`)
             setPendientesLibros(res.data || [])
         } catch (err) { console.error('Error:', err) }
-    }
+    }, [perfilId])
 
-    const cargarAbandonadosLibros = async () => {
+    const cargarAbandonadosLibros = useCallback(async () => {
         try {
             const res = await api.get(`/seguimientos/usuario/${perfilId}/estado/ABANDONADO`)
             setAbandonadosLibros(res.data || [])
         } catch (err) { console.error('Error:', err) }
-    }
+    }, [perfilId])
 
-    const cargarEstadisticas = async () => {
+    const cargarEstadisticas = useCallback(async () => {
         try { const res = await api.get(`/usuarios/${perfilId}/perfil`); setEstadisticas(res.data) }
         catch (err) { console.error('Error:', err) }
-    }
+    }, [perfilId])
+
+    useEffect(() => {
+        if (perfilId) {
+            cargarPerfil()
+            cargarEstadisticas()
+            setLeyendoIndex(0)
+            cargarFavoritos()
+            cargarLecturasRecientes()
+            cargarResenas()
+            cargarAnotaciones()
+            cargarLeyendoLibros()
+            cargarLeidosLibros()
+            cargarPendientesLibros()
+            cargarAbandonadosLibros()
+            cargarListasPublicas()
+            comprobarSiguiendo()
+        }
+    }, [cargarAbandonadosLibros, cargarAnotaciones, cargarEstadisticas, cargarFavoritos, cargarLecturasRecientes, cargarLeidosLibros, cargarLeyendoLibros, cargarListasPublicas, cargarPendientesLibros, cargarPerfil, cargarResenas, comprobarSiguiendo, perfilId])
 
     if (loading) return <p className="text-dark-muted">Cargando...</p>
     if (!perfil) return <p className="text-red-400">Usuario no encontrado</p>

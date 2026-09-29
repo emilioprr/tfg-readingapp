@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import api from '../api/axios'
@@ -9,12 +9,12 @@ export default function Notificaciones() {
     const [notificaciones, setNotificaciones] = useState([])
     const [loading, setLoading] = useState(true)
 
-    useEffect(() => { cargarNotificaciones() }, [])
-
-    const cargarNotificaciones = async () => {
+    const cargarNotificaciones = useCallback(async () => {
         try { const res = await api.get(`/notificaciones/usuario/${usuario.id}?size=20`); setNotificaciones(res.data.content || res.data || []) }
         catch (err) { console.error('Error:', err) } finally { setLoading(false) }
-    }
+    }, [usuario])
+
+    useEffect(() => { cargarNotificaciones() }, [cargarNotificaciones])
 
     const marcarLeida = async (id) => {
         try { await api.put(`/notificaciones/${id}/leida`); setNotificaciones(prev => prev.map(n => n.idnotificacion === id ? { ...n, leida: true } : n)) }

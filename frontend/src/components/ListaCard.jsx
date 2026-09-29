@@ -1,20 +1,20 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import api from '../api/axios'
 
 export default function ListaCard({ lista }) {
     const [libros, setLibros] = useState([])
 
-    useEffect(() => {
-        cargarLibros()
-    }, [lista.idlista])
-
-    const cargarLibros = async () => {
+    const cargarLibros = useCallback(async () => {
         try {
             const res = await api.get(`/listas/${lista.idlista}`)
             setLibros((res.data.libros || []).slice(0, 4))
         } catch (err) { console.error('Error:', err) }
-    }
+    }, [lista.idlista])
+
+    useEffect(() => {
+        cargarLibros()
+    }, [cargarLibros, lista.idlista])
 
     return (
         <Link to={`/lista/${lista.idlista}`}

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import LibroCard from '../components/LibroCard'
@@ -12,18 +12,18 @@ export default function AutorDetalle() {
     const [siguiendo, setSiguiendo] = useState(false)
     const [loading, setLoading] = useState(true)
 
-    useEffect(() => { cargarAutor(); cargarLibros() }, [id])
-
-    const cargarAutor = async () => {
+    const cargarAutor = useCallback(async () => {
         try { const res = await api.get(`/autores/${id}`); setAutor(res.data) }
         catch (err) { console.error('Error:', err) }
         finally { setLoading(false) }
-    }
+    }, [id])
 
-    const cargarLibros = async () => {
+    const cargarLibros = useCallback(async () => {
         try { const res = await api.get(`/libros/autor/${id}`); setLibros(res.data.content || res.data || []) }
         catch (err) { console.error('Error:', err) }
-    }
+    }, [id])
+
+    useEffect(() => { cargarAutor(); cargarLibros() }, [cargarAutor, cargarLibros, id])
 
     const toggleSeguir = async () => {
         try {

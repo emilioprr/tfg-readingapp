@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import ResenaCard from '../components/ResenaCard'
@@ -9,9 +9,7 @@ export default function MisLikes() {
     const [resenas, setResenas] = useState([])
     const [loading, setLoading] = useState(true)
 
-    useEffect(() => { cargarLikes() }, [])
-
-    const cargarLikes = async () => {
+    const cargarLikes = useCallback(async () => {
         try {
             const res = await api.get(`/resenas/likes/${usuario.id}`)
             setResenas(res.data.content || res.data || [])
@@ -20,7 +18,9 @@ export default function MisLikes() {
         } finally {
             setLoading(false)
         }
-    }
+    }, [usuario])
+
+    useEffect(() => { cargarLikes() }, [cargarLikes])
 
     if (loading) return <p className="text-dark-muted">Cargando...</p>
 

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import Estrellas from '../components/Estrellas'
@@ -30,6 +30,91 @@ export default function LibroDetalle() {
     const [misAnotaciones, setMisAnotaciones] = useState([])
     const [totalResenas, setTotalResenas] = useState(0)
 
+    const cargarLibro = useCallback(async () => {
+        try { const res = await api.get(`/libros/${id}`); setLibro(res.data) }
+        catch (err) { console.error('Error:', err) }
+        finally { setLoading(false) }
+    }, [id])
+
+    const cargarResenas = useCallback(async () => {
+        try {
+            const res = await api.get(`/resenas/libro/${id}?size=5`)
+            setResenas(res.data.content || res.data || [])
+            setTotalResenas(res.data.totalElements || res.data.length || 0)
+        } catch (err) { console.error('Error:', err) }
+    }, [id])
+
+    const cargarEstado = useCallback(async () => {
+        if (!usuario) return
+        try {
+            const res = await api.get(`/seguimientos/usuario/${usuario.id}/libro/${id}`)
+            const datos = res.data || []
+            if (datos.length > 0) setEstadoLibro(datos[datos.length - 1].estado)
+        } catch (err) { console.error('Error:', err) }
+    }, [id, usuario])
+
+    const cargarFavoritos = useCallback(async () => {
+        if (!usuario) return
+        try {
+            const res = await api.get(`/libros/favoritos/${usuario.id}`)
+            const favs = res.data || []
+            setNumFavoritos(favs.length)
+            setEsFavorito(favs.some(f => f.idlibro === parseInt(id)))
+        } catch (err) { console.error('Error:', err) }
+    }, [id, usuario])
+
+    const cargarListas = useCallback(async () => {
+        if (!usuario) return
+        try { const res = await api.get(`/listas/usuario/${usuario.id}`); setListas(res.data.content || res.data || []) }
+        catch (err) { console.error('Error:', err) }
+    }, [usuario])
+
+    const cargarAnotaciones = useCallback(async () => {
+        try {
+            const res = await api.get(`/anotaciones/libro/${id}/publicas`)
+            setAnotacionesPublicas(res.data.content || res.data || [])
+        } catch (err) { console.error('Error:', err) }
+    }, [id])
+
+    const cargarResenasAmigos = useCallback(async () => {
+        if (!usuario) return
+        try {
+            const res = await api.get(`/resenas/libro/${id}?size=50`)
+            const todas = res.data.content || res.data || []
+            const segRes = await api.get(`/usuarios/${usuario.id}/seguidos`)
+            const seguidos = (segRes.data || []).map(u => u.idusuario)
+            setResenasAmigos(todas.filter(r => seguidos.includes(r.idusuario)))
+        } catch (err) { console.error('Error:', err) }
+    }, [id, usuario])
+
+    const cargarMisResenas = useCallback(async () => {
+        if (!usuario) return
+        try {
+            const res = await api.get(`/resenas/libro/${id}?size=50`)
+            const todas = res.data.content || res.data || []
+            setMisResenas(todas.filter(r => r.idusuario === usuario.id))
+        } catch (err) { console.error('Error:', err) }
+    }, [id, usuario])
+
+    const cargarAnotacionesAmigos = useCallback(async () => {
+        if (!usuario) return
+        try {
+            const res = await api.get(`/anotaciones/libro/${id}/publicas`)
+            const todas = res.data || []
+            const segRes = await api.get(`/usuarios/${usuario.id}/seguidos`)
+            const seguidos = (segRes.data || []).map(u => u.idusuario)
+            setAnotacionesAmigos(todas.filter(a => seguidos.includes(a.idusuario)))
+        } catch (err) { console.error('Error:', err) }
+    }, [id, usuario])
+
+    const cargarMisAnotaciones = useCallback(async () => {
+        if (!usuario) return
+        try {
+            const res = await api.get(`/anotaciones/usuario/${usuario.id}/libro/${id}`)
+            setMisAnotaciones(res.data || [])
+        } catch (err) { console.error('Error:', err) }
+    }, [id, usuario])
+
     useEffect(() => {
         cargarLibro()
         cargarResenas()
@@ -41,92 +126,7 @@ export default function LibroDetalle() {
         cargarMisResenas()
         cargarAnotacionesAmigos()
         cargarMisAnotaciones()
-    }, [id, usuario])
-
-    const cargarLibro = async () => {
-        try { const res = await api.get(`/libros/${id}`); setLibro(res.data) }
-        catch (err) { console.error('Error:', err) }
-        finally { setLoading(false) }
-    }
-
-    const cargarResenas = async () => {
-        try {
-            const res = await api.get(`/resenas/libro/${id}?size=5`)
-            setResenas(res.data.content || res.data || [])
-            setTotalResenas(res.data.totalElements || res.data.length || 0)
-        } catch (err) { console.error('Error:', err) }
-    }
-
-    const cargarEstado = async () => {
-        if (!usuario) return
-        try {
-            const res = await api.get(`/seguimientos/usuario/${usuario.id}/libro/${id}`)
-            const datos = res.data || []
-            if (datos.length > 0) setEstadoLibro(datos[datos.length - 1].estado)
-        } catch (err) { console.error('Error:', err) }
-    }
-
-    const cargarFavoritos = async () => {
-        if (!usuario) return
-        try {
-            const res = await api.get(`/libros/favoritos/${usuario.id}`)
-            const favs = res.data || []
-            setNumFavoritos(favs.length)
-            setEsFavorito(favs.some(f => f.idlibro === parseInt(id)))
-        } catch (err) { console.error('Error:', err) }
-    }
-
-    const cargarListas = async () => {
-        if (!usuario) return
-        try { const res = await api.get(`/listas/usuario/${usuario.id}`); setListas(res.data.content || res.data || []) }
-        catch (err) { console.error('Error:', err) }
-    }
-
-    const cargarAnotaciones = async () => {
-        try {
-            const res = await api.get(`/anotaciones/libro/${id}/publicas`)
-            setAnotacionesPublicas(res.data.content || res.data || [])
-        } catch (err) { console.error('Error:', err) }
-    }
-
-    const cargarResenasAmigos = async () => {
-        if (!usuario) return
-        try {
-            const res = await api.get(`/resenas/libro/${id}?size=50`)
-            const todas = res.data.content || res.data || []
-            const segRes = await api.get(`/usuarios/${usuario.id}/seguidos`)
-            const seguidos = (segRes.data || []).map(u => u.idusuario)
-            setResenasAmigos(todas.filter(r => seguidos.includes(r.idusuario)))
-        } catch (err) { console.error('Error:', err) }
-    }
-
-    const cargarMisResenas = async () => {
-        if (!usuario) return
-        try {
-            const res = await api.get(`/resenas/libro/${id}?size=50`)
-            const todas = res.data.content || res.data || []
-            setMisResenas(todas.filter(r => r.idusuario === usuario.id))
-        } catch (err) { console.error('Error:', err) }
-    }
-
-    const cargarAnotacionesAmigos = async () => {
-        if (!usuario) return
-        try {
-            const res = await api.get(`/anotaciones/libro/${id}/publicas`)
-            const todas = res.data || []
-            const segRes = await api.get(`/usuarios/${usuario.id}/seguidos`)
-            const seguidos = (segRes.data || []).map(u => u.idusuario)
-            setAnotacionesAmigos(todas.filter(a => seguidos.includes(a.idusuario)))
-        } catch (err) { console.error('Error:', err) }
-    }
-
-    const cargarMisAnotaciones = async () => {
-        if (!usuario) return
-        try {
-            const res = await api.get(`/anotaciones/usuario/${usuario.id}/libro/${id}`)
-            setMisAnotaciones(res.data || [])
-        } catch (err) { console.error('Error:', err) }
-    }
+    }, [cargarAnotaciones, cargarAnotacionesAmigos, cargarEstado, cargarFavoritos, cargarLibro, cargarListas, cargarMisAnotaciones, cargarMisResenas, cargarResenas, cargarResenasAmigos, id, usuario])
 
     const toggleFavorito = async () => {
         try {
@@ -536,7 +536,7 @@ export default function LibroDetalle() {
                                                         cargarAnotaciones()
                                                         cargarMisAnotaciones()
                                                         cargarAnotacionesAmigos()
-                                                    } catch (err) { alert('Error al eliminar') }
+                                                    } catch { alert('Error al eliminar') }
                                                 }}
                                                         className="text-red-400/60 hover:text-red-400 text-xs transition-colors">
                                                     Eliminar

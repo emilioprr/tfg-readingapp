@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import api from '../api/axios'
@@ -15,9 +15,7 @@ export default function EditarLibro() {
     const [error, setError] = useState('')
     const [loading, setLoading] = useState(true)
 
-    useEffect(() => { cargarLibro() }, [id])
-
-    const cargarLibro = async () => {
+    const cargarLibro = useCallback(async () => {
         try {
             const res = await api.get(`/libros/${id}`)
             const libro = res.data
@@ -28,7 +26,9 @@ export default function EditarLibro() {
             setPortada(libro.portada || '')
         } catch (err) { console.error('Error:', err) }
         finally { setLoading(false) }
-    }
+    }, [id])
+
+    useEffect(() => { cargarLibro() }, [cargarLibro, id])
 
     const handleSubmit = async (e) => {
         e.preventDefault()

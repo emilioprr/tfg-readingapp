@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import api from '../api/axios'
@@ -31,15 +31,12 @@ export default function CrearResena() {
     const [leidoPreviamente, setLeidoPreviamente] = useState(false)
     const [error, setError] = useState('')
 
-    useEffect(() => { cargarLibro() }, [idlibro])
-    useEffect(() => { if (esEdicion) cargarResena() }, [idresena])
-
-    const cargarLibro = async () => {
+    const cargarLibro = useCallback(async () => {
         try { const res = await api.get(`/libros/${idlibro}`); setLibro(res.data) }
         catch (err) { console.error('Error:', err) }
-    }
+    }, [idlibro])
 
-    const cargarResena = async () => {
+    const cargarResena = useCallback(async () => {
         try {
             const res = await api.get(`/resenas/${idresena}`)
             const r = res.data
@@ -53,7 +50,10 @@ export default function CrearResena() {
             setTieneSpoiler(r.tieneSpoiler)
             setLeidoPreviamente(r.leidopreviamente || false)
         } catch (err) { console.error('Error:', err) }
-    }
+    }, [idresena])
+
+    useEffect(() => { cargarLibro() }, [cargarLibro, idlibro])
+    useEffect(() => { if (esEdicion) cargarResena() }, [cargarResena, esEdicion, idresena])
 
     const toggleEtiqueta = (et) => { setEtiquetas(prev => prev.includes(et) ? prev.filter(e => e !== et) : [...prev, et]) }
 

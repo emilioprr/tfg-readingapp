@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import api from '../api/axios'
@@ -18,15 +18,6 @@ export default function Navbar() {
     const navigate = useNavigate()
 
     useEffect(() => {
-        if (usuario) {
-            cargarAvatar()
-            cargarNoLeidas()
-            const interval = setInterval(cargarNoLeidas, 30000)
-            return () => clearInterval(interval)
-        }
-    }, [usuario])
-
-    useEffect(() => {
         const handleClickFuera = (e) => {
             if (menuRef.current && !menuRef.current.contains(e.target)) setMenuAbierto(false)
             if (buscadorRef.current && !buscadorRef.current.contains(e.target)) {
@@ -41,16 +32,16 @@ export default function Navbar() {
         if (buscadorAbierto && inputRef.current) inputRef.current.focus()
     }, [buscadorAbierto])
 
-    const cargarAvatar = async () => {
+    const cargarAvatar = useCallback(async () => {
         try {
             const res = await api.get(`/usuarios/${usuario.id}`)
             setAvatar(res.data.avatar)
         } catch (err) {
             console.error('Error cargando avatar:', err)
         }
-    }
+    }, [usuario])
 
-    const cargarNoLeidas = async () => {
+    const cargarNoLeidas = useCallback(async () => {
         try {
             const res = await api.get(`/notificaciones/usuario/${usuario.id}/no-leidas`)
             const datos = res.data.content || res.data || []
@@ -58,7 +49,16 @@ export default function Navbar() {
         } catch (err) {
             console.error('Error cargando no leídas:', err)
         }
-    }
+    }, [usuario])
+
+    useEffect(() => {
+        if (usuario) {
+            cargarAvatar()
+            cargarNoLeidas()
+            const interval = setInterval(cargarNoLeidas, 30000)
+            return () => clearInterval(interval)
+        }
+    }, [cargarAvatar, cargarNoLeidas, usuario])
 
     const handleBuscar = (e) => {
         e.preventDefault()

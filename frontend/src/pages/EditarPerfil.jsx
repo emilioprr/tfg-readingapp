@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import api from '../api/axios'
@@ -12,11 +12,12 @@ export default function EditarPerfil() {
     const [error, setError] = useState('')
     const [exito, setExito] = useState('')
 
-    useEffect(() => { cargarPerfil() }, [])
-    const cargarPerfil = async () => {
+    const cargarPerfil = useCallback(async () => {
         try { const res = await api.get(`/usuarios/${usuario.id}`); setNombre(res.data.nombre || ''); setBiografia(res.data.biografia || ''); setAvatar(res.data.avatar || '') }
         catch (err) { console.error('Error:', err) }
-    }
+    }, [usuario])
+
+    useEffect(() => { cargarPerfil() }, [cargarPerfil])
 
     const handleSubmit = async (e) => {
         e.preventDefault(); setError(''); setExito('')

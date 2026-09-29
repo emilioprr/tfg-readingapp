@@ -108,7 +108,7 @@ export default function Recomendaciones() {
         }
         cargar()
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [usuario.id])
+    }, [usuario])
 
     useEffect(() => {
         finChatRef.current?.scrollIntoView({ block: 'end' })

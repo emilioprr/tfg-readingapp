@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import api from '../api/axios'
@@ -16,11 +16,7 @@ export default function CrearLista() {
     const [esPublica, setEsPublica] = useState(true)
     const [error, setError] = useState('')
 
-    useEffect(() => {
-        if (esEdicion) cargarLista()
-    }, [idlista])
-
-    const cargarLista = async () => {
+    const cargarLista = useCallback(async () => {
         try {
             const res = await api.get(`/listas/${idlista}`)
             const lista = res.data
@@ -28,7 +24,11 @@ export default function CrearLista() {
             setDescripcion(lista.descripcion || '')
             setEsPublica(lista.esPublica)
         } catch (err) { console.error('Error:', err) }
-    }
+    }, [idlista])
+
+    useEffect(() => {
+        if (esEdicion) cargarLista()
+    }, [cargarLista, esEdicion, idlista])
 
     const handleSubmit = async (e) => {
         e.preventDefault(); setError('')

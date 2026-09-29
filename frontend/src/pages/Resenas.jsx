@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '../context/AuthContext'
 import ResenaCard from '../components/ResenaCard'
 import api from '../api/axios'
@@ -12,21 +12,16 @@ export default function Resenas() {
     const [hayMasPopulares, setHayMasPopulares] = useState(true)
     const [cargandoMas, setCargandoMas] = useState(false)
 
-    useEffect(() => {
-        cargarResenasAmigos()
-        cargarResenasPopulares()
-    }, [usuario])
-
-    const cargarResenasAmigos = async () => {
+    const cargarResenasAmigos = useCallback(async () => {
         if (!usuario) { setLoading(false); return }
         try {
             const res = await api.get(`/resenas/seguidos/${usuario.id}?size=20`)
             setResenasAmigos(res.data.content || res.data || [])
         } catch (err) { console.error('Error:', err) }
         finally { setLoading(false) }
-    }
+    }, [usuario])
 
-    const cargarResenasPopulares = async (pagina = 0, acumular = false) => {
+    const cargarResenasPopulares = useCallback(async (pagina = 0, acumular = false) => {
         try {
             const res = await api.get(`/resenas/populares?size=20&page=${pagina}`)
             const nuevas = res.data.content || res.data || []
@@ -37,7 +32,12 @@ export default function Resenas() {
             }
             setHayMasPopulares(nuevas.length === 20)
         } catch (err) { console.error('Error:', err) }
-    }
+    }, [])
+
+    useEffect(() => {
+        cargarResenasAmigos()
+        cargarResenasPopulares()
+    }, [cargarResenasAmigos, cargarResenasPopulares, usuario])
 
     const cargarMasPopulares = async () => {
         setCargandoMas(true)

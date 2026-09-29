@@ -1,7 +1,35 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import api from '../api/axios'
+
+const formatearMensaje = (n) => {
+    switch (n.tipo) {
+        case 'NUEVO_SEGUIDOR':
+            return { icono: '👤', titulo: 'Nuevo seguidor', texto: `${n.nombreUsuarioOrigen} ha empezado a seguirte` }
+        case 'NUEVA_RESENA_SEGUIDO':
+            return { icono: '⭐', titulo: 'Nueva reseña', texto: `${n.nombreUsuarioOrigen} ha reseñado ${n.tituloLibro || 'un libro'}` }
+        case 'LIKE_RESENA':
+            return { icono: '❤️', titulo: 'Nuevo like', texto: `A ${n.nombreUsuarioOrigen} le gustó tu reseña` }
+        case 'NUEVA_RECOMENDACION':
+            return { icono: '📚', titulo: 'Recomendación', texto: `${n.nombreUsuarioOrigen} te recomienda ${n.tituloLibro || 'un libro'}` }
+        case 'RETO_CUMPLIDO':
+            return { icono: '🎉', titulo: '¡Reto completado!', texto: n.mensaje }
+        default:
+            return { icono: '🔔', titulo: 'Notificación', texto: n.mensaje }
+    }
+}
+
+const getDestino = (n) => {
+    switch (n.tipo) {
+        case 'NUEVO_SEGUIDOR': return `/usuario/${n.idusuarioOrigen}`
+        case 'NUEVA_RESENA_SEGUIDO': return n.idresena ? `/resena/${n.idresena}` : null
+        case 'LIKE_RESENA': return n.idresena ? `/resena/${n.idresena}` : null
+        case 'NUEVA_RECOMENDACION': return n.idlibro ? `/libro/${n.idlibro}` : null
+        case 'RETO_CUMPLIDO': return '/retos'
+        default: return '/notificaciones'
+    }
+}
 
 export default function ToastNotificaciones() {
     const { usuario } = useAuth()
@@ -9,17 +37,7 @@ export default function ToastNotificaciones() {
     const [toasts, setToasts] = useState([])
     const ultimaComprobacion = useRef(null)
 
-    useEffect(() => {
-        if (!usuario) return
-
-        // Comprobar cada 15 segundos
-        const interval = setInterval(comprobarNotificaciones, 15000)
-        comprobarNotificaciones()
-
-        return () => clearInterval(interval)
-    }, [usuario])
-
-    const comprobarNotificaciones = async () => {
+    const comprobarNotificaciones = useCallback(async () => {
         try {
             const res = await api.get(`/notificaciones/usuario/${usuario.id}?size=5`)
             const notis = res.data.content || res.data || []
@@ -54,36 +72,18 @@ export default function ToastNotificaciones() {
             }
 
             ultimaComprobacion.current = nuevas.map(n => n.idnotificacion)
-        } catch (err) { /* silencioso */ }
-    }
+        } catch { /* silencioso */ }
+    }, [usuario])
 
-    const formatearMensaje = (n) => {
-        switch (n.tipo) {
-            case 'NUEVO_SEGUIDOR':
-                return { icono: '👤', titulo: 'Nuevo seguidor', texto: `${n.nombreUsuarioOrigen} ha empezado a seguirte` }
-            case 'NUEVA_RESENA_SEGUIDO':
-                return { icono: '⭐', titulo: 'Nueva reseña', texto: `${n.nombreUsuarioOrigen} ha reseñado ${n.tituloLibro || 'un libro'}` }
-            case 'LIKE_RESENA':
-                return { icono: '❤️', titulo: 'Nuevo like', texto: `A ${n.nombreUsuarioOrigen} le gustó tu reseña` }
-            case 'NUEVA_RECOMENDACION':
-                return { icono: '📚', titulo: 'Recomendación', texto: `${n.nombreUsuarioOrigen} te recomienda ${n.tituloLibro || 'un libro'}` }
-            case 'RETO_CUMPLIDO':
-                return { icono: '🎉', titulo: '¡Reto completado!', texto: n.mensaje }
-            default:
-                return { icono: '🔔', titulo: 'Notificación', texto: n.mensaje }
-        }
-    }
+    useEffect(() => {
+        if (!usuario) return
 
-    const getDestino = (n) => {
-        switch (n.tipo) {
-            case 'NUEVO_SEGUIDOR': return `/usuario/${n.idusuarioOrigen}`
-            case 'NUEVA_RESENA_SEGUIDO': return n.idresena ? `/resena/${n.idresena}` : null
-            case 'LIKE_RESENA': return n.idresena ? `/resena/${n.idresena}` : null
-            case 'NUEVA_RECOMENDACION': return n.idlibro ? `/libro/${n.idlibro}` : null
-            case 'RETO_CUMPLIDO': return '/retos'
-            default: return '/notificaciones'
-        }
-    }
+        // Comprobar cada 15 segundos
+        const interval = setInterval(comprobarNotificaciones, 15000)
+        comprobarNotificaciones()
+
+        return () => clearInterval(interval)
+    }, [comprobarNotificaciones, usuario])
 
     const handleClick = (toast) => {
         setToasts(prev => prev.filter(t => t.id !== toast.id))

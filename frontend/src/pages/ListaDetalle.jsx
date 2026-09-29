@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import LibroCard from '../components/LibroCard'
@@ -11,13 +11,13 @@ export default function ListaDetalle() {
     const [lista, setLista] = useState(null)
     const [loading, setLoading] = useState(true)
 
-    useEffect(() => { cargarLista() }, [id])
-
-    const cargarLista = async () => {
+    const cargarLista = useCallback(async () => {
         try { const res = await api.get(`/listas/${id}`); setLista(res.data) }
         catch (err) { console.error('Error:', err) }
         finally { setLoading(false) }
-    }
+    }, [id])
+
+    useEffect(() => { cargarLista() }, [cargarLista, id])
 
     const quitarLibro = async (idlibro) => {
         try { await api.delete(`/listas/${id}/libros/${idlibro}`); cargarLista() }

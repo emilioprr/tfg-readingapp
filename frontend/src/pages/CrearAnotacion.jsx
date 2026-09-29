@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import api from '../api/axios'
@@ -17,16 +17,16 @@ export default function CrearAnotacion() {
     const [error, setError] = useState('')
     const [exito, setExito] = useState('')
 
-    useEffect(() => { cargarLibro(); cargarAnotaciones() }, [idlibro])
-
-    const cargarLibro = async () => {
+    const cargarLibro = useCallback(async () => {
         try { const res = await api.get(`/libros/${idlibro}`); setLibro(res.data) }
         catch (err) { console.error('Error:', err) }
-    }
-    const cargarAnotaciones = async () => {
+    }, [idlibro])
+    const cargarAnotaciones = useCallback(async () => {
         try { const res = await api.get(`/anotaciones/usuario/${usuario.id}/libro/${idlibro}`); setAnotaciones(res.data.content || res.data || []) }
         catch (err) { console.error('Error:', err) }
-    }
+    }, [idlibro, usuario])
+
+    useEffect(() => { cargarLibro(); cargarAnotaciones() }, [cargarAnotaciones, cargarLibro, idlibro])
 
     const handleSubmit = async (e) => {
         e.preventDefault(); setError(''); setExito('')

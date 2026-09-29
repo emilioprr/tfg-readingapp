@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import api from '../api/axios'
@@ -13,9 +13,10 @@ export default function EnviarRecomendacion() {
     const [mensaje, setMensaje] = useState('')
     const [error, setError] = useState('')
 
-    useEffect(() => { cargarLibro(); cargarSeguidos() }, [idlibro])
-    const cargarLibro = async () => { try { const res = await api.get(`/libros/${idlibro}`); setLibro(res.data) } catch (err) { console.error('Error:', err) } }
-    const cargarSeguidos = async () => { try { const res = await api.get(`/usuarios/${usuario.id}/seguidos`); setSeguidos(res.data || []) } catch (err) { console.error('Error:', err) } }
+    const cargarLibro = useCallback(async () => { try { const res = await api.get(`/libros/${idlibro}`); setLibro(res.data) } catch (err) { console.error('Error:', err) } }, [idlibro])
+    const cargarSeguidos = useCallback(async () => { try { const res = await api.get(`/usuarios/${usuario.id}/seguidos`); setSeguidos(res.data || []) } catch (err) { console.error('Error:', err) } }, [usuario])
+
+    useEffect(() => { cargarLibro(); cargarSeguidos() }, [cargarLibro, cargarSeguidos, idlibro])
 
     const handleSubmit = async (e) => {
         e.preventDefault(); setError('')

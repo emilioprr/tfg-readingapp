@@ -60,7 +60,7 @@ export default function Timer() {
     const getMinutosLeidos = () => {
         return modo === 'objetivo'
             ? getTotalMinutosObjetivo() - Math.ceil(segundos / 60)
-            : Math.floor(segundosRef.current / 60)
+            : Math.floor(segundos / 60)
     }
 
     const iniciar = () => {

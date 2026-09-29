@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import api from '../api/axios'
@@ -10,17 +10,17 @@ export default function Calendario() {
     const [seguimientos, setSeguimientos] = useState([])
     const [loading, setLoading] = useState(true)
 
-    useEffect(() => {
-        if (usuario) cargarSeguimientos()
-    }, [usuario])
-
-    const cargarSeguimientos = async () => {
+    const cargarSeguimientos = useCallback(async () => {
         try {
             const res = await api.get(`/seguimientos/usuario/${usuario.id}`)
             setSeguimientos(res.data || [])
         } catch (err) { console.error('Error:', err) }
         finally { setLoading(false) }
-    }
+    }, [usuario])
+
+    useEffect(() => {
+        if (usuario) cargarSeguimientos()
+    }, [cargarSeguimientos, usuario])
 
     const meses = [
         'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',

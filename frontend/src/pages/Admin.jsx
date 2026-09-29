@@ -35,20 +35,6 @@ export default function Admin() {
         finally { setCargando(false) }
     }
 
-    const handleCargarPopulares = async () => {
-        setError('')
-        setResultado('')
-        setCargando(true)
-        try {
-            const res = await api.post('/carga/populares?cantidad=200&idioma=es')
-            setResultado(`Importados ${res.data.importados} libros populares`)
-        } catch (err) {
-            setError(err.response?.data?.mensaje || 'Error en la carga')
-        } finally {
-            setCargando(false)
-        }
-    }
-
     return (
         <div className="max-w-2xl mx-auto">
             <h1 className="text-2xl font-bold text-dark-text mb-6 tracking-tight">Panel de administración</h1>

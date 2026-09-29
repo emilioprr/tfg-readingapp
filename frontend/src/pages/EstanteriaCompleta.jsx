@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import api from '../api/axios'
 
@@ -14,15 +14,15 @@ export default function EstanteriaCompleta() {
     const [libros, setLibros] = useState([])
     const [loading, setLoading] = useState(true)
 
-    useEffect(() => { cargarLibros() }, [idusuario, estado])
-
-    const cargarLibros = async () => {
+    const cargarLibros = useCallback(async () => {
         try {
             const res = await api.get(`/seguimientos/usuario/${idusuario}/estado/${estado}`)
             setLibros(res.data || [])
         } catch (err) { console.error('Error:', err) }
         finally { setLoading(false) }
-    }
+    }, [estado, idusuario])
+
+    useEffect(() => { cargarLibros() }, [idusuario, estado, cargarLibros])
 
     if (loading) return <p className="text-dark-muted">Cargando...</p>
 

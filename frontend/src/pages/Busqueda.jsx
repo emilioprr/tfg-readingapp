@@ -1,9 +1,11 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useSearchParams, Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import api from '../api/axios'
 
 const SIZE = 24
+
+const claveLibro = (l) => (l.externo ? `g-${l.idExterno}` : `l-${l.idlibro}`)
 
 export default function Busqueda() {
     const [searchParams] = useSearchParams()
@@ -26,39 +28,15 @@ export default function Busqueda() {
     const googleAgotado = useRef(false)
     const busquedaId = useRef(0)
 
-    useEffect(() => {
-        if (!query) return
-        busquedaId.current++
-        setResultados([])
-        setHayMas(false)
-        setLoading(true)
-        setBuscandoExternos(false)
-        paginaLocal.current = 0
-        localAgotado.current = false
-        googleIndex.current = 0
-        googleAgotado.current = false
-
-        if (tab === 'libros') {
-            cargarMasLibros()
-        } else if (tab === 'autores') {
-            buscarAutores()
-        } else {
-            buscarUsuarios()
-            if (usuario) cargarSeguidos()
-        }
-    }, [query, tab])
-
-    const claveLibro = (l) => (l.externo ? `g-${l.idExterno}` : `l-${l.idlibro}`)
-
-    const anadirLibros = (libros) => {
+    const anadirLibros = useCallback((libros) => {
         setResultados(prev => {
             const claves = new Set(prev.map(claveLibro))
             return [...prev, ...libros.filter(l => !claves.has(claveLibro(l)))]
         })
-    }
+    }, [])
 
     // Primero agota la base de datos local; cuando se acaba, sigue con Google Books
-    const cargarMasLibros = async () => {
+    const cargarMasLibros = useCallback(async () => {
         const id = busquedaId.current
         try {
             if (!localAgotado.current) {
@@ -99,7 +77,7 @@ export default function Busqueda() {
                 setCargandoMas(false)
             }
         }
-    }
+    }, [anadirLibros, query, usuario])
 
     const verMas = async () => {
         setCargandoMas(true)
@@ -123,28 +101,50 @@ export default function Busqueda() {
         }
     }
 
-    const cargarSeguidos = async () => {
+    const cargarSeguidos = useCallback(async () => {
         try {
             const res = await api.get(`/usuarios/${usuario.id}/seguidos`)
             setSeguidos((res.data || []).map(u => u.idusuario))
         } catch (err) { console.error('Error:', err) }
-    }
+    }, [usuario])
 
-    const buscarAutores = async () => {
+    const buscarAutores = useCallback(async () => {
         try {
             const res = await api.get(`/autores/buscar?nombre=${encodeURIComponent(query)}`)
             setResultados(res.data.content || res.data || [])
         } catch (err) { console.error('Error:', err) }
         finally { setLoading(false) }
-    }
+    }, [query])
 
-    const buscarUsuarios = async () => {
+    const buscarUsuarios = useCallback(async () => {
         try {
             const res = await api.get(`/usuarios/buscar?nombre=${encodeURIComponent(query)}`)
             setResultados(res.data.content || res.data || [])
         } catch (err) { console.error('Error:', err) }
         finally { setLoading(false) }
-    }
+    }, [query])
+
+    useEffect(() => {
+        if (!query) return
+        busquedaId.current++
+        setResultados([])
+        setHayMas(false)
+        setLoading(true)
+        setBuscandoExternos(false)
+        paginaLocal.current = 0
+        localAgotado.current = false
+        googleIndex.current = 0
+        googleAgotado.current = false
+
+        if (tab === 'libros') {
+            cargarMasLibros()
+        } else if (tab === 'autores') {
+            buscarAutores()
+        } else {
+            buscarUsuarios()
+            if (usuario) cargarSeguidos()
+        }
+    }, [buscarAutores, buscarUsuarios, cargarMasLibros, cargarSeguidos, query, tab, usuario])
 
     const toggleSeguir = async (idusuario) => {
         try {

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import api from '../api/axios'
@@ -12,31 +12,23 @@ export default function Listas() {
     const [tab, setTab] = useState('explorar')
     const [loading, setLoading] = useState(true)
 
-    useEffect(() => {
-        cargarPublicas()
-        if (usuario) {
-            cargarMisListas()
-            cargarListasAmigos()
-        }
-    }, [usuario])
-
-    const cargarPublicas = async () => {
+    const cargarPublicas = useCallback(async () => {
         try {
             const res = await api.get('/listas/publicas')
             const todas = res.data.content || res.data || []
             setPublicas(todas.filter(l => !l.esAutomatica && (!usuario || l.idusuario !== usuario.id)))
         } catch (err) { console.error('Error:', err) }
         finally { setLoading(false) }
-    }
+    }, [usuario])
 
-    const cargarMisListas = async () => {
+    const cargarMisListas = useCallback(async () => {
         try {
             const res = await api.get(`/listas/usuario/${usuario.id}`)
             setMisListas(res.data.content || res.data || [])
         } catch (err) { console.error('Error:', err) }
-    }
+    }, [usuario])
 
-    const cargarListasAmigos = async () => {
+    const cargarListasAmigos = useCallback(async () => {
         try {
             const res = await api.get(`/usuarios/${usuario.id}/seguidos`)
             const seguidos = res.data || []
@@ -48,11 +40,19 @@ export default function Listas() {
                         .filter(l => l.esPublica)
                         .map(l => ({ ...l, nombreUsuario: seguido.nombre }))
                     todasListas.push(...listas)
-                } catch (err) { /* ignorar */ }
+                } catch { /* ignorar */ }
             }
             setListasAmigos(todasListas)
         } catch (err) { console.error('Error:', err) }
-    }
+    }, [usuario])
+
+    useEffect(() => {
+        cargarPublicas()
+        if (usuario) {
+            cargarMisListas()
+            cargarListasAmigos()
+        }
+    }, [cargarListasAmigos, cargarMisListas, cargarPublicas, usuario])
 
     const tabs = [
         { key: 'explorar', label: 'Explorar' },

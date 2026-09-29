@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '../context/AuthContext'
 import ResenaCard from '../components/ResenaCard'
 import api from '../api/axios'
@@ -8,9 +8,7 @@ export default function MisResenas() {
     const [resenas, setResenas] = useState([])
     const [loading, setLoading] = useState(true)
 
-    useEffect(() => { cargarResenas() }, [])
-
-    const cargarResenas = async () => {
+    const cargarResenas = useCallback(async () => {
         try {
             const res = await api.get(`/resenas/usuario/${usuario.id}?size=50`)
             setResenas(res.data.content || res.data || [])
@@ -19,7 +17,9 @@ export default function MisResenas() {
         } finally {
             setLoading(false)
         }
-    }
+    }, [usuario])
+
+    useEffect(() => { cargarResenas() }, [cargarResenas])
 
     if (loading) return <p className="text-dark-muted">Cargando...</p>
 

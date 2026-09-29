@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import ResenaCard from '../components/ResenaCard'
 import api from '../api/axios'
@@ -9,25 +9,25 @@ export default function ResenasLibro() {
     const [libro, setLibro] = useState(null)
     const [loading, setLoading] = useState(true)
 
-    useEffect(() => {
-        cargarResenas()
-        cargarLibro()
-    }, [id])
-
-    const cargarResenas = async () => {
+    const cargarResenas = useCallback(async () => {
         try {
             const res = await api.get(`/resenas/libro/${id}?size=200`)
             setResenas(res.data.content || res.data || [])
         } catch (err) { console.error('Error:', err) }
         finally { setLoading(false) }
-    }
+    }, [id])
 
-    const cargarLibro = async () => {
+    const cargarLibro = useCallback(async () => {
         try {
             const res = await api.get(`/libros/${id}`)
             setLibro(res.data)
         } catch (err) { console.error('Error:', err) }
-    }
+    }, [id])
+
+    useEffect(() => {
+        cargarResenas()
+        cargarLibro()
+    }, [cargarLibro, cargarResenas, id])
 
     if (loading) return <p className="text-dark-muted">Cargando...</p>
 

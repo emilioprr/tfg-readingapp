@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import api from '../api/axios'
@@ -26,7 +26,7 @@ function Etiquetas({ tipo, modalidad }) {
     )
 }
 
-function ParticipantesReto({ idreto, tipo }) {
+function ParticipantesReto({ idreto }) {
     const [participantes, setParticipantes] = useState(null)
 
     useEffect(() => {
@@ -84,7 +84,7 @@ function TarjetaActivo({ p, onAbandonar }) {
                     )}
                 </div>
             </div>
-            {verParticipantes && <ParticipantesReto idreto={p.idreto} tipo={p.tipoReto} />}
+            {verParticipantes && <ParticipantesReto idreto={p.idreto} />}
         </div>
     )
 }
@@ -131,28 +131,28 @@ export default function Retos() {
     const [seguidos, setSeguidos] = useState([])
     const [loading, setLoading] = useState(true)
 
+    const cargarActivos = useCallback(async () => {
+        try { const res = await api.get(`/retos/usuario/${usuario.id}/activos?size=50`); setActivos(res.data.content || res.data || []) }
+        catch (err) { console.error('Error:', err) }
+    }, [usuario])
+    const cargarDisponibles = useCallback(async () => {
+        try { const res = await api.get('/retos/disponibles?size=50'); setDisponibles(res.data.content || res.data || []) }
+        catch (err) { console.error('Error:', err) }
+    }, [])
+    const cargarLogros = useCallback(async () => {
+        try { const res = await api.get(`/retos/usuario/${usuario.id}/logros?size=50`); setLogros(res.data.content || res.data || []) }
+        catch (err) { console.error('Error:', err) }
+    }, [usuario])
+    const cargarSeguidos = useCallback(async () => {
+        try { const res = await api.get(`/usuarios/${usuario.id}/seguidos`); setSeguidos((res.data || []).map(u => u.idusuario)) }
+        catch (err) { console.error('Error:', err) }
+    }, [usuario])
+
     useEffect(() => {
         if (!usuario) return
         Promise.all([cargarActivos(), cargarDisponibles(), cargarLogros(), cargarSeguidos()])
             .finally(() => setLoading(false))
-    }, [usuario])
-
-    const cargarActivos = async () => {
-        try { const res = await api.get(`/retos/usuario/${usuario.id}/activos?size=50`); setActivos(res.data.content || res.data || []) }
-        catch (err) { console.error('Error:', err) }
-    }
-    const cargarDisponibles = async () => {
-        try { const res = await api.get('/retos/disponibles?size=50'); setDisponibles(res.data.content || res.data || []) }
-        catch (err) { console.error('Error:', err) }
-    }
-    const cargarLogros = async () => {
-        try { const res = await api.get(`/retos/usuario/${usuario.id}/logros?size=50`); setLogros(res.data.content || res.data || []) }
-        catch (err) { console.error('Error:', err) }
-    }
-    const cargarSeguidos = async () => {
-        try { const res = await api.get(`/usuarios/${usuario.id}/seguidos`); setSeguidos((res.data || []).map(u => u.idusuario)) }
-        catch (err) { console.error('Error:', err) }
-    }
+    }, [cargarActivos, cargarDisponibles, cargarLogros, cargarSeguidos, usuario])
 
     const unirse = async (idreto) => {
         try {

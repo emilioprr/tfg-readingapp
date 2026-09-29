@@ -17,5 +17,10 @@ export default defineConfig([
       globals: globals.browser,
       parserOptions: { ecmaFeatures: { jsx: true } },
     },
+    rules: {
+      // Da falsos positivos con las cargas de datos async/await que se lanzan desde un useEffect:
+      // marca como "síncrono" un setState que en realidad ocurre después del await.
+      'react-hooks/set-state-in-effect': 'off',
+    },
   },
 ])

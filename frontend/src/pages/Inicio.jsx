@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import LibroCard from '../components/LibroCard'
@@ -25,19 +25,10 @@ export default function Inicio() {
     const { refrescarRacha } = useRacha()
 
     useEffect(() => {
-        if (usuario) {
-            cargarLeyendo()
-            cargarRetos()
-            cargarLibrosPopulares()
-            cargarPopularesAmigos()
-        }
-    }, [usuario])
-
-    useEffect(() => {
         if (retoIndex >= retosActivos.length) {
             setRetoIndex(0)
         }
-    }, [retosActivos])
+    }, [retoIndex, retosActivos])
 
     useEffect(() => {
         if (retoCumplido) {
@@ -46,7 +37,7 @@ export default function Inicio() {
         }
     }, [retoCumplido])
 
-    const cargarLeyendo = async () => {
+    const cargarLeyendo = useCallback(async () => {
         try {
             const res = await api.get(`/seguimientos/usuario/${usuario.id}/estado/LEYENDO`)
             const datos = res.data || []
@@ -54,9 +45,9 @@ export default function Inicio() {
             setLeyendo(datos)
         } catch (err) { console.error('Error:', err) }
         finally { setLoading(false) }
-    }
+    }, [usuario])
 
-    const cargarRetos = async () => {
+    const cargarRetos = useCallback(async () => {
         try {
             const res = await api.get(`/retos/usuario/${usuario.id}/activos?size=10`)
             const nuevos = res.data.content || res.data || []
@@ -64,21 +55,30 @@ export default function Inicio() {
             return nuevos
         } catch (err) { console.error('Error:', err) }
         return []
-    }
+    }, [usuario])
 
-    const cargarPopularesAmigos = async () => {
+    const cargarPopularesAmigos = useCallback(async () => {
         try {
             const res = await api.get(`/libros/populares-amigos/${usuario.id}?size=12`)
             setPopularesAmigos(res.data.content || res.data || [])
         } catch (err) { console.error('Error:', err) }
-    }
+    }, [usuario])
 
-    const cargarLibrosPopulares = async () => {
+    const cargarLibrosPopulares = useCallback(async () => {
         try {
             const res = await api.get('/libros/populares?size=12')
             setLibrosPopulares(res.data || [])
         } catch (err) { console.error('Error:', err) }
-    }
+    }, [])
+
+    useEffect(() => {
+        if (usuario) {
+            cargarLeyendo()
+            cargarRetos()
+            cargarLibrosPopulares()
+            cargarPopularesAmigos()
+        }
+    }, [cargarLeyendo, cargarLibrosPopulares, cargarPopularesAmigos, cargarRetos, usuario])
 
     const actualizarProgreso = async () => {
         if (!nuevaPagina) return
@@ -119,7 +119,7 @@ export default function Inicio() {
                         setRetoCumplido(retoNotif.mensaje)
                         await api.put(`/notificaciones/${retoNotif.idnotificacion}/leida`)
                     }
-                } catch (err) { /* silencioso */ }
+                } catch { /* silencioso */ }
 
                 setMostrarAnotacionModal(true)
             }

@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useState, useEffect, useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import Estrellas from './Estrellas'
 import SpoilerOculto from './SpoilerOculto'
@@ -11,19 +11,19 @@ export default function ResenaCard({ resena: resenaInicial, mostrarLibro = true,
     const [resena, setResena] = useState(resenaInicial)
     const [liked, setLiked] = useState(false)
 
-    useEffect(() => {
-        if (usuario && resenaInicial.idusuario !== usuario.id) {
-            comprobarLike()
-        }
-    }, [resenaInicial.idresena])
-
-    const comprobarLike = async () => {
+    const comprobarLike = useCallback(async () => {
         try {
             const res = await api.get(`/resenas/likes/${usuario.id}`)
             const likes = res.data.content || res.data || []
             setLiked(likes.some(r => r.idresena === resenaInicial.idresena))
         } catch (err) { console.error('Error:', err) }
-    }
+    }, [resenaInicial.idresena, usuario])
+
+    useEffect(() => {
+        if (usuario && resenaInicial.idusuario !== usuario.id) {
+            comprobarLike()
+        }
+    }, [comprobarLike, resenaInicial.idresena, resenaInicial.idusuario, usuario])
 
     const toggleLike = async (e) => {
         e.stopPropagation()

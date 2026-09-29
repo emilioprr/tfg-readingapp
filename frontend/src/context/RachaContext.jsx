@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useRef } from 'react'
+import { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react'
 import { useAuth } from './AuthContext'
 import api from '../api/axios'
 
@@ -10,7 +10,7 @@ export function RachaProvider({ children }) {
     const [celebracion, setCelebracion] = useState(null)
     const rachaRef = useRef(null)
 
-    const cargar = async () => {
+    const cargar = useCallback(async () => {
         if (!usuario) return null
         try {
             const res = await api.get(`/racha/usuario/${usuario.id}`)
@@ -21,12 +21,14 @@ export function RachaProvider({ children }) {
             console.error('Error racha:', err)
             return null
         }
-    }
+    }, [usuario])
 
     useEffect(() => {
         if (usuario) cargar()
         else { setRacha(null); rachaRef.current = null }
-    }, [usuario])
+    }, [usuario, cargar])
+
+    const cerrarCelebracion = useCallback(() => setCelebracion(null), [])
 
     // Llamar después de cualquier actividad de lectura
     const refrescarRacha = async () => {
@@ -40,10 +42,12 @@ export function RachaProvider({ children }) {
     }
 
     return (
-        <RachaContext.Provider value={{ racha, refrescarRacha, celebracion, cerrarCelebracion: () => setCelebracion(null) }}>
+        <RachaContext.Provider value={{ racha, refrescarRacha, celebracion, cerrarCelebracion }}>
             {children}
         </RachaContext.Provider>
     )
 }
 
+// El hook vive junto a su Provider (patrón habitual de Context)
+// eslint-disable-next-line react-refresh/only-export-components
 export const useRacha = () => useContext(RachaContext)

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import Estrellas from '../components/Estrellas'
@@ -28,30 +28,30 @@ export default function ResenaDetalle() {
     const [guardando, setGuardando] = useState(false)
     const navigate = useNavigate()
 
-    useEffect(() => { cargarResena() }, [id])
-
-    const cargarResena = async () => {
+    const cargarResena = useCallback(async () => {
         try {
             const res = await api.get(`/resenas/${id}`)
             setResena(res.data)
         } catch (err) { console.error('Error:', err) }
         finally { setLoading(false) }
-    }
+    }, [id])
 
-    useEffect(() => {
-        if (usuario && resena && resena.idusuario !== usuario.id && !eliminada) {
-            comprobarLike()
-        }
-    }, [resena?.idresena])
-
-    const comprobarLike = async () => {
+    const comprobarLike = useCallback(async () => {
         if (eliminada) return
         try {
             const res = await api.get(`/resenas/likes/${usuario.id}`)
             const likes = res.data.content || res.data || []
             setLiked(likes.some(r => r.idresena === parseInt(id)))
         } catch (err) { console.error('Error:', err) }
-    }
+    }, [eliminada, id, usuario])
+
+    useEffect(() => { cargarResena() }, [cargarResena, id])
+    const autorResena = resena?.idusuario
+    useEffect(() => {
+        if (usuario && autorResena != null && autorResena !== usuario.id && !eliminada) {
+            comprobarLike()
+        }
+    }, [comprobarLike, eliminada, autorResena, usuario])
 
     const toggleLike = async () => {
         try {
@@ -67,15 +67,6 @@ export default function ResenaDetalle() {
         } catch (err) { alert(err.response?.data?.mensaje || 'Error') }
     }
 
-    const iniciarEdicion = () => {
-        setTextoEdit(resena.texto || '')
-        setPuntuacionEdit(resena.puntuacion || 0)
-        setRitmoEdit(resena.ritmo || null)
-        setEtiquetasEdit(resena.etiquetas || [])
-        setEsPublicaEdit(resena.esPublica)
-        setTieneSpoilerEdit(resena.tieneSpoiler)
-        setEditando(true)
-    }
 
     const cancelarEdicion = () => {
         setEditando(false)
@@ -298,7 +289,7 @@ export default function ResenaDetalle() {
                                 setEliminada(true)
                                 try {
                                     await api.delete(`/resenas/${id}`)
-                                } catch (err) {}
+                                } catch { /* si falla, igualmente se sale de la reseña */ }
                                 navigate('/', { replace: true })
                             }}
                                     className="text-red-400/60 hover:text-red-400 text-sm transition-colors">

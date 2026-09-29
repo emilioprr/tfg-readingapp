@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import api from '../api/axios'
 
 export default function Registro() {
@@ -7,8 +7,6 @@ export default function Registro() {
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
     const [error, setError] = useState('')
-    const [exito, setExito] = useState(false)
-    const navigate = useNavigate()
 
     const handleSubmit = async (e) => {
         e.preventDefault()
@@ -33,7 +31,6 @@ export default function Registro() {
             <form onSubmit={handleSubmit} className="bg-dark-card p-8 rounded-2xl border border-dark-border w-full max-w-md">
                 <h2 className="text-2xl font-bold text-dark-text mb-6 text-center">Crear cuenta</h2>
                 {error && <p className="text-red-400 text-sm mb-4 text-center">{error}</p>}
-                {exito && <p className="text-emerald-400 text-sm mb-4 text-center">Cuenta creada. Redirigiendo...</p>}
                 <div className="mb-4">
                     <label className="block text-dark-muted text-sm mb-1">Nombre</label>
                     <input type="text" value={nombre} onChange={(e) => setNombre(e.target.value)}
