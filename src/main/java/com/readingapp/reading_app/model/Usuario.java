@@ -43,9 +43,6 @@ public class Usuario {
     @Column(name = "fecha_alta", nullable = false)
     private LocalDate fechaAlta = LocalDate.now();
 
-    @Column
-    private Integer seguidores = 0;
-
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     @Builder.Default

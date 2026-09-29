@@ -47,7 +47,6 @@ public class UsuarioService {
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .fechaAlta(LocalDate.now())
-                .seguidores(0)
                 .build();
 
         usuario = usuarioRepository.save(usuario);
@@ -111,7 +110,6 @@ public class UsuarioService {
         }
 
         seguidor.getSeguidos().add(seguido);
-        seguido.setSeguidores(seguido.getSeguidores() + 1);
         usuarioRepository.save(seguidor);
         usuarioRepository.save(seguido);
         notificacionService.crearNotificacionSeguidor(seguido, seguidor);
@@ -133,7 +131,6 @@ public class UsuarioService {
         }
 
         seguidor.getSeguidos().remove(seguido);
-        seguido.setSeguidores(Math.max(0, seguido.getSeguidores() - 1));
         usuarioRepository.save(seguidor);
         usuarioRepository.save(seguido);
     }
@@ -172,7 +169,7 @@ public class UsuarioService {
                 .biografia(usuario.getBiografia())
                 .avatar(usuario.getAvatar())
                 .fechaAlta(usuario.getFechaAlta() != null ? usuario.getFechaAlta().toString() : null)
-                .seguidores(usuario.getSeguidores())
+                .seguidores(usuario.getSeguidoresList() != null ? usuario.getSeguidoresList().size() : 0)
                 .build();
     }
 }

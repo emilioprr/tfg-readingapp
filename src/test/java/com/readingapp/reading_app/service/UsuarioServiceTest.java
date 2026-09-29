@@ -37,7 +37,7 @@ class UsuarioServiceTest {
     @InjectMocks private UsuarioService usuarioService;
 
     private static Usuario usuario(Long id, String nombre) {
-        return Usuario.builder().idusuario(id).nombre(nombre).seguidores(0)
+        return Usuario.builder().idusuario(id).nombre(nombre)
                 .seguidos(new HashSet<>()).seguidoresList(new HashSet<>()).build();
     }
 
@@ -68,7 +68,6 @@ class UsuarioServiceTest {
 
             verify(usuarioRepository).save(guardado.capture());
             assertThat(guardado.getValue().getPassword()).isEqualTo("$2a$hash");
-            assertThat(guardado.getValue().getSeguidores()).isZero();
         }
 
         @Test
@@ -155,12 +154,11 @@ class UsuarioServiceTest {
         }
 
         @Test
-        @DisplayName("Seguir a alguien suma un seguidor y le avisa")
-        void seguirSumaYNotifica() {
+        @DisplayName("Seguir a alguien lo añade a mis seguidos y le avisa")
+        void seguirAnadeYNotifica() {
             usuarioService.seguirUsuario(1L, 2L);
 
             assertThat(ana.getSeguidos()).contains(luis);
-            assertThat(luis.getSeguidores()).isEqualTo(1);
             verify(notificacionService).crearNotificacionSeguidor(luis, ana);
         }
 
@@ -175,34 +173,30 @@ class UsuarioServiceTest {
         @DisplayName("No se puede seguir dos veces a la misma persona")
         void noSeguirDosVeces() {
             ana.getSeguidos().add(luis);
-            luis.setSeguidores(1);
 
             assertThatThrownBy(() -> usuarioService.seguirUsuario(1L, 2L))
                     .isInstanceOf(IllegalArgumentException.class);
-            assertThat(luis.getSeguidores()).isEqualTo(1);
+            assertThat(ana.getSeguidos()).hasSize(1);
+            verify(notificacionService, never()).crearNotificacionSeguidor(any(), any());
         }
 
         @Test
-        @DisplayName("Dejar de seguir resta un seguidor")
+        @DisplayName("Dejar de seguir lo quita de mis seguidos")
         void dejarDeSeguir() {
             ana.getSeguidos().add(luis);
-            luis.setSeguidores(1);
 
             usuarioService.dejarDeSeguirUsuario(1L, 2L);
 
             assertThat(ana.getSeguidos()).doesNotContain(luis);
-            assertThat(luis.getSeguidores()).isZero();
         }
 
         @Test
-        @DisplayName("El contador de seguidores nunca baja de 0")
-        void contadorNoNegativo() {
-            ana.getSeguidos().add(luis);
-            luis.setSeguidores(0); // contador desincronizado
+        @DisplayName("El número de seguidores se calcula a partir de la lista real")
+        void seguidoresDesdeLaLista() {
+            luis.getSeguidoresList().add(ana);
+            when(usuarioRepository.findById(2L)).thenReturn(Optional.of(luis));
 
-            usuarioService.dejarDeSeguirUsuario(1L, 2L);
-
-            assertThat(luis.getSeguidores()).isZero();
+            assertThat(usuarioService.obtenerPorId(2L).getSeguidores()).isEqualTo(1);
         }
 
         @Test
