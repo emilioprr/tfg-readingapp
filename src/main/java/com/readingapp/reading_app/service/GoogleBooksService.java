@@ -341,7 +341,7 @@ public class GoogleBooksService {
         Integer anio = extraerAnio((String) volumeInfo.get("publishedDate"));
 
         List<String> categorias = (List<String>) volumeInfo.get("categories");
-        String genero = (categorias != null && !categorias.isEmpty()) ? categorias.get(0) : "Ficción";
+        String genero = (categorias != null && !categorias.isEmpty()) ? categorias.get(0) : null;
 
         Libro libro = Libro.builder()
                 .idapiexterna(idExterno)
