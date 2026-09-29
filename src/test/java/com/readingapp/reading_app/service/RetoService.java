@@ -369,7 +369,7 @@ class RetoServiceTest {
             ParticipanteReto p1 = participante(r1, usuario, false);
             ParticipanteReto p2 = participante(r2, usuario, false);
 
-            when(participanteRetoRepository.findByUsuarioIdusuarioAndRetoCumplidoFalse(ID_USUARIO))
+            when(participanteRetoRepository.findActivosDeUsuario(ID_USUARIO, HOY))
                     .thenReturn(List.of(p1, p2));
             librosLeidos(2);
             when(seguimientoRepository.sumPaginasByUsuarioEntreFechas(eq(ID_USUARIO), any(), any())).thenReturn(300L);
@@ -378,6 +378,70 @@ class RetoServiceTest {
 
             assertThat(p1.getProgreso()).isEqualTo(2);
             assertThat(p2.getProgreso()).isEqualTo(300);
+        }
+    }
+
+    // ===== Retos terminados =====
+
+    @Nested
+    @DisplayName("Retos terminados")
+    class Terminados {
+
+        @Test
+        @DisplayName("No se puede unir a un reto que ya ha terminado")
+        void noUnirseATerminado() {
+            Reto reto = reto(1L, TipoReto.LIBROS, ModalidadReto.COMPARTIDO, 5);
+            reto.setFechaFin(HOY.minusDays(1));
+            when(retoRepository.findById(1L)).thenReturn(Optional.of(reto));
+
+            assertThatThrownBy(() -> retoService.unirse(1L, ID_USUARIO))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("terminado");
+            verify(participanteRetoRepository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("El último día del reto todavía se puede participar")
+        void ultimoDiaSigueVigente() {
+            Reto reto = reto(1L, TipoReto.LIBROS, ModalidadReto.COMPARTIDO, 5);
+            reto.setFechaFin(HOY);
+            when(retoRepository.findById(1L)).thenReturn(Optional.of(reto));
+            when(usuarioRepository.findById(ID_USUARIO)).thenReturn(Optional.of(usuario));
+            when(participanteRetoRepository.save(any(ParticipanteReto.class))).thenAnswer(inv -> inv.getArgument(0));
+
+            assertThat(retoService.unirse(1L, ID_USUARIO)).isNotNull();
+        }
+
+        @Test
+        @DisplayName("Un reto terminado ya no recalcula su progreso")
+        void terminadoNoRecalcula() {
+            Reto reto = reto(1L, TipoReto.LIBROS, ModalidadReto.PERSONAL, 10);
+            reto.setFechaFin(HOY.minusDays(3));
+            ParticipanteReto p = participante(reto, usuario, false);
+            p.setProgreso(4);
+            when(retoRepository.findById(1L)).thenReturn(Optional.of(reto));
+            when(participanteRetoRepository.findByRetoIdretoAndUsuarioIdusuario(1L, ID_USUARIO)).thenReturn(Optional.of(p));
+
+            retoService.recalcularProgreso(1L, ID_USUARIO);
+
+            assertThat(p.getProgreso()).isEqualTo(4);
+            verify(participanteRetoRepository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("Los retos disponibles y activos se piden solo vigentes (a fecha de hoy)")
+        void listadosSoloVigentes() {
+            org.springframework.data.domain.Pageable pagina = org.springframework.data.domain.PageRequest.of(0, 10);
+            when(retoRepository.findByModalidadInAndFechaFinGreaterThanEqual(any(), eq(HOY), eq(pagina)))
+                    .thenReturn(org.springframework.data.domain.Page.empty());
+            when(participanteRetoRepository.findActivosDeUsuario(ID_USUARIO, HOY, pagina))
+                    .thenReturn(org.springframework.data.domain.Page.empty());
+
+            retoService.obtenerDisponibles(pagina);
+            retoService.obtenerRetosActivos(ID_USUARIO, pagina);
+
+            verify(retoRepository).findByModalidadInAndFechaFinGreaterThanEqual(any(), eq(HOY), eq(pagina));
+            verify(participanteRetoRepository).findActivosDeUsuario(ID_USUARIO, HOY, pagina);
         }
     }
 

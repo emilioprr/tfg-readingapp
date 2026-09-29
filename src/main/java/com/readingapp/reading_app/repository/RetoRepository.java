@@ -6,17 +6,17 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.time.LocalDate;
 import java.util.List;
 
 public interface RetoRepository extends JpaRepository<Reto, Long> {
 
-    Page<Reto> findByModalidad(ModalidadReto modalidad, Pageable pageable);
+    // Solo retos vigentes: los que ya han terminado dejan de mostrarse
+    Page<Reto> findByModalidadAndFechaFinGreaterThanEqual(ModalidadReto modalidad, LocalDate hoy, Pageable pageable);
 
-    List<Reto> findByModalidad(ModalidadReto modalidad);
-
-    Page<Reto> findByCreadorIdusuario(Long idusuario, Pageable pageable);
+    Page<Reto> findByCreadorIdusuarioAndFechaFinGreaterThanEqual(Long idusuario, LocalDate hoy, Pageable pageable);
 
     // Retos a los que te puedes unir: predefinidos + compartidos + colaborativos
-    Page<Reto> findByModalidadIn(List<ModalidadReto> modalidades, Pageable pageable);
+    Page<Reto> findByModalidadInAndFechaFinGreaterThanEqual(List<ModalidadReto> modalidades, LocalDate hoy, Pageable pageable);
 }
 

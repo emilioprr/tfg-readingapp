@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -17,14 +18,20 @@ public interface ParticipanteRetoRepository extends JpaRepository<ParticipanteRe
 
     boolean existsByRetoIdretoAndUsuarioIdusuario(Long idreto, Long idusuario);
 
-    List<ParticipanteReto> findByUsuarioIdusuarioAndRetoCumplidoFalse(Long idusuario);
 
     Page<ParticipanteReto> findByUsuarioIdusuarioAndRetoCumplidoTrue(Long idusuario, Pageable pageable);
 
     List<ParticipanteReto> findByRetoIdreto(Long idreto);
 
     // Para retos activos de un usuario (paginado)
-    Page<ParticipanteReto> findByUsuarioIdusuarioAndRetoCumplidoFalse(Long idusuario, Pageable pageable);
+    /** Retos en curso de un usuario: sin completar y sin haber terminado (los caducados desaparecen). */
+    @Query("SELECT p FROM ParticipanteReto p WHERE p.usuario.idusuario = :idusuario " +
+            "AND p.retoCumplido = false AND p.reto.fechaFin >= :hoy")
+    List<ParticipanteReto> findActivosDeUsuario(@Param("idusuario") Long idusuario, @Param("hoy") LocalDate hoy);
+
+    @Query("SELECT p FROM ParticipanteReto p WHERE p.usuario.idusuario = :idusuario " +
+            "AND p.retoCumplido = false AND p.reto.fechaFin >= :hoy")
+    Page<ParticipanteReto> findActivosDeUsuario(@Param("idusuario") Long idusuario, @Param("hoy") LocalDate hoy, Pageable pageable);
 
     // Suma de progreso de todos los participantes de un reto (para COLABORATIVO)
     @Query("SELECT COALESCE(SUM(p.progreso), 0) FROM ParticipanteReto p WHERE p.reto.idreto = :idreto")

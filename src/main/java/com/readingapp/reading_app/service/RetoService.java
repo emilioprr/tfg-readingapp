@@ -94,6 +94,10 @@ public class RetoService {
             throw new IllegalArgumentException("No puedes unirte a un reto personal de otro usuario");
         }
 
+        if (reto.getFechaFin().isBefore(LocalDate.now(clock))) {
+            throw new IllegalArgumentException("Este reto ya ha terminado");
+        }
+
         if (participanteRetoRepository.existsByRetoIdretoAndUsuarioIdusuario(idreto, idusuario)) {
             throw new IllegalArgumentException("Ya participas en este reto");
         }
@@ -118,22 +122,22 @@ public class RetoService {
     }
 
     public Page<RetoDTO.Response> obtenerPorModalidad(ModalidadReto modalidad, Pageable pageable) {
-        return retoRepository.findByModalidad(modalidad, pageable).map(this::toResponse);
+        return retoRepository.findByModalidadAndFechaFinGreaterThanEqual(modalidad, LocalDate.now(clock), pageable).map(this::toResponse);
     }
 
     public Page<RetoDTO.Response> obtenerDisponibles(Pageable pageable) {
         // Todos los que puedes unirte: predefinidos + compartidos + colaborativos
         List<ModalidadReto> modalidades = List.of(
                 ModalidadReto.PREDEFINIDO, ModalidadReto.COMPARTIDO, ModalidadReto.COLABORATIVO);
-        return retoRepository.findByModalidadIn(modalidades, pageable).map(this::toResponse);
+        return retoRepository.findByModalidadInAndFechaFinGreaterThanEqual(modalidades, LocalDate.now(clock), pageable).map(this::toResponse);
     }
 
     public Page<RetoDTO.Response> obtenerCreadosPorUsuario(Long idusuario, Pageable pageable) {
-        return retoRepository.findByCreadorIdusuario(idusuario, pageable).map(this::toResponse);
+        return retoRepository.findByCreadorIdusuarioAndFechaFinGreaterThanEqual(idusuario, LocalDate.now(clock), pageable).map(this::toResponse);
     }
 
     public Page<RetoDTO.ParticipanteResponse> obtenerRetosActivos(Long idusuario, Pageable pageable) {
-        return participanteRetoRepository.findByUsuarioIdusuarioAndRetoCumplidoFalse(idusuario, pageable)
+        return participanteRetoRepository.findActivosDeUsuario(idusuario, LocalDate.now(clock), pageable)
                 .map(p -> toParticipanteResponse(p, p.getReto().getMeta()));
     }
 
@@ -149,7 +153,8 @@ public class RetoService {
                 .findByRetoIdretoAndUsuarioIdusuario(idreto, idusuario)
                 .orElseThrow(() -> new EntityNotFoundException("No participas en este reto"));
 
-        if (participante.getRetoCumplido()) {
+        // Un reto completado o ya terminado no cambia
+        if (participante.getRetoCumplido() || reto.getFechaFin().isBefore(LocalDate.now(clock))) {
             return toParticipanteResponse(participante, reto.getMeta());
         }
 
@@ -178,7 +183,7 @@ public class RetoService {
     @Transactional
     public void recalcularRetosActivosDeUsuario(Long idusuario) {
         List<ParticipanteReto> activos = participanteRetoRepository
-                .findByUsuarioIdusuarioAndRetoCumplidoFalse(idusuario);
+                .findActivosDeUsuario(idusuario, LocalDate.now(clock));
 
         for (ParticipanteReto p : activos) {
             recalcularProgreso(p.getReto().getIdreto(), idusuario);
