@@ -46,9 +46,8 @@ export default function TarjetaCita({ cita, esMia, onGuardar }) {
             <div className="flex items-start justify-between">
                 <span aria-hidden className="text-terra/40 text-6xl font-serif leading-none -mb-4 select-none">“</span>
                 <div className="flex items-center gap-4">
-                    <button onClick={toggleLike} disabled={esMia}
-                            title={esMia ? 'Es tu cita' : likeada ? 'Quitar me gusta' : 'Me gusta'}
-                            className={`flex items-center gap-1 transition-colors ${likeada ? 'text-red-500' : 'text-dark-muted'} ${esMia ? 'cursor-default' : 'hover:text-red-500'}`}>
+                    <button onClick={toggleLike} title={likeada ? 'Quitar me gusta' : 'Me gusta'}
+                            className={`flex items-center gap-1 transition-colors ${likeada ? 'text-red-500' : 'text-dark-muted hover:text-red-500'}`}>
                         <IconoLike lleno={likeada} />
                         <span className="text-xs tabular-nums">{likes}</span>
                     </button>

@@ -209,14 +209,18 @@ class CitaServiceTest {
     }
 
     @Test
-    @DisplayName("No se puede dar like a citas privadas de otros ni a las propias")
-    void noLikeAPrivadasNiPropias() {
+    @DisplayName("No se puede dar like a citas privadas de otros; a las propias sí, pero sin avisarse a uno mismo")
+    void likePrivadasYPropias() {
         Anotacion privada = anotacion(luis, TipoAnotacion.CITA, false, "Privada");
         Anotacion propia = anotacion(ana, TipoAnotacion.CITA, true, "Mía");
         em.flush();
 
         assertThatThrownBy(() -> citaService.darLike(privada.getIdanotacion())).isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> citaService.darLike(propia.getIdanotacion())).isInstanceOf(IllegalArgumentException.class);
+        citaService.darLike(propia.getIdanotacion());
+        em.flush();
+        assertThat(buscar(citaService.obtenerComunidad("recientes", 0, 20), propia.getIdanotacion()).getLikes()).isEqualTo(1);
+        assertThat(notificacionRepository.findByUsuarioIdusuarioAndTipoOrderByFechaDesc(
+                ana.getIdusuario(), TipoNotificacion.LIKE_CITA, PageRequest.of(0, 10)).getContent()).isEmpty();
     }
 
     @Test

@@ -78,17 +78,16 @@ public class CitaService {
         }
     }
 
-    /** Da like a una cita pública de otro usuario (las propias no, para no inflar las populares). Dar like dos veces no hace nada. */
+    /** Da like a una cita pública (o propia). Dar like dos veces no hace nada; el autor no se avisa a sí mismo. */
     @Transactional
     public void darLike(Long idanotacion) {
         Usuario usuario = usuarioActual();
         Anotacion cita = citaVisible(idanotacion, usuario.getIdusuario());
-        if (cita.getUsuario().getIdusuario().equals(usuario.getIdusuario())) {
-            throw new IllegalArgumentException("No puedes dar like a tus propias citas");
-        }
         if (!likeCitaRepository.existsByUsuarioIdusuarioAndAnotacionIdanotacion(usuario.getIdusuario(), idanotacion)) {
             likeCitaRepository.save(LikeCita.builder().usuario(usuario).anotacion(cita).fecha(LocalDateTime.now()).build());
-            notificacionService.crearNotificacionLikeCita(cita, usuario);
+            if (!cita.getUsuario().getIdusuario().equals(usuario.getIdusuario())) {
+                notificacionService.crearNotificacionLikeCita(cita, usuario);
+            }
         }
     }
 
