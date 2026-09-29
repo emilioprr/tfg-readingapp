@@ -226,13 +226,8 @@ public class RetoService {
 
         Usuario usuario = participante.getUsuario();
 
-        // Notificar al propio usuario
-        notificacionService.crearNotificacionRetoCumplido(reto, usuario, usuario);
-
-        // Notificar a seguidores
-        for (Usuario seguidor : usuario.getSeguidoresList()) {
-            notificacionService.crearNotificacionRetoCumplido(reto, usuario, seguidor);
-        }
+        // Solo se avisa al propio usuario; sus seguidores lo ven en su feed de actividad
+        notificacionService.crearNotificacionRetoCumplido(reto, usuario);
 
         log.info("Usuario {} completó el reto '{}'", usuario.getIdusuario(), reto.getTitulo());
     }
@@ -245,10 +240,8 @@ public class RetoService {
             p.setFechaCumplimiento(LocalDateTime.now(clock));
             participanteRetoRepository.save(p);
 
-            // Notificar a seguidores de cada participante
-            for (Usuario seguidor : p.getUsuario().getSeguidoresList()) {
-                notificacionService.crearNotificacionRetoCumplido(reto, p.getUsuario(), seguidor);
-            }
+            // Se avisa a cada participante (sus seguidores lo ven en su feed de actividad)
+            notificacionService.crearNotificacionRetoCumplido(reto, p.getUsuario());
         }
 
         log.info("Reto colaborativo '{}' completado por {} participantes", reto.getTitulo(), activos.size());

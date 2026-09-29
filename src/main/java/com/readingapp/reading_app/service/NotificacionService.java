@@ -3,6 +3,7 @@ package com.readingapp.reading_app.service;
 import com.readingapp.reading_app.config.SecurityUtils;
 import com.readingapp.reading_app.dto.NotificacionDTO;
 import com.readingapp.reading_app.model.*;
+import com.readingapp.reading_app.model.enums.ModalidadReto;
 import com.readingapp.reading_app.model.enums.TipoNotificacion;
 import com.readingapp.reading_app.repository.NotificacionRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -135,36 +136,23 @@ public class NotificacionService {
         notificacionRepository.save(notificacion);
     }
 
+    /**
+     * Avisa a un participante de que ha completado un reto (en los colaborativos, entre todos).
+     * Sus seguidores no se notifican: lo ven en su feed de actividad.
+     */
     @Transactional
-    public void crearNotificacionNuevaResena(Resena resena, Usuario seguidor) {
-        Notificacion notificacion = Notificacion.builder()
-                .tipo(TipoNotificacion.NUEVA_RESENA_SEGUIDO)
-                .mensaje(resena.getUsuario().getNombre() + " publicó una reseña de " + resena.getLibro().getTitulo())
-                .usuario(seguidor)
-                .resena(resena)
-                .usuarioOrigen(resena.getUsuario())
-                .fecha(LocalDateTime.now())
-                .leida(false)
-                .build();
-        notificacionRepository.save(notificacion);
-    }
-
-    @Transactional
-    public void crearNotificacionRetoCumplido(Reto reto, Usuario usuarioQueCompleto, Usuario seguidor) {
-        String mensaje;
-        if (usuarioQueCompleto.getIdusuario().equals(seguidor.getIdusuario())) {
-            mensaje = "¡Has completado el reto \"" + reto.getTitulo() + "\"!";
-        } else {
-            mensaje = usuarioQueCompleto.getNombre() + " ha completado el reto \"" + reto.getTitulo() + "\"";
-        }
+    public void crearNotificacionRetoCumplido(Reto reto, Usuario participante) {
+        String mensaje = reto.getModalidad() == ModalidadReto.COLABORATIVO
+                ? "¡Habéis completado el reto \"" + reto.getTitulo() + "\"!"
+                : "¡Has completado el reto \"" + reto.getTitulo() + "\"!";
 
         Notificacion notif = Notificacion.builder()
                 .tipo(TipoNotificacion.RETO_CUMPLIDO)
                 .mensaje(mensaje)
                 .fecha(LocalDateTime.now())
                 .leida(false)
-                .usuario(seguidor)
-                .usuarioOrigen(usuarioQueCompleto)
+                .usuario(participante)
+                .usuarioOrigen(participante)
                 .reto(reto)
                 .build();
         notificacionRepository.save(notif);

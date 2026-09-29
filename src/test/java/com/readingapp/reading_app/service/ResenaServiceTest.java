@@ -175,25 +175,13 @@ class ResenaServiceTest {
         }
 
         @Test
-        @DisplayName("Una reseña pública avisa a los seguidores del autor")
-        void publicaNotificaSeguidores() {
+        @DisplayName("Publicar una reseña no notifica a los seguidores (la ven en su feed de actividad)")
+        void publicarNoNotificaSeguidores() {
             leidoVeces(1, 0);
 
             resenaService.crear(peticion("4"));
 
-            verify(notificacionService).crearNotificacionNuevaResena(any(Resena.class), eq(seguidor));
-        }
-
-        @Test
-        @DisplayName("Una reseña privada no avisa a nadie")
-        void privadaNoNotifica() {
-            leidoVeces(1, 0);
-            ResenaDTO.CreateRequest request = peticion("4");
-            request.setEsPublica(false);
-
-            resenaService.crear(request);
-
-            verify(notificacionService, never()).crearNotificacionNuevaResena(any(), any());
+            verifyNoInteractions(notificacionService);
         }
     }
 

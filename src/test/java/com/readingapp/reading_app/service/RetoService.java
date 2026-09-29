@@ -314,7 +314,7 @@ class RetoServiceTest {
         }
 
         @Test
-        @DisplayName("Al completar un reto se notifica al usuario y a sus seguidores")
+        @DisplayName("Al completar un reto se notifica solo al usuario, no a sus seguidores")
         void completarNotifica() {
             Reto reto = reto(1L, TipoReto.LIBROS, ModalidadReto.PERSONAL, 3);
             ParticipanteReto p = participante(reto, usuario, false);
@@ -324,8 +324,8 @@ class RetoServiceTest {
 
             assertThat(p.getRetoCumplido()).isTrue();
             assertThat(p.getFechaCumplimiento()).isEqualTo(HOY.atTime(12, 0));
-            verify(notificacionService).crearNotificacionRetoCumplido(reto, usuario, usuario);
-            verify(notificacionService).crearNotificacionRetoCumplido(reto, usuario, seguidor);
+            verify(notificacionService).crearNotificacionRetoCumplido(reto, usuario);
+            verifyNoMoreInteractions(notificacionService);
         }
 
         @Test
@@ -359,6 +359,9 @@ class RetoServiceTest {
 
             assertThat(p1.getRetoCumplido()).isTrue();
             assertThat(p2.getRetoCumplido()).isTrue();
+            // Cada participante recibe su aviso
+            verify(notificacionService).crearNotificacionRetoCumplido(reto, usuario);
+            verify(notificacionService).crearNotificacionRetoCumplido(reto, otro);
         }
 
         @Test

@@ -68,13 +68,8 @@ public class ResenaService {
                 .libro(libro)
                 .build();
 
+        // Los seguidores ya la ven en su feed de actividad: no se les notifica
         resena = resenaRepository.save(resena);
-
-        if (resena.getEsPublica()) {
-            for (Usuario seguidor : usuario.getSeguidoresList()) {
-                notificacionService.crearNotificacionNuevaResena(resena, seguidor);
-            }
-        }
 
         return toResponse(resena);
     }
