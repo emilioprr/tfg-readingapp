@@ -6,6 +6,7 @@ import ResenaCard from '../components/ResenaCard'
 import api from '../api/axios'
 import SpoilerOculto from '../components/SpoilerOculto'
 import PuntuarLibro from '../components/PuntuarLibro'
+import GuardarEnListaModal from '../components/GuardarEnListaModal'
 
 export default function LibroDetalle() {
     const { id } = useParams()
@@ -18,11 +19,9 @@ export default function LibroDetalle() {
     const [esFavorito, setEsFavorito] = useState(false)
     const [numFavoritos, setNumFavoritos] = useState(0)
     const [mostrarConfirmacion, setMostrarConfirmacion] = useState(false)
-    const [menuAbierto, setMenuAbierto] = useState(false)
-    const [listas, setListas] = useState([])
+    const [mostrarListas, setMostrarListas] = useState(false)
     const [loading, setLoading] = useState(true)
     const [anotacionesPublicas, setAnotacionesPublicas] = useState([])
-    const [mensajeExito, setMensajeExito] = useState('')
     const [tabPrincipal, setTabPrincipal] = useState('resenas')
     const [subTabResenas, setSubTabResenas] = useState('todas')
     const [subTabAnotaciones, setSubTabAnotaciones] = useState('todas')
@@ -66,12 +65,6 @@ export default function LibroDetalle() {
             setEsFavorito(favs.some(f => f.idlibro === parseInt(id)))
         } catch (err) { console.error('Error:', err) }
     }, [id, usuario])
-
-    const cargarListas = useCallback(async () => {
-        if (!usuario) return
-        try { const res = await api.get(`/listas/usuario/${usuario.id}`); setListas(res.data.content || res.data || []) }
-        catch (err) { console.error('Error:', err) }
-    }, [usuario])
 
     const cargarAnotaciones = useCallback(async () => {
         try {
@@ -125,13 +118,12 @@ export default function LibroDetalle() {
         cargarResenas()
         cargarEstado()
         cargarFavoritos()
-        cargarListas()
         cargarAnotaciones()
         cargarResenasAmigos()
         cargarMisResenas()
         cargarAnotacionesAmigos()
         cargarMisAnotaciones()
-    }, [cargarAnotaciones, cargarAnotacionesAmigos, cargarEstado, cargarFavoritos, cargarLibro, cargarListas, cargarMisAnotaciones, cargarMisResenas, cargarResenas, cargarResenasAmigos, id, usuario])
+    }, [cargarAnotaciones, cargarAnotacionesAmigos, cargarEstado, cargarFavoritos, cargarLibro, cargarMisAnotaciones, cargarMisResenas, cargarResenas, cargarResenasAmigos, id, usuario])
 
     const toggleFavorito = async () => {
         try {
@@ -159,19 +151,10 @@ export default function LibroDetalle() {
         navigate('/')
     }
 
-    const agregarALista = async (idlista) => {
-        try {
-            await api.post(`/listas/${idlista}/libros/${id}`)
-            setMensajeExito('Libro añadido a la lista')
-            setTimeout(() => setMensajeExito(''), 2000)
-        } catch (err) { alert(err.response?.data?.mensaje || 'Error') }
-    }
-
     const agregarAWishlist = async () => {
         try {
             await api.post('/seguimientos', { estado: 'PENDIENTE', idusuario: usuario.id, idlibro: parseInt(id) })
             setEstadoLibro('PENDIENTE')
-            setMenuAbierto(false)
         } catch (err) { alert(err.response?.data?.mensaje || 'Error') }
     }
 
@@ -264,58 +247,13 @@ export default function LibroDetalle() {
                                     </svg>
                                 </button>
 
-                                {/* Tres puntos */}
-                                <div className="relative">
-                                    <button onClick={() => setMenuAbierto(!menuAbierto)} title="Más opciones"
-                                            className="text-dark-muted hover:text-dark-text transition-colors">
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-                                        </svg>
-                                    </button>
-                                    {menuAbierto && (
-                                        <div className="absolute right-0 top-8 bg-dark-elevated border border-dark-border rounded-xl shadow-2xl w-48 overflow-hidden z-50">
-                                            {!estadoLibro && (
-                                                <button onClick={agregarAWishlist}
-                                                        className="w-full text-left px-4 py-2.5 text-dark-text hover:bg-dark-card text-sm transition-colors flex items-center gap-2">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-dark-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
-                                                    </svg>
-                                                    Quiero leer
-                                                </button>
-                                            )}
-                                            {listas.length > 0 && (
-                                                listas.map((lista) => (
-                                                    <button key={lista.idlista} onClick={() => agregarALista(lista.idlista)}
-                                                            className="w-full text-left px-4 py-2.5 text-dark-text hover:bg-dark-card text-sm transition-colors flex items-center gap-2">
-                                                        <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-dark-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-                                                        </svg>
-                                                        {lista.nombre}
-                                                    </button>
-                                                ))
-                                            )}
-                                            <Link to={`/crear-lista?volver=/libro/${id}`}
-                                                  className="w-full text-left px-4 py-2.5 text-dark-muted hover:bg-dark-card text-sm transition-colors flex items-center gap-2">
-                                                <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-dark-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-                                                </svg>
-                                                Crear lista
-                                            </Link>
-                                            {estadoLibro === 'LEYENDO' && (
-                                                <button onClick={() => navigate('/')}
-                                                        className="w-full text-left px-4 py-2.5 text-terra hover:bg-dark-card text-sm transition-colors flex items-center gap-2">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                                    </svg>
-                                                    Actualizar progreso
-                                                </button>
-                                            )}
-                                            {mensajeExito && (
-                                                <p className="text-emerald-400 text-sm mt-2">{mensajeExito}</p>
-                                            )}
-                                        </div>
-                                    )}
-                                </div>
+                                {/* Guardar en lista */}
+                                <button onClick={() => setMostrarListas(true)} title="Guardar en lista"
+                                        className="text-dark-muted hover:text-terra transition-colors">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h11M4 12h11M4 18h7m9-3v6m-3-3h6" />
+                                    </svg>
+                                </button>
                             </div>
                         )}
                     </div>
@@ -324,11 +262,30 @@ export default function LibroDetalle() {
                     {libro.sinopsis && (
                         <p className="text-dark-text/80 mt-4 leading-relaxed text-sm">{libro.sinopsis}</p>
                     )}
-                    {usuario && estadoLibro !== 'LEYENDO' && (
-                        <button onClick={() => setMostrarConfirmacion(true)}
-                                className="mt-5 bg-terra hover:bg-terra-hover text-white font-semibold px-6 py-2 rounded-lg text-sm transition-colors">
-                            Empezar a leer
-                        </button>
+                    {/* Acciones de lectura según el estado del libro */}
+                    {usuario && (
+                        <div className="flex flex-wrap items-center gap-3 mt-5">
+                            {estadoLibro === 'LEYENDO' ? (
+                                <button onClick={() => navigate('/')}
+                                        className="bg-terra hover:bg-terra-hover text-white font-semibold px-6 py-2 rounded-lg text-sm transition-colors">
+                                    Actualizar progreso
+                                </button>
+                            ) : (
+                                <button onClick={() => setMostrarConfirmacion(true)}
+                                        className="bg-terra hover:bg-terra-hover text-white font-semibold px-6 py-2 rounded-lg text-sm transition-colors">
+                                    {estadoLibro === 'LEIDO' ? 'Releer' : 'Empezar a leer'}
+                                </button>
+                            )}
+                            {!estadoLibro && (
+                                <button onClick={agregarAWishlist}
+                                        className="border border-dark-border hover:border-terra hover:text-terra text-dark-text px-5 py-2 rounded-lg text-sm transition-colors">
+                                    Quiero leer
+                                </button>
+                            )}
+                            {estadoLibro === 'PENDIENTE' && (
+                                <span className="text-dark-muted text-sm">✓ En tu lista de Quiero leer</span>
+                            )}
+                        </div>
                     )}
                 </div>
             </div>
@@ -568,6 +525,8 @@ export default function LibroDetalle() {
             )}
 
             {/* Modal confirmación empezar a leer */}
+            {mostrarListas && <GuardarEnListaModal idlibro={parseInt(id)} onClose={() => setMostrarListas(false)} />}
+
             {mostrarConfirmacion && (
                 <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50">
                     <div className="bg-dark-card border border-dark-border rounded-2xl p-6 max-w-sm w-full mx-4">

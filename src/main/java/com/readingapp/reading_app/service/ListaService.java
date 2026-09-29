@@ -58,6 +58,19 @@ public class ListaService {
                 .toList();
     }
 
+    /** Tus listas indicando en cuáles está ya un libro, para la ventana "Guardar en lista" de su ficha. */
+    @Transactional(readOnly = true)
+    public List<ListaDTO.Response> obtenerMiasParaLibro(Long usuarioId, Long idlibro) {
+        SecurityUtils.validarUsuario(usuarioId);
+        return listaRepository.findByUsuarioIdusuario(usuarioId).stream()
+                .map(lista -> {
+                    ListaDTO.Response r = toResponse(lista);
+                    r.setContieneLibro(lista.getLibros().stream().anyMatch(l -> l.getIdlibro().equals(idlibro)));
+                    return r;
+                })
+                .toList();
+    }
+
     public List<ListaDTO.Response> obtenerPublicas() {
         return listaRepository.findByEsPublicaTrue().stream()
                 .map(this::toResponse)

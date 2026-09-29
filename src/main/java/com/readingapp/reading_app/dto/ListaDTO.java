@@ -31,6 +31,8 @@ public class ListaDTO {
         private Long idusuario;
         private String nombreUsuario;
         private Integer numLibros;
+        /** Solo en "mis listas para un libro": si ese libro ya está en la lista. */
+        private Boolean contieneLibro;
     }
 
     @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder

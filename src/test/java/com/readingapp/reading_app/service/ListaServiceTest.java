@@ -65,6 +65,26 @@ class ListaServiceTest {
     }
 
     @Test
+    @DisplayName("Mis listas para un libro indican en cuáles está ya (para marcar las casillas)")
+    void misListasParaLibro() {
+        Lista conLibro = Lista.builder().idlista(20L).nombre("Verano").esPublica(true).usuario(ana)
+                .libros(new HashSet<>(List.of(libro))).build();
+        Lista sinLibro = Lista.builder().idlista(21L).nombre("Pendientes").esPublica(false).usuario(ana)
+                .libros(new HashSet<>()).build();
+        when(listaRepository.findByUsuarioIdusuario(1L)).thenReturn(List.of(conLibro, sinLibro));
+
+        assertThat(listaService.obtenerMiasParaLibro(1L, 10L))
+                .extracting(ListaDTO.Response::getNombre, ListaDTO.Response::getContieneLibro)
+                .containsExactly(org.assertj.core.groups.Tuple.tuple("Verano", true), org.assertj.core.groups.Tuple.tuple("Pendientes", false));
+    }
+
+    @Test
+    @DisplayName("Solo puedes consultar tus propias listas para un libro")
+    void misListasParaLibroSoloPropias() {
+        assertThatThrownBy(() -> listaService.obtenerMiasParaLibro(2L, 10L)).isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
     @DisplayName("Una lista nueva es pública por defecto")
     void crearValoresPorDefecto() {
         when(usuarioRepository.findById(1L)).thenReturn(Optional.of(ana));

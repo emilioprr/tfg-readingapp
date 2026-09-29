@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import LibroCard from '../components/LibroCard'
+import AnadirLibrosModal from '../components/AnadirLibrosModal'
 import api from '../api/axios'
 
 export default function ListaDetalle() {
@@ -10,6 +11,7 @@ export default function ListaDetalle() {
     const navigate = useNavigate()
     const [lista, setLista] = useState(null)
     const [loading, setLoading] = useState(true)
+    const [anadiendo, setAnadiendo] = useState(false)
 
     const cargarLista = useCallback(async () => {
         try { const res = await api.get(`/listas/${id}`); setLista(res.data) }
@@ -49,10 +51,10 @@ export default function ListaDetalle() {
                             </Link>
                         )}
                         {esMia && (
-                            <Link to="/catalogo"
-                                  className="text-sm bg-terra hover:bg-terra-hover text-white font-semibold px-4 py-1.5 rounded-lg transition-colors">
-                                + Añadir libro
-                            </Link>
+                            <button onClick={() => setAnadiendo(true)}
+                                    className="text-sm bg-terra hover:bg-terra-hover text-white font-semibold px-4 py-1.5 rounded-lg transition-colors">
+                                + Añadir libros
+                            </button>
                         )}
                         {(esMia || (usuario && usuario.rol === 'ADMIN')) && (
                             <button onClick={eliminarLista} className="text-red-400 hover:text-red-300 text-sm transition-colors">
@@ -72,9 +74,19 @@ export default function ListaDetalle() {
                 </div>
             </div>
 
+            {anadiendo && (
+                <AnadirLibrosModal idlista={lista.idlista} idsEnLista={libros.map(l => l.idlibro)}
+                                   onCambio={cargarLista} onClose={() => setAnadiendo(false)} />
+            )}
+
             {libros.length === 0 ? (
                 <div className="text-center py-16 bg-dark-card rounded-2xl">
                     <p className="text-dark-muted">Esta lista está vacía</p>
+                    {esMia && (
+                        <button onClick={() => setAnadiendo(true)} className="mt-2 text-terra hover:text-terra-hover text-sm transition-colors">
+                            Añade el primer libro
+                        </button>
+                    )}
                 </div>
             ) : (
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-x-4 gap-y-6">
@@ -82,8 +94,9 @@ export default function ListaDetalle() {
                         <div key={libro.idlibro} className="group relative">
                             <LibroCard libro={libro} className="w-full" />
                             {esMia && (
-                                <button onClick={() => quitarLibro(libro.idlibro)}
-                                        className="absolute top-1 right-1 bg-black/60 text-red-400 hover:text-red-300 rounded-full w-6 h-6 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity">
+                                // Siempre visible en pantallas táctiles; en escritorio aparece al pasar el ratón
+                                <button onClick={() => quitarLibro(libro.idlibro)} title="Quitar de la lista"
+                                        className="absolute top-1 right-1 bg-black/60 text-red-400 hover:text-red-300 rounded-full w-6 h-6 flex items-center justify-center text-xs opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                                     ✕
                                 </button>
                             )}

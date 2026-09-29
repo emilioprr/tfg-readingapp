@@ -35,6 +35,11 @@ public class ListaController {
         return ResponseEntity.ok(listaService.obtenerPorUsuario(usuarioId));
     }
 
+    @GetMapping("/usuario/{usuarioId}/libro/{libroId}")
+    public ResponseEntity<List<ListaDTO.Response>> obtenerMiasParaLibro(@PathVariable Long usuarioId, @PathVariable Long libroId) {
+        return ResponseEntity.ok(listaService.obtenerMiasParaLibro(usuarioId, libroId));
+    }
+
     @GetMapping("/publicas")
     public ResponseEntity<List<ListaDTO.Response>> obtenerPublicas() {
         return ResponseEntity.ok(listaService.obtenerPublicas());
