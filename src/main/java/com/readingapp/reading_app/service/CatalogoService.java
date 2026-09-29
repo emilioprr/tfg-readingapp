@@ -33,14 +33,14 @@ public class CatalogoService {
     public static final int MIN_LIBROS_FILA = 4;
     private static final int ANIO_CLASICOS = 1950;
     private static final int LONGITUD_MIN_SINOPSIS = 120;
-    private static final double NOTA_MIN_VALORADOS = 7.0; // sobre 10
+    private static final double NOTA_MIN_VALORADOS = 3.5; // sobre 5
 
     private final LibroRepository libroRepository;
     private final ResenaRepository resenaRepository;
     private final SeguimientoRepository seguimientoRepository;
     private final Clock clock;
 
-    /** Nota media (sobre 10) y nº de reseñas públicas de un libro. */
+    /** Nota media (sobre 5) y nº de reseñas públicas de un libro. */
     private record Nota(double media, int total) {}
 
     @Transactional(readOnly = true)
@@ -140,7 +140,7 @@ public class CatalogoService {
         Map<Long, Nota> notas = new HashMap<>();
         for (Object[] fila : resenaRepository.findNotasMediasPorLibro()) {
             double media = ((Number) fila[1]).doubleValue();
-            notas.put((Long) fila[0], new Nota(Math.round(media * 20.0) / 10.0, ((Number) fila[2]).intValue()));
+            notas.put((Long) fila[0], new Nota(Math.round(media * 10.0) / 10.0, ((Number) fila[2]).intValue()));
         }
         return notas;
     }

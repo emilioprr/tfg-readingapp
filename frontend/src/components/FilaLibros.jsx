@@ -16,7 +16,7 @@ export function PortadaLibro({ libro, className = 'w-36' }) {
                 )}
                 {libro.notaMedia != null && (
                     <span className="absolute top-1.5 right-1.5 bg-black/70 backdrop-blur-sm text-amber-400 text-[11px] font-semibold px-1.5 py-0.5 rounded">
-                        ★ {libro.notaMedia}
+                        ★ {libro.notaMedia.toLocaleString('es-ES')}
                     </span>
                 )}
             </div>

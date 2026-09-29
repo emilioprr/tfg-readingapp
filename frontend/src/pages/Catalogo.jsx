@@ -26,7 +26,7 @@ function Destacado({ libro }) {
                         <span className="text-dark-text/90">{libro.nombreAutor}</span>
                         {libro.anioPublicacion && <><span>·</span><span>{libro.anioPublicacion}</span></>}
                         {libro.categoria && <><span>·</span><span>{libro.categoria}</span></>}
-                        {libro.notaMedia != null && <><span>·</span><span className="text-amber-400 font-semibold">★ {libro.notaMedia}</span></>}
+                        {libro.notaMedia != null && <><span>·</span><span className="text-amber-400 font-semibold">★ {libro.notaMedia.toLocaleString('es-ES')}</span></>}
                     </div>
                     {libro.sinopsis && (
                         <p className="text-dark-text/80 text-sm leading-relaxed mt-4 line-clamp-4">{libro.sinopsis}</p>

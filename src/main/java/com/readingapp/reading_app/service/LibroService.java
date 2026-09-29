@@ -17,6 +17,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -55,35 +57,30 @@ public class LibroService {
             notificacionService.crearNotificacionNuevoLibro(libro, seguidor);
         }
 
-        return toResponse(libro);
+        return toDetalle(libro);
     }
 
     public LibroDTO.Response obtenerPorId(Long id) {
         Libro libro = buscarPorId(id);
-        return toResponse(libro);
+        return toDetalle(libro);
     }
 
     public List<LibroDTO.Response> obtenerTodos(Pageable pageable) {
-        return libroRepository.findAll(pageable).stream()
-                .map(this::toResponse)
-                .toList();
+        return toResumenes(libroRepository.findAll(pageable).getContent());
     }
 
     public Page<LibroDTO.Response> buscarPorTitulo(String titulo, Pageable pageable) {
-        return libroRepository.findByTituloContainingIgnoreCase(titulo, pageable)
-                .map(this::toResponse);
+        Page<Libro> pagina = libroRepository.findByTituloContainingIgnoreCase(titulo, pageable);
+        Map<Long, double[]> notas = notasDe(pagina.getContent());
+        return pagina.map(l -> toResumen(l, notas));
     }
 
     public List<LibroDTO.Response> buscarPorGenero(String genero, Pageable pageable) {
-        return libroRepository.findByGeneroIgnoreCase(genero, pageable).stream()
-                .map(this::toResponse)
-                .toList();
+        return toResumenes(libroRepository.findByGeneroIgnoreCase(genero, pageable));
     }
 
     public List<LibroDTO.Response> obtenerPorAutor(Long idautor, Pageable pageable) {
-        return libroRepository.findByAutorIdautor(idautor, pageable).stream()
-                .map(this::toResponse)
-                .toList();
+        return toResumenes(libroRepository.findByAutorIdautor(idautor, pageable));
     }
 
     @Transactional
@@ -100,7 +97,7 @@ public class LibroService {
         if (request.getGenero() != null) libro.setGenero(request.getGenero());
 
         libro = libroRepository.save(libro);
-        return toResponse(libro);
+        return toDetalle(libro);
     }
 
     @Transactional
@@ -135,9 +132,7 @@ public class LibroService {
     public List<LibroDTO.Response> obtenerFavoritos(Long usuarioId) {
         Usuario usuario = usuarioRepository.findById(usuarioId)
                 .orElseThrow(() -> new EntityNotFoundException("Usuario no encontrado"));
-        return usuario.getLibrosFavoritos().stream()
-                .map(this::toResponse)
-                .toList();
+        return toResumenes(new ArrayList<>(usuario.getLibrosFavoritos()));
     }
 
     public List<String> obtenerGeneros() {
@@ -146,15 +141,11 @@ public class LibroService {
 
     public List<LibroDTO.Response> obtenerPopulares(Pageable pageable) {
         LocalDateTime hace30Dias = LocalDateTime.now().minusDays(30);
-        return libroRepository.findPopulares(hace30Dias, pageable).stream()
-                .map(this::toResponse)
-                .toList();
+        return toResumenes(libroRepository.findPopulares(hace30Dias, pageable));
     }
 
     public List<LibroDTO.Response> obtenerPopularesEntreSeguidos(Long idusuario, Pageable pageable) {
-        return libroRepository.findLibrosPopularesEntreSeguidos(idusuario, pageable).stream()
-                .map(this::toResponse)
-                .toList();
+        return toResumenes(libroRepository.findLibrosPopularesEntreSeguidos(idusuario, pageable));
     }
 
     private Map<String, Long> calcularDistribucion(Long idlibro) {
@@ -186,10 +177,34 @@ public class LibroService {
                 .orElseThrow(() -> new EntityNotFoundException("Libro no encontrado con id: " + id));
     }
 
-    private LibroDTO.Response toResponse(Libro libro) {
-        Double media = resenaRepository.findNotaMediaByLibro(libro.getIdlibro());
-        long count = resenaRepository.countByLibroIdlibroAndEsPublicaTrue(libro.getIdlibro());
+    /** Ficha completa de un libro (página de detalle): incluye distribución de notas, ritmo y etiquetas. */
+    private LibroDTO.Response toDetalle(Libro libro) {
+        LibroDTO.Response r = toResumen(libro, notasDe(List.of(libro)));
+        r.setRitmoMedio(resenaRepository.findRitmoMedioByLibro(libro.getIdlibro()));
+        r.setDistribucionNotas(calcularDistribucion(libro.getIdlibro()));
+        r.setEtiquetasPopulares(calcularEtiquetasPopulares(libro.getIdlibro()));
+        return r;
+    }
 
+    /** Listados: datos básicos y nota media, con una sola consulta de notas para todos los libros. */
+    private List<LibroDTO.Response> toResumenes(List<Libro> libros) {
+        Map<Long, double[]> notas = notasDe(libros);
+        return libros.stream().map(l -> toResumen(l, notas)).toList();
+    }
+
+    /** idlibro -> {nota media sobre 5, nº de reseñas públicas}. */
+    private Map<Long, double[]> notasDe(List<Libro> libros) {
+        Map<Long, double[]> notas = new HashMap<>();
+        if (libros.isEmpty()) return notas;
+        for (Object[] fila : resenaRepository.findNotasMediasPorLibros(libros.stream().map(Libro::getIdlibro).toList())) {
+            double media = ((Number) fila[1]).doubleValue();
+            notas.put((Long) fila[0], new double[]{Math.round(media * 10.0) / 10.0, ((Number) fila[2]).doubleValue()});
+        }
+        return notas;
+    }
+
+    private LibroDTO.Response toResumen(Libro libro, Map<Long, double[]> notas) {
+        double[] nota = notas.get(libro.getIdlibro());
         return LibroDTO.Response.builder()
                 .idlibro(libro.getIdlibro())
                 .idapiexterna(libro.getIdapiexterna())
@@ -202,11 +217,8 @@ public class LibroService {
                 .genero(libro.getGenero())
                 .nombreAutor(libro.getAutor().getNombre())
                 .idautor(libro.getAutor().getIdautor())
-                .notaMedia(media != null ? Math.round(media * 20.0) / 10.0 : null)
-                .numResenas((int) count)
-                .ritmoMedio(resenaRepository.findRitmoMedioByLibro(libro.getIdlibro()))
-                .distribucionNotas(calcularDistribucion(libro.getIdlibro()))
-                .etiquetasPopulares(calcularEtiquetasPopulares(libro.getIdlibro()))
+                .notaMedia(nota != null ? nota[0] : null)
+                .numResenas(nota != null ? (int) nota[1] : 0)
                 .build();
     }
 }

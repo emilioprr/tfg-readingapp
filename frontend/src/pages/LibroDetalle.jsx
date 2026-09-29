@@ -177,7 +177,7 @@ export default function LibroDetalle() {
     const dist = libro.distribucionNotas || {}
     const distKeys = ['0.5', '1.0', '1.5', '2.0', '2.5', '3.0', '3.5', '4.0', '4.5', '5.0']
     const maxDist = Math.max(...distKeys.map(k => dist[k] || 0), 1)
-    const notaSobre5 = libro.notaMedia != null ? libro.notaMedia / 2 : null
+    const notaMedia = libro.notaMedia // sobre 5
     const formatoNota = (n) => n.toLocaleString('es-ES', { minimumFractionDigits: 1, maximumFractionDigits: 1 })
 
     return (
@@ -216,10 +216,10 @@ export default function LibroDetalle() {
                                 {libro.numPaginas && <span>{libro.numPaginas} pág.</span>}
                             </div>
                             <div className="flex items-center gap-2 mt-4">
-                                {notaSobre5 != null ? (
+                                {notaMedia != null ? (
                                     <>
                                         <span className="text-terra text-4xl leading-none">★</span>
-                                        <span className="text-dark-text text-4xl font-bold leading-none tracking-tight">{formatoNota(notaSobre5)}</span>
+                                        <span className="text-dark-text text-4xl font-bold leading-none tracking-tight">{formatoNota(notaMedia)}</span>
                                         <span className="text-dark-muted text-sm self-end mb-0.5 ml-1">
                                             {libro.numResenas} {libro.numResenas === 1 ? 'reseña' : 'reseñas'}
                                         </span>
@@ -360,10 +360,10 @@ export default function LibroDetalle() {
                         <div className="flex flex-col items-center sm:px-6">
                             <h3 className="text-xs uppercase tracking-wide text-dark-muted mb-2">Valoración media</h3>
                             <div className="flex items-baseline gap-1">
-                                <span className="text-4xl font-bold text-dark-text leading-none">{formatoNota(notaSobre5)}</span>
+                                <span className="text-4xl font-bold text-dark-text leading-none">{formatoNota(notaMedia)}</span>
                                 <span className="text-dark-muted text-sm">/ 5</span>
                             </div>
-                            <div className="mt-2"><Estrellas puntuacion={notaSobre5} /></div>
+                            <div className="mt-2"><Estrellas puntuacion={notaMedia} /></div>
                             <span className="text-dark-muted text-xs mt-1">
                                 {libro.numResenas} {libro.numResenas === 1 ? 'reseña' : 'reseñas'}
                             </span>
