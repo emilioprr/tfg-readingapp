@@ -17,14 +17,19 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final UsuarioService usuarioService;
+    private final IntentosLoginService intentosLoginService;
 
     public AuthDTO.AuthResponse login(AuthDTO.LoginRequest request) {
-        Usuario usuario = usuarioRepository.findByEmailIgnoreCase(UsuarioService.normalizarEmail(request.getEmail()))
-                .orElseThrow(() -> new IllegalArgumentException("Email o contraseña incorrectos"));
+        String email = UsuarioService.normalizarEmail(request.getEmail());
+        intentosLoginService.comprobar(email);
 
-        if (!passwordEncoder.matches(request.getPassword(), usuario.getPassword())) {
+        Usuario usuario = usuarioRepository.findByEmailIgnoreCase(email).orElse(null);
+        if (usuario == null || !passwordEncoder.matches(request.getPassword(), usuario.getPassword())) {
+            // Mismo mensaje exista o no el email, para no revelar qué cuentas existen
+            intentosLoginService.registrarFallo(email);
             throw new IllegalArgumentException("Email o contraseña incorrectos");
         }
+        intentosLoginService.registrarExito(email);
 
         String token = jwtUtil.generateToken(usuario.getIdusuario(), usuario.getEmail(), usuario.getRol().name());
 
