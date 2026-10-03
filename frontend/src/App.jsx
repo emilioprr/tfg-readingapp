@@ -1,45 +1,48 @@
+import { lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
 import MainLayout from './layouts/MainLayout'
-import Landing from './pages/Landing'
-import Login from './pages/Login'
-import Registro from './pages/Registro'
-import Catalogo from './pages/Catalogo'
-import LibroDetalle from './pages/LibroDetalle'
-import Perfil from './pages/Perfil'
-import AutorDetalle from './pages/AutorDetalle'
-import Notificaciones from './pages/Notificaciones'
-import Retos from './pages/Retos'
-import CrearResena from './pages/CrearResena'
-import ListaDetalle from './pages/ListaDetalle'
-import CrearLista from './pages/CrearLista'
-import Recomendaciones from './pages/Recomendaciones'
-import CategoriaCatalogo from './pages/CategoriaCatalogo'
-import Conexiones from './pages/Conexiones'
-import Ajustes from './pages/Ajustes'
-import Citas from './pages/Citas'
-import Actividad from './pages/Actividad'
-import EnviarRecomendacion from './pages/EnviarRecomendacion'
-import CrearAnotacion from './pages/CrearAnotacion'
-import CrearReto from './pages/CrearReto'
-import EditarPerfil from './pages/EditarPerfil'
-import Admin from './pages/Admin'
-import Inicio from './pages/Inicio'
-import MisResenas from './pages/MisResenas'
-import MisLikes from './pages/MisLikes'
-import Busqueda from './pages/Busqueda'
-import Listas from './pages/Listas'
-import ResenaDetalle from './pages/ResenaDetalle'
-import Calendario from './pages/Calendario'
-import Timer from './pages/Timer'
-import EditarLibro from './pages/EditarLibro'
-import Resenas from './pages/Resenas'
-import EstanteriaCompleta from './pages/EstanteriaCompleta'
-import ResenasLibro from './pages/ResenasLibro'
 import { RachaProvider } from './context/RachaContext'
 import { NotificacionesProvider } from './context/NotificacionesContext'
 import { AvisosProvider } from './context/AvisosContext'
+import Cargando from './components/Cargando'
 
+// Cada pantalla va en su propio archivo y se descarga la primera vez que se abre (code splitting por rutas)
+const Landing = lazy(() => import('./pages/Landing'))
+const Login = lazy(() => import('./pages/Login'))
+const Registro = lazy(() => import('./pages/Registro'))
+const Catalogo = lazy(() => import('./pages/Catalogo'))
+const LibroDetalle = lazy(() => import('./pages/LibroDetalle'))
+const Perfil = lazy(() => import('./pages/Perfil'))
+const AutorDetalle = lazy(() => import('./pages/AutorDetalle'))
+const Notificaciones = lazy(() => import('./pages/Notificaciones'))
+const Retos = lazy(() => import('./pages/Retos'))
+const CrearResena = lazy(() => import('./pages/CrearResena'))
+const ListaDetalle = lazy(() => import('./pages/ListaDetalle'))
+const CrearLista = lazy(() => import('./pages/CrearLista'))
+const Recomendaciones = lazy(() => import('./pages/Recomendaciones'))
+const CategoriaCatalogo = lazy(() => import('./pages/CategoriaCatalogo'))
+const Conexiones = lazy(() => import('./pages/Conexiones'))
+const Ajustes = lazy(() => import('./pages/Ajustes'))
+const Citas = lazy(() => import('./pages/Citas'))
+const Actividad = lazy(() => import('./pages/Actividad'))
+const EnviarRecomendacion = lazy(() => import('./pages/EnviarRecomendacion'))
+const CrearAnotacion = lazy(() => import('./pages/CrearAnotacion'))
+const CrearReto = lazy(() => import('./pages/CrearReto'))
+const EditarPerfil = lazy(() => import('./pages/EditarPerfil'))
+const Admin = lazy(() => import('./pages/Admin'))
+const Inicio = lazy(() => import('./pages/Inicio'))
+const MisResenas = lazy(() => import('./pages/MisResenas'))
+const MisLikes = lazy(() => import('./pages/MisLikes'))
+const Busqueda = lazy(() => import('./pages/Busqueda'))
+const Listas = lazy(() => import('./pages/Listas'))
+const ResenaDetalle = lazy(() => import('./pages/ResenaDetalle'))
+const Calendario = lazy(() => import('./pages/Calendario'))
+const Timer = lazy(() => import('./pages/Timer'))
+const EditarLibro = lazy(() => import('./pages/EditarLibro'))
+const Resenas = lazy(() => import('./pages/Resenas'))
+const EstanteriaCompleta = lazy(() => import('./pages/EstanteriaCompleta'))
+const ResenasLibro = lazy(() => import('./pages/ResenasLibro'))
 
 function App() {
     return (
@@ -49,7 +52,7 @@ function App() {
             <AvisosProvider>
                 <BrowserRouter>
                     <Routes>
-                        <Route path="/landing" element={<Landing/>}/>
+                        <Route path="/landing" element={<Suspense fallback={<Cargando pantalla />}><Landing/></Suspense>}/>
                         <Route element={<MainLayout/>}>
                             <Route path="/login" element={<Login/>}/>
                             <Route path="/registro" element={<Registro/>}/>
