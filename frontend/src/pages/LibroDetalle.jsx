@@ -6,9 +6,33 @@ import ResenaCard from '../components/ResenaCard'
 import api from '../api/axios'
 import SpoilerOculto from '../components/SpoilerOculto'
 import PuntuarLibro from '../components/PuntuarLibro'
+import Portada from '../components/Portada'
+import Dialogo from '../components/Dialogo'
+import { Star, PaperPlaneTilt, ListPlus, Lightning, Check } from '@phosphor-icons/react'
 import GuardarEnListaModal from '../components/GuardarEnListaModal'
+import Pestanas from '../components/Pestanas'
+import TextoDesplegable from '../components/TextoDesplegable'
+import { formatoMedia } from '../utils/notas'
+import { FRASES_RITMO, nivelRitmo } from '../utils/ritmo'
+import { useAvisos } from '../context/AvisosContext'
+import { nombreEtiqueta } from '../utils/etiquetas'
+
+// Filtros de las pestañas de reseñas y anotaciones (texto sencillo; el activo, en texto principal)
+function Filtros({ opciones, activo, onCambiar }) {
+    return (
+        <div className="flex gap-5 mb-6 text-sm" role="group" aria-label="Filtrar">
+            {opciones.map((t) => (
+                <button key={t.key} onClick={() => onCambiar(t.key)} aria-pressed={activo === t.key}
+                        className={activo === t.key ? 'text-texto font-medium' : 'text-texto-sec hover:text-texto'}>
+                    {t.label}
+                </button>
+            ))}
+        </div>
+    )
+}
 
 export default function LibroDetalle() {
+    const { avisar, confirmar, avisarCarga } = useAvisos()
     const { id } = useParams()
     const { usuario } = useAuth()
     const navigate = useNavigate()
@@ -33,17 +57,17 @@ export default function LibroDetalle() {
 
     const cargarLibro = useCallback(async () => {
         try { const res = await api.get(`/libros/${id}`); setLibro(res.data) }
-        catch (err) { console.error('Error:', err) }
+        catch (err) { console.error('Error:', err); avisarCarga(err, 'No se ha podido cargar el libro.') }
         finally { setLoading(false) }
-    }, [id])
+    }, [avisarCarga, id])
 
     const cargarResenas = useCallback(async () => {
         try {
             const res = await api.get(`/resenas/libro/${id}?size=5`)
             setResenas(res.data.content || res.data || [])
             setTotalResenas(res.data.totalElements || res.data.length || 0)
-        } catch (err) { console.error('Error:', err) }
-    }, [id])
+        } catch (err) { console.error('Error:', err); avisarCarga(err, 'No se han podido cargar las reseñas.') }
+    }, [avisarCarga, id])
 
     const cargarEstado = useCallback(async () => {
         if (!usuario) return
@@ -70,8 +94,8 @@ export default function LibroDetalle() {
         try {
             const res = await api.get(`/anotaciones/libro/${id}/publicas`)
             setAnotacionesPublicas(res.data.content || res.data || [])
-        } catch (err) { console.error('Error:', err) }
-    }, [id])
+        } catch (err) { console.error('Error:', err); avisarCarga(err, 'No se han podido cargar las anotaciones.') }
+    }, [avisarCarga, id])
 
     const cargarResenasAmigos = useCallback(async () => {
         if (!usuario) return
@@ -133,21 +157,21 @@ export default function LibroDetalle() {
                 setNumFavoritos(prev => prev - 1)
             } else {
                 if (numFavoritos >= 5) {
-                    alert('Ya tienes 5 libros favoritos. Quita uno para añadir otro.')
+                    avisar('Ya tienes 5 libros favoritos. Quita uno para añadir otro.', 'info')
                     return
                 }
                 await api.post(`/libros/${id}/favorito/${usuario.id}`)
                 setEsFavorito(true)
                 setNumFavoritos(prev => prev + 1)
             }
-        } catch (err) { alert(err.response?.data?.mensaje || 'Error') }
+        } catch (err) { avisar(err.response?.data?.mensaje || 'Algo ha fallado. Inténtalo de nuevo.') }
     }
 
     const marcarLeyendo = async () => {
         try {
             await api.post('/seguimientos', { estado: 'LEYENDO', idusuario: usuario.id, idlibro: parseInt(id) })
             setEstadoLibro('LEYENDO')
-        } catch (err) { alert(err.response?.data?.mensaje || 'Error') }
+        } catch (err) { avisar(err.response?.data?.mensaje || 'Algo ha fallado. Inténtalo de nuevo.') }
         navigate('/')
     }
 
@@ -155,11 +179,11 @@ export default function LibroDetalle() {
         try {
             await api.post('/seguimientos', { estado: 'PENDIENTE', idusuario: usuario.id, idlibro: parseInt(id) })
             setEstadoLibro('PENDIENTE')
-        } catch (err) { alert(err.response?.data?.mensaje || 'Error') }
+        } catch (err) { avisar(err.response?.data?.mensaje || 'Algo ha fallado. Inténtalo de nuevo.') }
     }
 
-    if (loading) return <p className="text-dark-muted">Cargando...</p>
-    if (!libro) return <p className="text-red-400">Libro no encontrado</p>
+    if (loading) return <p className="text-texto-sec">Cargando…</p>
+    if (!libro) return <p className="font-serif text-xl text-texto-sec">Este libro no existe o no se ha podido cargar.</p>
 
     const dist = libro.distribucionNotas || {}
     const distKeys = ['0.5', '1.0', '1.5', '2.0', '2.5', '3.0', '3.5', '4.0', '4.5', '5.0']
@@ -167,379 +191,301 @@ export default function LibroDetalle() {
     const notaMedia = libro.notaMedia // sobre 5
     // Tu reseña más reciente de este libro (si lo has releído puede haber varias)
     const miResena = [...misResenas].sort((a, b) => new Date(b.fechaCreacion) - new Date(a.fechaCreacion))[0]
-    const formatoNota = (n) => n.toLocaleString('es-ES', { minimumFractionDigits: 1, maximumFractionDigits: 1 })
+
+    const opcionesFiltro = [
+        { key: 'todas', label: 'Todas' },
+        ...(usuario ? [{ key: 'amigos', label: 'De amigos' }, { key: 'mias', label: 'Mías' }] : []),
+    ]
+    // Ficha de catálogo del margen
+    const ficha = [
+        ['Autor', libro.nombreAutor && <Link to={`/autor/${libro.idautor}`} className="hover:text-acento">{libro.nombreAutor}</Link>],
+        ['Páginas', libro.numPaginas],
+        ['Publicado', libro.anioPublicacion],
+        ['Género', libro.genero],
+        ['ISBN', libro.isbn],
+    ].filter(([, valor]) => valor)
 
     return (
-        <div className="max-w-5xl mx-auto">
-            {/* Cabecera: Portada + Info + Acciones */}
-            <div className="flex flex-col md:flex-row gap-8 mb-10">
-                {/* Portada */}
-                <div className="flex-shrink-0">
-                    {libro.portada ? (
-                        <img src={libro.portada} alt={libro.titulo} className="w-52 h-80 object-cover rounded-sm shadow-xl" />
-                    ) : (
-                        <div className="w-52 h-80 bg-dark-elevated rounded-sm flex items-center justify-center text-dark-muted shadow-xl">
-                            Sin portada
-                        </div>
-                    )}
-                    {usuario && (
-                        <PuntuarLibro idlibro={id} estado={estadoLibro} lecturaAntigua={lecturaAntigua} miResena={miResena}
-                                      onCambio={() => { cargarLibro(); cargarEstado(); cargarMisResenas(); cargarResenas() }} />
-                    )}
-                </div>
+        <div>
+            {/* Cabecera a todo el ancho, sobre la portada difuminada */}
+            <section className="relative isolate -mx-4 sm:-mx-6 px-4 sm:px-6 pt-4 pb-14 mb-4">
 
-                {/* Info */}
-                <div className="flex-1">
-                    {/* Título + acciones arriba a la derecha */}
-                    <div className="flex items-start justify-between">
-                        <div className="flex-1 min-w-0 pr-4">
-                            <h1 className="text-3xl font-bold text-dark-text tracking-tight mb-1">{libro.titulo}</h1>
-                            <Link to={`/autor/${libro.idautor}`} className="text-dark-muted hover:text-terra text-lg transition-colors">
-                                {libro.nombreAutor}
-                            </Link>
-                            {usuario && usuario.rol === 'ADMIN' && (
-                                <Link to={`/libro/${id}/editar`}
-                                      className="text-dark-muted hover:text-terra transition-colors text-sm">
-                                    Editar libro
-                                </Link>
-                            )}
-                            <div className="flex gap-3 mt-2 text-sm text-dark-muted">
-                                {libro.genero && <span className="bg-dark-elevated px-2.5 py-0.5 rounded">{libro.genero}</span>}
-                                {libro.anioPublicacion && <span>{libro.anioPublicacion}</span>}
-                                {libro.numPaginas && <span>{libro.numPaginas} pág.</span>}
-                            </div>
-                            <div className="flex items-center gap-2 mt-4">
-                                {notaMedia != null ? (
-                                    <>
-                                        <span className="text-terra text-4xl leading-none">★</span>
-                                        <span className="text-dark-text text-4xl font-bold leading-none tracking-tight">{formatoNota(notaMedia)}</span>
-                                        <span className="text-dark-muted text-sm self-end mb-0.5 ml-1">
-                                            {libro.numValoraciones} {libro.numValoraciones === 1 ? 'valoración' : 'valoraciones'}
-                                        </span>
-                                    </>
-                                ) : (
-                                    <span className="text-dark-muted text-sm">Sin valoraciones todavía</span>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Iconos arriba a la derecha */}
+                <div className="relative max-w-6xl mx-auto grid gap-10 md:grid-cols-[13rem_minmax(0,1fr)] lg:grid-cols-[14rem_minmax(0,1fr)_13rem] lg:gap-12">
+                    {/* Portada y tu nota */}
+                    <div className="flex flex-col items-center md:items-start">
+                        <Portada src={libro.portada} titulo={libro.titulo} autor={libro.nombreAutor} id={libro.idlibro}
+                                 elevar={false} className="w-44 md:w-full" />
                         {usuario && (
-                            <div className="flex items-center gap-3 flex-shrink-0">
-                                {/* Favorito */}
-                                <button onClick={toggleFavorito} className="transition-colors" title={esFavorito ? 'Quitar de favoritos' : 'Añadir a favoritos'}>
-                                    {esFavorito ? (
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-yellow-400" viewBox="0 0 24 24" fill="currentColor">
-                                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                                        </svg>
-                                    ) : (
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-dark-muted hover:text-yellow-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                                        </svg>
-                                    )}
-                                </button>
-
-                                {/* Compartir / Recomendar */}
-                                <button onClick={() => navigate(`/libro/${id}/recomendar`)} title="Recomendar"
-                                        className="text-dark-muted hover:text-terra transition-colors">
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-                                    </svg>
-                                </button>
-
-                                {/* Guardar en lista */}
-                                <button onClick={() => setMostrarListas(true)} title="Guardar en lista"
-                                        className="text-dark-muted hover:text-terra transition-colors">
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h11M4 12h11M4 18h7m9-3v6m-3-3h6" />
-                                    </svg>
-                                </button>
-                            </div>
+                            <PuntuarLibro idlibro={id} estado={estadoLibro} lecturaAntigua={lecturaAntigua} miResena={miResena}
+                                          onCambio={() => { cargarLibro(); cargarEstado(); cargarMisResenas(); cargarResenas() }} />
                         )}
                     </div>
 
-                    {/* Sinopsis */}
-                    {libro.sinopsis && (
-                        <p className="text-dark-text/80 mt-4 leading-relaxed text-sm">{libro.sinopsis}</p>
-                    )}
-                    {/* Acciones de lectura según el estado del libro */}
-                    {usuario && (
-                        <div className="flex flex-wrap items-center gap-3 mt-5">
-                            {estadoLibro === 'LEYENDO' ? (
-                                <button onClick={() => navigate('/')}
-                                        className="bg-terra hover:bg-terra-hover text-white font-semibold px-6 py-2 rounded-lg text-sm transition-colors">
-                                    Actualizar progreso
-                                </button>
+                    {/* Título, nota, acciones y sinopsis */}
+                    <div className="min-w-0">
+                        <h1 className="font-serif text-4xl sm:text-5xl lg:text-[3.5rem] leading-[1.02] tracking-tight text-texto">{libro.titulo}</h1>
+                        <Link to={`/autor/${libro.idautor}`} className="inline-block text-lg text-texto-sec hover:text-acento mt-3">
+                            {libro.nombreAutor}
+                        </Link>
+                        {usuario && usuario.rol === 'ADMIN' && (
+                            <Link to={`/libro/${id}/editar`} className="block text-texto-ter hover:text-acento text-sm mt-1">Editar libro</Link>
+                        )}
+
+                        <div className="flex items-end gap-4 mt-8">
+                            {notaMedia != null ? (
+                                <>
+                                    <span className="font-serif text-6xl leading-none text-texto">{formatoMedia(notaMedia)}</span>
+                                    <div className="pb-1">
+                                        <Estrellas puntuacion={notaMedia} />
+                                        <p className="text-texto-sec text-xs mt-1">
+                                            {libro.numValoraciones} {libro.numValoraciones === 1 ? 'valoración' : 'valoraciones'}
+                                        </p>
+                                    </div>
+                                </>
                             ) : (
-                                <button onClick={() => setMostrarConfirmacion(true)}
-                                        className="bg-terra hover:bg-terra-hover text-white font-semibold px-6 py-2 rounded-lg text-sm transition-colors">
-                                    {estadoLibro === 'LEIDO' ? 'Releer' : 'Empezar a leer'}
-                                </button>
-                            )}
-                            {!estadoLibro && (
-                                <button onClick={agregarAWishlist}
-                                        className="border border-dark-border hover:border-terra hover:text-terra text-dark-text px-5 py-2 rounded-lg text-sm transition-colors">
-                                    Quiero leer
-                                </button>
-                            )}
-                            {estadoLibro === 'PENDIENTE' && (
-                                <span className="text-dark-muted text-sm">✓ En tu lista de Quiero leer</span>
+                                <p className="text-texto-sec text-sm">Nadie lo ha valorado todavía.</p>
                             )}
                         </div>
+
+                        {/* Acciones de lectura según el estado del libro, y las de guardar/compartir */}
+                        {usuario && (
+                            <div className="flex flex-wrap items-center gap-3 mt-8">
+                                {estadoLibro === 'LEYENDO' ? (
+                                    <button onClick={() => navigate('/')} className="btn-acento">Actualizar progreso</button>
+                                ) : (
+                                    <button onClick={() => setMostrarConfirmacion(true)} className="btn-acento">
+                                        {estadoLibro === 'LEIDO' ? 'Releer' : 'Empezar a leer'}
+                                    </button>
+                                )}
+                                {!estadoLibro && (
+                                    <button onClick={agregarAWishlist} className="btn-secundario">Quiero leer</button>
+                                )}
+                                {estadoLibro === 'PENDIENTE' && (
+                                    <span className="text-texto-sec text-sm flex items-center gap-1.5"><Check size={14} /> En tu pila de pendientes</span>
+                                )}
+                                <span className="flex items-center gap-4 ml-1 text-texto-sec">
+                                    <button onClick={toggleFavorito} title={esFavorito ? 'Quitar de favoritos' : 'Añadir a favoritos'}
+                                            aria-label={esFavorito ? 'Quitar de favoritos' : 'Añadir a favoritos'}
+                                            className={esFavorito ? 'text-acento' : 'hover:text-acento'}>
+                                        <Star size={22} weight={esFavorito ? 'fill' : 'regular'} />
+                                    </button>
+                                    <button onClick={() => navigate(`/libro/${id}/recomendar`)} title="Recomendar" aria-label="Recomendar"
+                                            className="hover:text-texto">
+                                        <PaperPlaneTilt size={22} />
+                                    </button>
+                                    <button onClick={() => setMostrarListas(true)} title="Guardar en lista" aria-label="Guardar en lista"
+                                            className="hover:text-texto">
+                                        <ListPlus size={22} />
+                                    </button>
+                                </span>
+                            </div>
+                        )}
+
+                        {libro.sinopsis && (
+                            <TextoDesplegable texto={libro.sinopsis} lineas={7}
+                                              className="font-serif text-[17px] leading-[1.7] text-texto/90 max-w-[65ch] mt-10" />
+                        )}
+                    </div>
+
+                    {/* Ficha de catálogo en el margen */}
+                    {ficha.length > 0 && (
+                        <aside className="md:col-start-2 lg:col-start-3 lg:border-l lg:border-linea lg:pl-8">
+                            <h2 className="etiqueta mb-4">Ficha</h2>
+                            <dl className="space-y-3 text-sm">
+                                {ficha.map(([nombre, valor]) => (
+                                    <div key={nombre}>
+                                        <dt className="text-texto-ter text-xs">{nombre}</dt>
+                                        <dd className="text-texto mt-0.5 break-words">{valor}</dd>
+                                    </div>
+                                ))}
+                            </dl>
+                        </aside>
                     )}
                 </div>
-            </div>
+            </section>
 
-            {/* Estadísticas de reseñas */}
-            {libro.numValoraciones > 0 && (
-                <div className="bg-dark-card rounded-2xl p-6 mb-10">
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-0 sm:divide-x divide-dark-border">
-                        {/* Distribución de notas: histograma compacto de 0,5 a 5 estrellas */}
-                        <div className="flex flex-col items-center sm:px-6">
-                            <h3 className="text-xs uppercase tracking-wide text-dark-muted mb-3">Distribución</h3>
-                            <div className="flex items-end gap-1 h-16">
+            <div className="max-w-6xl mx-auto">
+                {/* Estadísticas de valoraciones */}
+                {libro.numValoraciones > 0 && (
+                    <section className="border-t border-linea pt-8 mb-12">
+                        {/* Distribución de notas, centrada: de media estrella a cinco (la media ya está arriba) */}
+                        <div className="flex flex-col items-center">
+                            <h3 className="etiqueta mb-6">Distribución de notas</h3>
+                            <div className="flex items-end gap-1.5 sm:gap-2 h-32">
                                 {distKeys.map((k) => {
                                     const count = dist[k] || 0
-                                    const alto = count > 0 ? Math.max(8, (count / maxDist) * 100) : 4
+                                    const alto = count > 0 ? Math.max(6, (count / maxDist) * 100) : 3
                                     return (
                                         <div key={k} className="relative h-full flex items-end group">
-                                            <div className={`w-3 rounded-sm transition-colors ${count > 0 ? 'bg-terra/80 group-hover:bg-terra' : 'bg-dark-border'}`}
+                                            <div className={`w-5 sm:w-7 rounded-[1px] ${count > 0 ? 'bg-texto/70 group-hover:bg-texto' : 'bg-linea'}`}
                                                  style={{ height: `${alto}%` }} />
                                             {/* Al pasar el ratón: nº de valoraciones con esa nota, encima de la barra */}
                                             <div className="absolute left-1/2 -translate-x-1/2 mb-1.5 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity z-10"
                                                  style={{ bottom: `${alto}%` }}>
-                                                <div className="bg-dark-elevated border border-dark-border text-dark-text text-[11px] rounded-md px-2 py-1 whitespace-nowrap shadow-lg">
-                                                    <span className="font-semibold">{count}</span> {count === 1 ? 'valoración' : 'valoraciones'}
-                                                    <span className="text-dark-muted"> · {k.replace('.', ',')}★</span>
+                                                <div className="bg-superficie border border-linea text-texto text-[11px] rounded px-2 py-1 whitespace-nowrap">
+                                                    <span className="font-medium">{count}</span> {count === 1 ? 'valoración' : 'valoraciones'}
+                                                    <span className="text-texto-sec"> · {k.replace('.', ',')}★</span>
                                                 </div>
                                             </div>
                                         </div>
                                     )
                                 })}
                             </div>
-                            <div className="flex justify-between w-full max-w-[9.5rem] mt-1.5 text-[11px] text-dark-muted">
-                                <span>★</span>
-                                <span>★★★★★</span>
-                            </div>
-                        </div>
-
-                        {/* Nota media sobre 5 */}
-                        <div className="flex flex-col items-center sm:px-6">
-                            <h3 className="text-xs uppercase tracking-wide text-dark-muted mb-2">Valoración media</h3>
-                            <div className="flex items-baseline gap-1">
-                                <span className="text-4xl font-bold text-dark-text leading-none">{formatoNota(notaMedia)}</span>
-                                <span className="text-dark-muted text-sm">/ 5</span>
-                            </div>
-                            <div className="mt-2"><Estrellas puntuacion={notaMedia} /></div>
-                            <span className="text-dark-muted text-xs mt-1">
-                                {libro.numValoraciones} {libro.numValoraciones === 1 ? 'valoración' : 'valoraciones'}
-                            </span>
-                        </div>
-
-                        {/* Ritmo medio */}
-                        <div className="flex flex-col items-center sm:px-6">
-                            <h3 className="text-xs uppercase tracking-wide text-dark-muted mb-3">Ritmo</h3>
-                            {libro.ritmoMedio ? (
-                                <>
-                                    <div className="flex gap-1">
-                                        {[1, 2, 3].map((r) => (
-                                            <span key={r} className={`text-2xl ${libro.ritmoMedio >= r ? 'opacity-100' : 'opacity-25'}`}>⚡</span>
-                                        ))}
-                                    </div>
-                                    <span className="text-dark-muted text-xs mt-2">
-                                        {libro.ritmoMedio <= 1.5 ? 'Lento' : libro.ritmoMedio <= 2.5 ? 'Medio' : 'Rápido'}
-                                    </span>
-                                </>
-                            ) : (
-                                <span className="text-dark-muted text-xs">Sin datos</span>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* Etiquetas populares */}
-                    {libro.etiquetasPopulares && libro.etiquetasPopulares.length > 0 && (
-                        <div className="mt-5 pt-5 border-t border-dark-border">
-                            <div className="flex items-center gap-3">
-                                <span className="text-sm text-dark-muted">Ambiente:</span>
-                                <div className="flex gap-2 flex-wrap">
-                                    {libro.etiquetasPopulares.map((et) => (
-                                        <span key={et} className="text-xs bg-terra/10 text-terra px-2.5 py-1 rounded-full">{et}</span>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-                    )}
-                </div>
-            )}
-
-            {/* Tabs principales */}
-            <div className="flex gap-4 mb-6 border-b border-dark-border">
-                <button onClick={() => setTabPrincipal('resenas')}
-                        className={`px-4 py-2.5 text-sm font-medium transition-colors relative ${
-                            tabPrincipal === 'resenas' ? 'text-terra' : 'text-dark-muted hover:text-dark-text'
-                        }`}>
-                    Reseñas
-                    {tabPrincipal === 'resenas' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-terra rounded-full" />}
-                </button>
-                <button onClick={() => setTabPrincipal('anotaciones')}
-                        className={`px-4 py-2.5 text-sm font-medium transition-colors relative ${
-                            tabPrincipal === 'anotaciones' ? 'text-terra' : 'text-dark-muted hover:text-dark-text'
-                        }`}>
-                    Anotaciones
-                    {tabPrincipal === 'anotaciones' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-terra rounded-full" />}
-                </button>
-            </div>
-
-            {/* Contenido de Reseñas */}
-            {tabPrincipal === 'resenas' && (
-                <div className="mb-12">
-                    {/* Sub-tabs */}
-                    <div className="flex gap-2 mb-5">
-                        {[
-                            { key: 'todas', label: 'Todas' },
-                            ...(usuario ? [{ key: 'amigos', label: 'De amigos' }] : []),
-                            ...(usuario ? [{ key: 'mias', label: 'Mías' }] : []),
-                        ].map((t) => (
-                            <button key={t.key} onClick={() => setSubTabResenas(t.key)}
-                                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                                        subTabResenas === t.key ? 'bg-terra text-white' : 'bg-dark-elevated text-dark-muted hover:text-dark-text'
-                                    }`}>
-                                {t.label}
-                            </button>
-                        ))}
-                    </div>
-
-                    {/* Lista de reseñas según sub-tab */}
-                    {(() => {
-                        const lista = subTabResenas === 'amigos' ? resenasAmigos
-                            : subTabResenas === 'mias' ? misResenas
-                                : resenas
-                        return lista.length === 0 ? (
-                            <div className="text-center py-8 bg-dark-card rounded-2xl">
-                                <p className="text-dark-muted">
-                                    {subTabResenas === 'amigos' ? 'Tus amigos aún no han reseñado este libro'
-                                        : subTabResenas === 'mias' ? 'No has reseñado este libro'
-                                            : 'Aún no hay reseñas para este libro'}
-                                </p>
-                            </div>
-                        ) : (
-                            <>
-                                <div className="space-y-4">
-                                    {lista.map((r) => (
-                                        <ResenaCard key={r.idresena} resena={r} mostrarLibro={false} />
-                                    ))}
-                                </div>
-                                {subTabResenas === 'todas' && totalResenas > 5 && (
-                                    <div className="text-center mt-4">
-                                        <Link to={`/libro/${id}/resenas`} className="text-sm text-dark-muted hover:text-terra transition-colors">
-                                            Ver todas ({totalResenas})
-                                        </Link>
-                                    </div>
-                                )}
-                            </>
-                        )
-                    })()}
-                </div>
-            )}
-
-            {/* Contenido de Anotaciones */}
-            {tabPrincipal === 'anotaciones' && (
-                <div className="mb-12">
-                    {/* Sub-tabs */}
-                    <div className="flex gap-2 mb-5">
-                        {[
-                            { key: 'todas', label: 'Todas' },
-                            ...(usuario ? [{ key: 'amigos', label: 'De amigos' }] : []),
-                            ...(usuario ? [{ key: 'mias', label: 'Mias' }] : []),
-                        ].map((t) => (
-                            <button key={t.key} onClick={() => setSubTabAnotaciones(t.key)}
-                                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                                        subTabAnotaciones === t.key ? 'bg-terra text-white' : 'bg-dark-elevated text-dark-muted hover:text-dark-text'
-                                    }`}>
-                                {t.label}
-                            </button>
-                        ))}
-                    </div>
-
-                    {/* Lista de anotaciones según sub-tab */}
-                    {(() => {
-                        const lista = subTabAnotaciones === 'amigos' ? anotacionesAmigos
-                            : subTabAnotaciones === 'mias' ? misAnotaciones
-                                : anotacionesPublicas
-                        return lista.length === 0 ? (
-                            <div className="text-center py-8 bg-dark-card rounded-2xl">
-                                <p className="text-dark-muted">
-                                    {subTabAnotaciones === 'amigos' ? 'Tus amigos no tienen anotaciones en este libro'
-                                        : subTabAnotaciones === 'mias' ? 'No tienes anotaciones en este libro'
-                                            : 'No hay anotaciones públicas para este libro'}
-                                </p>
-                            </div>
-                        ) : (
-                            <div className="space-y-3">
-                                {lista.map((a) => (
-                                    <div key={a.idanotacion} className="bg-dark-card p-4 rounded-xl">
-                                        <div className="flex items-center justify-between mb-2">
-                                            <div className="flex items-center gap-2">
-                                                <span onClick={() => navigate(`/usuario/${a.idusuario}`)}
-                                                      className="text-dark-text text-sm font-medium hover:text-terra transition-colors cursor-pointer">
-                                                    {a.nombreUsuario}
-                                                </span>
-                                                <span className="text-dark-muted text-xs">{new Date(a.fecha).toLocaleDateString()}</span>
-                                                {(a.parte || a.numPagina) && (
-                                                    <span className="text-dark-muted text-xs">
-                                                        · {a.parte}{a.parte && a.numPagina ? ' · ' : ''}{a.numPagina ? `Pág. ${a.numPagina}` : ''}
-                                                    </span>
-                                                )}
-                                                {!a.esPublica && (
-                                                    <span className="text-xs bg-dark-elevated text-dark-muted px-2 py-0.5 rounded-full">Privada</span>
-                                                )}
-                                            </div>
-                                            {usuario && (usuario.id === a.idusuario || usuario.rol === 'ADMIN') && (
-                                                <button onClick={async (e) => {
-                                                    e.stopPropagation()
-                                                    if (!window.confirm('¿Eliminar esta anotación?')) return
-                                                    try {
-                                                        await api.delete(`/anotaciones/${a.idanotacion}`)
-                                                        cargarAnotaciones()
-                                                        cargarMisAnotaciones()
-                                                        cargarAnotacionesAmigos()
-                                                    } catch { alert('Error al eliminar') }
-                                                }}
-                                                        className="text-red-400/60 hover:text-red-400 text-xs transition-colors">
-                                                    Eliminar
-                                                </button>
-                                            )}
-                                        </div>
-                                        <SpoilerOculto activo={a.tieneSpoiler && usuario?.id !== a.idusuario}>
-                                            <div>
-                                                {a.titulo && <p className="text-dark-text font-medium text-sm mb-1">{a.titulo}</p>}
-                                                <p className="text-dark-text/70 text-sm">{a.texto}</p>
-                                            </div>
-                                        </SpoilerOculto>
-                                    </div>
+                            {/* Eje: solo las estrellas enteras, bajo su barra */}
+                            <div className="flex gap-1.5 sm:gap-2 mt-2 text-[11px] text-texto-ter">
+                                {distKeys.map((k) => (
+                                    <span key={k} className="w-5 sm:w-7 text-center">{k.endsWith('.0') ? `${parseInt(k)}★` : ''}</span>
                                 ))}
                             </div>
-                        )
-                    })()}
-                </div>
-            )}
+                            <p className="text-texto-sec text-xs mt-4">
+                                {libro.numValoraciones} {libro.numValoraciones === 1 ? 'valoración' : 'valoraciones'}
+                            </p>
+                        </div>
 
-            {/* Modal confirmación empezar a leer */}
+                        {/* Ritmo medio, debajo */}
+                        <div className="flex flex-col items-center border-t border-linea mt-10 pt-8">
+                            <h3 className="etiqueta mb-4">Ritmo</h3>
+                            {libro.ritmoMedio ? (
+                                <>
+                                    <div className="flex gap-1 text-texto">
+                                        {[1, 2, 3].map((r) => (
+                                            <Lightning key={r} size={24} weight={nivelRitmo(libro.ritmoMedio) >= r ? 'fill' : 'light'}
+                                                       className={nivelRitmo(libro.ritmoMedio) >= r ? '' : 'opacity-40'} />
+                                        ))}
+                                    </div>
+                                    <p className="text-texto-sec text-sm mt-2">
+                                        {FRASES_RITMO[nivelRitmo(libro.ritmoMedio)]}
+                                    </p>
+                                </>
+                            ) : (
+                                <p className="text-texto-sec text-sm">Aún no hay datos de ritmo.</p>
+                            )}
+                        </div>
+
+                        {/* Etiquetas populares */}
+                        {libro.etiquetasPopulares && libro.etiquetasPopulares.length > 0 && (
+                            <div className="mt-10 flex flex-wrap items-center justify-center gap-2">
+                                <span className="etiqueta mr-2">Ambiente</span>
+                                {libro.etiquetasPopulares.map((et) => (
+                                    <span key={et} className="text-xs text-texto-sec border border-linea px-2 py-0.5 rounded">{nombreEtiqueta(et)}</span>
+                                ))}
+                            </div>
+                        )}
+                    </section>
+                )}
+
+                {/* Tabs principales */}
+                <Pestanas activa={tabPrincipal} onCambiar={setTabPrincipal} className="mb-6"
+                          pestanas={[{ key: 'resenas', label: 'Reseñas' }, { key: 'anotaciones', label: 'Anotaciones' }]} />
+
+                {/* Contenido de Reseñas */}
+                {tabPrincipal === 'resenas' && (
+                    <div className="mb-12">
+                        <Filtros opciones={opcionesFiltro} activo={subTabResenas} onCambiar={setSubTabResenas} />
+                        {(() => {
+                            const lista = subTabResenas === 'amigos' ? resenasAmigos
+                                : subTabResenas === 'mias' ? misResenas
+                                    : resenas
+                            return lista.length === 0 ? (
+                                <p className="font-serif text-xl text-texto-sec py-6">
+                                    {subTabResenas === 'amigos' ? 'Tus amigos aún no han escrito sobre este libro.'
+                                        : subTabResenas === 'mias' ? 'Todavía no lo has reseñado.'
+                                            : 'Nadie ha escrito todavía sobre este libro.'}
+                                </p>
+                            ) : (
+                                <>
+                                    <div className="border-t border-linea">
+                                        {lista.map((r) => (
+                                            <ResenaCard key={r.idresena} resena={r} mostrarLibro={false} />
+                                        ))}
+                                    </div>
+                                    {subTabResenas === 'todas' && totalResenas > 5 && (
+                                        <div className="mt-6">
+                                            <Link to={`/libro/${id}/resenas`} className="text-sm text-texto-sec hover:text-acento">
+                                                Ver las {totalResenas} reseñas
+                                            </Link>
+                                        </div>
+                                    )}
+                                </>
+                            )
+                        })()}
+                    </div>
+                )}
+
+                {/* Contenido de Anotaciones */}
+                {tabPrincipal === 'anotaciones' && (
+                    <div className="mb-12">
+                        <Filtros opciones={opcionesFiltro} activo={subTabAnotaciones} onCambiar={setSubTabAnotaciones} />
+                        {(() => {
+                            const lista = subTabAnotaciones === 'amigos' ? anotacionesAmigos
+                                : subTabAnotaciones === 'mias' ? misAnotaciones
+                                    : anotacionesPublicas
+                            return lista.length === 0 ? (
+                                <p className="font-serif text-xl text-texto-sec py-6">
+                                    {subTabAnotaciones === 'amigos' ? 'Tus amigos no han escrito en sus márgenes.'
+                                        : subTabAnotaciones === 'mias' ? 'Todavía no has escrito en los márgenes.'
+                                            : 'Nadie ha compartido todavía sus notas de este libro.'}
+                                </p>
+                            ) : (
+                                <div className="divide-y divide-linea border-y border-linea">
+                                    {lista.map((a) => (
+                                        <article key={a.idanotacion} className="py-5">
+                                            <div className="flex items-center justify-between gap-4 mb-2">
+                                                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-texto-ter">
+                                                    <button onClick={() => navigate(`/usuario/${a.idusuario}`)}
+                                                            className="text-texto text-sm hover:text-acento">
+                                                        {a.nombreUsuario}
+                                                    </button>
+                                                    <span>{new Date(a.fecha).toLocaleDateString()}</span>
+                                                    {(a.parte || a.numPagina) && (
+                                                        <span>· {a.parte}{a.parte && a.numPagina ? ' · ' : ''}{a.numPagina ? `pág. ${a.numPagina}` : ''}</span>
+                                                    )}
+                                                    {!a.esPublica && <span className="border border-linea px-1.5 rounded">Privada</span>}
+                                                </div>
+                                                {usuario && (usuario.id === a.idusuario || usuario.rol === 'ADMIN') && (
+                                                    <button onClick={async (e) => {
+                                                        e.stopPropagation()
+                                                        if (!await confirmar({ titulo: '¿Eliminar esta anotación?', texto: 'No se puede deshacer.', aceptar: 'Eliminar', peligro: true })) return
+                                                        try {
+                                                            await api.delete(`/anotaciones/${a.idanotacion}`)
+                                                            cargarAnotaciones()
+                                                            cargarMisAnotaciones()
+                                                            cargarAnotacionesAmigos()
+                                                        } catch { avisar('No se ha podido eliminar. Inténtalo de nuevo.') }
+                                                    }}
+                                                            className="text-texto-ter hover:text-error text-xs">
+                                                        Eliminar
+                                                    </button>
+                                                )}
+                                            </div>
+                                            <SpoilerOculto activo={a.tieneSpoiler && usuario?.id !== a.idusuario}>
+                                                <div className="max-w-[65ch]">
+                                                    {a.titulo && <p className="text-texto font-medium mb-1">{a.titulo}</p>}
+                                                    <p className="font-serif text-[17px] leading-[1.65] text-texto/90 whitespace-pre-line">{a.texto}</p>
+                                                </div>
+                                            </SpoilerOculto>
+                                        </article>
+                                    ))}
+                                </div>
+                            )
+                        })()}
+                    </div>
+                )}
+            </div>
+
             {mostrarListas && <GuardarEnListaModal idlibro={parseInt(id)} onClose={() => setMostrarListas(false)} />}
 
+            {/* Confirmación de empezar a leer */}
             {mostrarConfirmacion && (
-                <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50">
-                    <div className="bg-dark-card border border-dark-border rounded-2xl p-6 max-w-sm w-full mx-4">
-                        <h3 className="text-lg font-bold text-dark-text mb-2">¿Empezar a leer?</h3>
-                        <p className="text-dark-muted mb-6">{libro.titulo}</p>
-                        <div className="flex gap-3 justify-end">
-                            <button onClick={() => setMostrarConfirmacion(false)}
-                                    className="px-4 py-2 text-dark-muted hover:text-dark-text transition-colors">Cancelar</button>
-                            <button onClick={async () => { await marcarLeyendo(); setMostrarConfirmacion(false) }}
-                                    className="bg-terra hover:bg-terra-hover text-white font-semibold px-4 py-2 rounded-lg transition-colors">Sí, empezar</button>
-                        </div>
-                    </div>
-                </div>
+                <Dialogo titulo={estadoLibro === 'LEIDO' ? '¿Lo relees?' : '¿Empiezas a leerlo?'} onCerrar={() => setMostrarConfirmacion(false)}
+                         acciones={<>
+                             <button onClick={() => setMostrarConfirmacion(false)} className="btn-texto px-2">Ahora no</button>
+                             <button onClick={async () => { await marcarLeyendo(); setMostrarConfirmacion(false) }} className="btn-acento">
+                                 Sí, empezar
+                             </button>
+                         </>}>
+                    {libro.titulo}
+                </Dialogo>
             )}
         </div>
     )

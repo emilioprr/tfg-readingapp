@@ -2,25 +2,28 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useNotificaciones } from '../context/NotificacionesContext'
+import { X } from '@phosphor-icons/react'
 
+// Texto breve de cada aviso: una etiqueta en versalitas y una frase (sin emojis)
 const formatearMensaje = (n) => {
+    const quien = n.nombreUsuarioOrigen || 'Alguien'
     switch (n.tipo) {
         case 'NUEVO_SEGUIDOR':
-            return { icono: '👤', titulo: 'Nuevo seguidor', texto: `${n.nombreUsuarioOrigen} ha empezado a seguirte` }
+            return { titulo: 'Nuevo seguidor', texto: `${quien} ha empezado a seguirte` }
         case 'NUEVA_RESENA_SEGUIDO':
-            return { icono: '⭐', titulo: 'Nueva reseña', texto: `${n.nombreUsuarioOrigen} ha reseñado ${n.tituloLibro || 'un libro'}` }
+            return { titulo: 'Nueva reseña', texto: `${quien} ha reseñado ${n.tituloLibro || 'un libro'}` }
         case 'LIKE_RESENA':
-            return { icono: '❤️', titulo: 'Nuevo like', texto: `A ${n.nombreUsuarioOrigen} le gustó tu reseña` }
+            return { titulo: 'Me gusta', texto: `A ${quien} le ha gustado tu reseña` }
         case 'LIKE_CITA':
-            return { icono: '❤️', titulo: 'Nuevo like', texto: `A ${n.nombreUsuarioOrigen} le gustó tu cita` }
+            return { titulo: 'Me gusta', texto: `A ${quien} le ha gustado tu cita` }
         case 'LIKE_LISTA':
-            return { icono: '❤️', titulo: 'Nuevo like', texto: `A ${n.nombreUsuarioOrigen} le gustó tu lista ${n.nombreLista || ''}`.trim() }
+            return { titulo: 'Me gusta', texto: `A ${quien} le ha gustado tu lista ${n.nombreLista || ''}`.trim() }
         case 'NUEVA_RECOMENDACION':
-            return { icono: '📚', titulo: 'Recomendación', texto: `${n.nombreUsuarioOrigen} te recomienda ${n.tituloLibro || 'un libro'}` }
+            return { titulo: 'Recomendación', texto: `${quien} te recomienda ${n.tituloLibro || 'un libro'}` }
         case 'RETO_CUMPLIDO':
-            return { icono: '🎉', titulo: '¡Reto completado!', texto: n.mensaje }
+            return { titulo: 'Reto cumplido', texto: 'Reto cumplido. Buen trabajo.', detalle: n.mensaje }
         default:
-            return { icono: '🔔', titulo: 'Notificación', texto: n.mensaje }
+            return { titulo: 'Aviso', texto: n.mensaje }
     }
 }
 
@@ -81,18 +84,20 @@ export default function ToastNotificaciones() {
     if (toasts.length === 0) return null
 
     return (
-        <div className="fixed top-6 right-6 z-50 flex flex-col gap-3">
+        <div className="fixed top-16 right-4 sm:right-6 z-50 flex flex-col gap-3 w-[calc(100%-2rem)] max-w-sm" aria-live="polite">
             {toasts.map((toast) => (
-                <div key={toast.id}
-                     onClick={() => handleClick(toast)}
-                     className="animate-slide-in bg-dark-card border border-terra/40 rounded-xl p-4 shadow-2xl flex items-center gap-3 max-w-sm cursor-pointer hover:bg-dark-elevated transition-colors">
-                    <div className="text-2xl flex-shrink-0">{toast.mensaje.icono}</div>
+                <div key={toast.id} role="status" tabIndex={0}
+                     onClick={() => handleClick(toast)} onKeyDown={(e) => { if (e.key === 'Enter') handleClick(toast) }}
+                     className="animate-tira bg-superficie border border-linea border-t-2 border-t-acento rounded px-4 py-3 flex items-start gap-3 cursor-pointer hover:bg-superficie-alta">
                     <div className="flex-1 min-w-0">
-                        <p className="text-dark-text font-semibold text-sm">{toast.mensaje.titulo}</p>
-                        <p className="text-dark-muted text-xs truncate">{toast.mensaje.texto}</p>
+                        <p className="etiqueta">{toast.mensaje.titulo}</p>
+                        <p className="font-serif text-[17px] leading-snug text-texto mt-1">{toast.mensaje.texto}</p>
+                        {toast.mensaje.detalle && <p className="text-texto-sec text-xs mt-1 truncate">{toast.mensaje.detalle}</p>}
                     </div>
-                    <button onClick={(e) => cerrarToast(e, toast.id)}
-                            className="text-dark-muted hover:text-dark-text text-sm flex-shrink-0">✕</button>
+                    <button onClick={(e) => cerrarToast(e, toast.id)} aria-label="Cerrar aviso"
+                            className="text-texto-ter hover:text-texto flex-shrink-0 mt-0.5">
+                        <X size={14} />
+                    </button>
                 </div>
             ))}
         </div>

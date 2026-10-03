@@ -1,13 +1,20 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import LibroCard from '../components/LibroCard'
+import FilaLibros from '../components/FilaLibros'
 import ActividadSeguidos from '../components/ActividadSeguidos'
 import { useRacha } from '../context/RachaContext'
 import { useNotificaciones } from '../context/NotificacionesContext'
 import api from '../api/axios'
+import { CaretLeft, CaretRight, NotePencil, Check, X } from '@phosphor-icons/react'
+import Portada from '../components/Portada'
+import ProgresoLectura from '../components/ProgresoLectura'
+import Dialogo from '../components/Dialogo'
+import { SemanaRacha } from '../components/Racha'
+import { useAvisos } from '../context/AvisosContext'
 
 export default function Inicio() {
+    const { avisar, confirmar, avisarCarga } = useAvisos()
     const { usuario } = useAuth()
     const navigate = useNavigate()
     const [leyendo, setLeyendo] = useState([])
@@ -23,7 +30,7 @@ export default function Inicio() {
     const [mostrarAbandonarModal, setMostrarAbandonarModal] = useState(false)
     const [mostrarAnotacionModal, setMostrarAnotacionModal] = useState(false)
     const [librosPopulares, setLibrosPopulares] = useState([])
-    const { refrescarRacha } = useRacha()
+    const { racha, refrescarRacha } = useRacha()
     // Tras registrar lectura se piden las notificaciones al momento: si se cumple un reto, sale su aviso
     const { refrescar: refrescarNotificaciones } = useNotificaciones()
 
@@ -39,9 +46,9 @@ export default function Inicio() {
             const datos = res.data || []
             datos.sort((a, b) => b.idseguimiento - a.idseguimiento)
             setLeyendo(datos)
-        } catch (err) { console.error('Error:', err) }
+        } catch (err) { console.error('Error:', err); avisarCarga(err, 'No se ha podido cargar lo que estás leyendo.') }
         finally { setLoading(false) }
-    }, [usuario])
+    }, [avisarCarga, usuario])
 
     const cargarRetos = useCallback(async () => {
         try {
@@ -49,9 +56,9 @@ export default function Inicio() {
             const nuevos = res.data.content || res.data || []
             setRetosActivos(nuevos)
             return nuevos
-        } catch (err) { console.error('Error:', err) }
+        } catch (err) { console.error('Error:', err); avisarCarga(err, 'No se han podido cargar tus retos.') }
         return []
-    }, [usuario])
+    }, [avisarCarga, usuario])
 
     const cargarPopularesAmigos = useCallback(async () => {
         try {
@@ -82,7 +89,7 @@ export default function Inicio() {
         const libroActual = leyendo[leyendoIndex]
 
         const salto = parseInt(nuevaPagina) - (libroActual.numPagina || 0)
-        if (salto > 200 && !window.confirm(`Vas a registrar ${salto} páginas de golpe. ¿Es correcto?`)) return
+        if (salto > 200 && !await confirmar({ titulo: `¿Registrar ${salto} páginas de golpe?`, texto: 'Es un salto grande. Comprueba que la página es la correcta.', aceptar: 'Sí, registrar' })) return
 
         try {
             await api.post('/seguimientos', {
@@ -126,7 +133,7 @@ export default function Inicio() {
             refrescarNotificaciones()
             navigate(`/libro/${libroActual.idlibro}/resena`)
         } catch (err) {
-            alert(err.response?.data?.mensaje || 'Error')
+            avisar(err.response?.data?.mensaje || 'Algo ha fallado. Inténtalo de nuevo.')
         }
     }
 
@@ -141,7 +148,7 @@ export default function Inicio() {
             if (leyendoIndex >= leyendo.length - 1) setLeyendoIndex(Math.max(0, leyendoIndex - 1))
             cargarLeyendo()
         } catch (err) {
-            alert(err.response?.data?.mensaje || 'Error')
+            avisar(err.response?.data?.mensaje || 'Algo ha fallado. Inténtalo de nuevo.')
         }
     }
 
@@ -151,331 +158,205 @@ export default function Inicio() {
     }
 
     if (!usuario) return <Navigate to="/landing" />
-    if (loading) return <p className="text-dark-muted">Cargando...</p>
+    if (loading) return <p className="text-texto-sec">Cargando…</p>
 
     const libroActual = leyendo[leyendoIndex]
     const retoActual = retosActivos[retoIndex]
+    const cancelarEdicion = () => { setEditandoProgreso(false); setNuevaPagina(''); setErrorProgreso('') }
 
     return (
         <div>
-            {/* Saludo */}
-            <div className="mb-8">
-                <h1 className="text-3xl font-bold text-dark-text tracking-tight">Hola, {usuario.nombre}</h1>
-                <p className="text-dark-muted mt-1">¿Qué vas a leer hoy?</p>
-            </div>
+            {/* Cabecera: el libro en curso, protagonista, sobre su portada difuminada */}
+            <section className="relative isolate -mx-4 sm:-mx-6 px-4 sm:px-6 pt-2 pb-12 mb-4">
 
-            {/* Grid principal: en móvil, una tarjeta debajo de otra */}
-            <div className="flex flex-col lg:flex-row gap-5 mb-12">
-                {/* Leyendo ahora — 3/4 */}
-                <div className="flex-[3] min-w-0 bg-dark-card rounded-2xl p-4 sm:p-6 min-h-[280px]">
-                    <div className="flex items-center justify-between mb-5">
-                        <h2 className="text-lg font-semibold text-dark-text">Leyendo ahora</h2>
-                        {leyendo.length > 1 && (
-                            <span className="text-xs text-dark-muted">{leyendo.length} libros</span>
-                        )}
-                    </div>
+                <p className="relative text-sm text-texto-sec mb-8">Hola, {usuario.nombre}.</p>
 
-                    {leyendo.length === 0 ? (
-                        <div className="flex items-center justify-center h-48">
-                            <div className="text-center">
-                                <p className="text-dark-muted mb-3">No estás leyendo nada</p>
-                                <Link to="/catalogo" className="text-terra hover:text-terra-hover text-sm transition-colors">
-                                    Explorar libros
-                                </Link>
-                            </div>
-                        </div>
-                    ) : (
-                        <div>
-                            <div className="flex gap-4 sm:gap-6 relative">
-                                <Link to={`/libro/${libroActual.idlibro}`} className="flex-shrink-0">
-                                    {libroActual.portadaLibro ? (
-                                        <img src={libroActual.portadaLibro} alt={libroActual.tituloLibro}
-                                             className="w-24 h-36 sm:w-32 sm:h-48 object-cover shadow-lg rounded-sm" />
-                                    ) : (
-                                        <div className="w-24 h-36 sm:w-32 sm:h-48 bg-dark-elevated flex items-center justify-center text-dark-muted text-sm shadow-lg rounded-sm">
-                                            Sin portada
-                                        </div>
-                                    )}
-                                </Link>
-
-                                <div className="flex-1 min-w-0 flex flex-col justify-between">
-                                    <div>
-                                        <div className="flex items-start justify-between">
-                                            <div className="flex-1 min-w-0 pr-2 sm:pr-4">
-                                                <Link to={`/libro/${libroActual.idlibro}`}
-                                                      className="text-lg sm:text-xl font-bold text-dark-text hover:text-terra transition-colors block mb-1">
-                                                    {libroActual.tituloLibro}
-                                                </Link>
-                                                <p className="text-dark-muted text-sm">{libroActual.nombreAutor || ''}</p>
-                                            </div>
-
-                                            <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
-                                                <Link to={`/libro/${libroActual.idlibro}/anotaciones`}
-                                                      className="text-dark-muted hover:text-terra transition-colors p-1" title="Nueva anotación">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-                                                    </svg>
-                                                </Link>
-                                                <button onClick={() => setMostrarFinalizarModal(true)}
-                                                        className="text-emerald-400 hover:text-emerald-300 transition-colors p-1" title="Marcar como finalizado">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                                                    </svg>
-                                                </button>
-                                                <button onClick={() => setMostrarAbandonarModal(true)}
-                                                        className="text-red-400/60 hover:text-red-400 transition-colors p-1" title="Abandonar libro">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                                                    </svg>
-                                                </button>
-                                            </div>
-                                        </div>
-
-                                        <div className="mt-4 mb-2">
-                                            <div className="flex items-center justify-between mb-1">
-                                                <span className="text-dark-muted text-xs">Progreso</span>
-                                                <span className="text-terra font-bold text-sm">{libroActual.porcentaje || 0}%</span>
-                                            </div>
-                                            <div className="bg-dark-border rounded-full h-2.5 w-full">
-                                                <div className="bg-gradient-to-r from-orange-500 to-amber-500 h-2.5 rounded-full transition-all duration-500"
-                                                     style={{ width: `${libroActual.porcentaje || 0}%` }} />
-                                            </div>
-                                        </div>
-
-                                        {editandoProgreso ? (
-                                            <div className="mt-3">
-                                                <div className="flex items-center gap-2">
-                                                    <span className="text-dark-muted text-sm">Página</span>
-                                                    <input
-                                                        type="number"
-                                                        value={nuevaPagina}
-                                                        onChange={(e) => setNuevaPagina(e.target.value)}
-                                                        onKeyDown={handleKeyDown}
-                                                        autoFocus
-                                                        min={libroActual.numPagina + 1}
-                                                        max={libroActual.totalPaginas || undefined}
-                                                        className="w-20 bg-dark-elevated border border-dark-border rounded-lg px-2 py-1 text-dark-text text-sm focus:border-terra focus:outline-none transition-colors"
-                                                    />
-                                                    <span className="text-dark-muted text-sm">de {libroActual.totalPaginas || '?'}</span>
-                                                    <button onClick={actualizarProgreso}
-                                                            className="bg-terra hover:bg-terra-hover text-white font-semibold px-3 py-1 rounded-lg text-sm transition-colors">
-                                                        OK
-                                                    </button>
-                                                    <button onClick={() => { setEditandoProgreso(false); setNuevaPagina(''); setErrorProgreso('') }}
-                                                            className="text-dark-muted hover:text-dark-text text-sm transition-colors">
-                                                        ✕
-                                                    </button>
-                                                </div>
-                                                {errorProgreso && <p className="text-red-400 text-xs mt-1">{errorProgreso}</p>}
-                                            </div>
-                                        ) : (
-                                            <div className="flex items-center justify-between mt-3">
-                        <span className="text-dark-muted text-sm">
-                          Pág. {libroActual.numPagina}{libroActual.totalPaginas ? ` de ${libroActual.totalPaginas}` : ''}
-                        </span>
-                                                <button onClick={() => { setEditandoProgreso(true); setNuevaPagina(String(libroActual.numPagina + 1)) }}
-                                                        className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-semibold px-4 py-1.5 rounded-lg text-sm transition-all">
-                                                    Actualizar
-                                                </button>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-
+                <div className="relative grid gap-12 lg:grid-cols-[minmax(0,1fr)_15rem]">
+                    {/* Leyendo ahora */}
+                    <div className="min-w-0">
+                        <div className="flex items-center justify-between mb-6">
+                            <h2 className="etiqueta">Leyendo ahora</h2>
                             {leyendo.length > 1 && (
-                                <div className="flex items-center justify-center gap-3 mt-5 pt-4 border-t border-dark-border">
+                                <div className="flex items-center gap-3 text-texto-sec">
                                     <button onClick={() => { setLeyendoIndex(i => i === 0 ? leyendo.length - 1 : i - 1); setEditandoProgreso(false) }}
-                                            className="text-dark-muted hover:text-terra transition-colors">
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-                                        </svg>
+                                            className="hover:text-texto" aria-label="Libro anterior">
+                                        <CaretLeft size={16} />
                                     </button>
-                                    <div className="flex gap-1.5">
-                                        {leyendo.map((_, i) => (
-                                            <button key={i} onClick={() => { setLeyendoIndex(i); setEditandoProgreso(false) }}
-                                                    className={`w-2 h-2 rounded-full transition-colors ${i === leyendoIndex ? 'bg-terra' : 'bg-dark-border hover:bg-dark-muted'}`} />
-                                        ))}
-                                    </div>
+                                    <span className="text-xs tabular-nums">{leyendoIndex + 1} de {leyendo.length}</span>
                                     <button onClick={() => { setLeyendoIndex(i => i === leyendo.length - 1 ? 0 : i + 1); setEditandoProgreso(false) }}
-                                            className="text-dark-muted hover:text-terra transition-colors">
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                                        </svg>
+                                            className="hover:text-texto" aria-label="Libro siguiente">
+                                        <CaretRight size={16} />
                                     </button>
                                 </div>
                             )}
                         </div>
-                    )}
-                </div>
 
-                {/* Retos activos — 1/4 */}
-                <div className="flex-[1] min-w-0 bg-dark-card rounded-2xl p-4 sm:p-6 min-h-[280px]">
-                    <div className="flex items-center justify-between mb-5">
-                        <h2 className="text-lg font-semibold text-dark-text">Retos</h2>
-                        <Link to="/retos" className="text-xs text-dark-muted hover:text-terra transition-colors">Ver todos</Link>
-                    </div>
-
-                    {retosActivos.length === 0 || !retoActual ? (
-                        <div className="flex items-center justify-center h-48">
-                            <div className="text-center">
-                                <p className="text-dark-muted mb-3 text-sm">Sin retos activos</p>
-                                <Link to="/retos" className="text-terra hover:text-terra-hover text-sm transition-colors">Explorar retos</Link>
+                        {leyendo.length === 0 ? (
+                            <div className="py-10 border-y border-linea">
+                                <p className="font-serif text-3xl text-texto leading-tight">No tienes ningún libro entre manos.</p>
+                                <p className="text-texto-sec mt-2">Busca el siguiente en el catálogo y empieza cuando quieras.</p>
+                                <Link to="/catalogo" className="btn-acento mt-6">Explorar libros</Link>
                             </div>
-                        </div>
-                    ) : (() => {
-                        const tipo = retoActual.tipoReto || retoActual.tipo
-                        const modalidad = retoActual.modalidadReto || retoActual.modalidad
-                        const TIPOS = { LIBROS: 'Libros', PAGINAS: 'Páginas', HORAS: 'Horas' }
-                        const MODALIDADES = { PERSONAL: 'Personal', COMPARTIDO: 'Con amigos', PREDEFINIDO: 'Oficial', COLABORATIVO: 'Colaborativo' }
-                        const textoProgreso = tipo === 'HORAS'
-                            ? `${((retoActual.progreso || 0) / 60).toFixed(1)}/${retoActual.meta} h`
-                            : `${retoActual.progreso || 0}/${retoActual.meta}`
+                        ) : (
+                            <div className="flex flex-col sm:flex-row gap-8 sm:gap-10">
+                                <Link to={`/libro/${libroActual.idlibro}`} className="group flex-shrink-0 self-start">
+                                    <Portada src={libroActual.portadaLibro} titulo={libroActual.tituloLibro} autor={libroActual.nombreAutor}
+                                             id={libroActual.idlibro} className="w-36 sm:w-44" />
+                                </Link>
 
-                        return (
-                            <div className="flex flex-col justify-between h-[calc(100%-2rem)]">
-                                <div>
-                                    <h3 className="text-dark-text font-medium text-sm mb-1">{retoActual.tituloReto || retoActual.titulo}</h3>
-                                    <div className="flex gap-1.5 mb-4">
-                                        <span className="text-xs bg-terra/10 text-terra px-2 py-0.5 rounded-full">{TIPOS[tipo] || tipo}</span>
-                                        <span className="text-xs bg-dark-elevated text-dark-muted px-2 py-0.5 rounded-full">{MODALIDADES[modalidad] || modalidad}</span>
+                                <div className="flex-1 min-w-0 flex flex-col">
+                                    <Link to={`/libro/${libroActual.idlibro}`}
+                                          className="font-serif text-4xl sm:text-5xl leading-[1.05] tracking-tight text-texto hover:text-acento">
+                                        {libroActual.tituloLibro}
+                                    </Link>
+                                    {libroActual.nombreAutor && <p className="text-texto-sec mt-3">{libroActual.nombreAutor}</p>}
+
+                                    <div className="mt-8 max-w-xl">
+                                        <ProgresoLectura pagina={libroActual.numPagina} total={libroActual.totalPaginas}
+                                                         porcentaje={libroActual.porcentaje} />
                                     </div>
 
-                                    <div className="flex items-center justify-center my-4">
-                                        <div className="relative w-28 h-28">
-                                            <svg className="w-28 h-28 -rotate-90" viewBox="0 0 100 100">
-                                                <circle cx="50" cy="50" r="42" fill="none" stroke="#2a2a2a" strokeWidth="8" />
-                                                <circle cx="50" cy="50" r="42" fill="none" stroke="#c45d3e" strokeWidth="8"
-                                                        strokeLinecap="round"
-                                                        strokeDasharray={`${Math.min(100, retoActual.porcentaje || 0) * 2.64} 264`} />
-                                            </svg>
-                                            <div className="absolute inset-0 flex flex-col items-center justify-center">
-                                                <span className="text-terra font-bold text-lg">{retoActual.porcentaje || 0}%</span>
-                                                <span className="text-dark-muted text-xs">{textoProgreso}</span>
+                                    {editandoProgreso ? (
+                                        <div className="mt-6">
+                                            <div className="flex flex-wrap items-center gap-2">
+                                                <label htmlFor="nueva-pagina" className="text-texto-sec text-sm">Voy por la página</label>
+                                                <input id="nueva-pagina" type="number" value={nuevaPagina}
+                                                       onChange={(e) => setNuevaPagina(e.target.value)} onKeyDown={handleKeyDown} autoFocus
+                                                       min={libroActual.numPagina + 1} max={libroActual.totalPaginas || undefined}
+                                                       className="campo w-24" />
+                                                <span className="text-texto-ter text-sm">de {libroActual.totalPaginas || '?'}</span>
+                                                <button onClick={actualizarProgreso} className="btn-acento">Guardar</button>
+                                                <button onClick={cancelarEdicion} className="btn-texto">Cancelar</button>
                                             </div>
+                                            {errorProgreso && <p className="text-error text-xs mt-2">{errorProgreso}</p>}
                                         </div>
-                                    </div>
+                                    ) : (
+                                        <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-3">
+                                            <button onClick={() => { setEditandoProgreso(true); setNuevaPagina(String(libroActual.numPagina + 1)) }}
+                                                    className="btn-acento">
+                                                Actualizar página
+                                            </button>
+                                            <Link to={`/libro/${libroActual.idlibro}/anotaciones`} className="btn-texto">
+                                                <NotePencil size={16} /> Anotar
+                                            </Link>
+                                            <button onClick={() => setMostrarFinalizarModal(true)} className="btn-texto hover:text-exito">
+                                                <Check size={16} /> Lo he terminado
+                                            </button>
+                                            <button onClick={() => setMostrarAbandonarModal(true)} className="btn-texto hover:text-error">
+                                                <X size={16} /> Abandonar
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
-
-                                {retosActivos.length > 1 && (
-                                    <div className="flex items-center justify-center gap-3 pt-3 border-t border-dark-border">
-                                        <button onClick={() => setRetoIndex(i => i === 0 ? retosActivos.length - 1 : i - 1)}
-                                                className="text-dark-muted hover:text-terra transition-colors">
-                                            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-                                            </svg>
-                                        </button>
-                                        <div className="flex gap-1.5">
-                                            {retosActivos.map((_, i) => (
-                                                <button key={i} onClick={() => setRetoIndex(i)}
-                                                        className={`w-1.5 h-1.5 rounded-full transition-colors ${i === retoIndex ? 'bg-terra' : 'bg-dark-border hover:bg-dark-muted'}`} />
-                                            ))}
-                                        </div>
-                                        <button onClick={() => setRetoIndex(i => i === retosActivos.length - 1 ? 0 : i + 1)}
-                                                className="text-dark-muted hover:text-terra transition-colors">
-                                            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                                            </svg>
-                                        </button>
-                                    </div>
-                                )}
                             </div>
-                        )
-                    })()}
-                </div>
-            </div>
+                        )}
+                    </div>
 
-            {/* Libros populares */}
-            {librosPopulares.length > 0 && (
-                <div className="mb-12">
-                    <div className="flex items-center justify-between mb-5">
-                        <h2 className="text-xl font-semibold text-dark-text">Libros populares</h2>
-                        <Link to="/catalogo" className="text-xs text-dark-muted hover:text-terra transition-colors">Ver más</Link>
-                    </div>
-                    <div className="flex gap-5 overflow-x-auto pb-2">
-                        {librosPopulares.map((libro) => (
-                            <LibroCard key={libro.idlibro} libro={libro} />
-                        ))}
-                    </div>
-                </div>
-            )}
+                    {/* Margen derecho: racha y retos */}
+                    <aside className="lg:border-l lg:border-linea lg:pl-8 space-y-10">
+                        {racha && (
+                            <div>
+                                <h2 className="etiqueta mb-3">Racha</h2>
+                                <p className="font-serif text-texto leading-none">
+                                    <span className="text-6xl">{racha.racha}</span>
+                                    <span className="text-xl text-texto-sec ml-2">{racha.racha === 1 ? 'día' : 'días'}</span>
+                                </p>
+                                <p className="text-texto-sec text-sm mt-2">
+                                    {racha.hoyCompletado ? 'Hoy ya has leído.' : 'Lee hoy para no perderla.'}
+                                </p>
+                                {racha.semana?.length > 0 && <div className="mt-4"><SemanaRacha semana={racha.semana} /></div>}
+                            </div>
+                        )}
 
-            {/* Popular entre amigos */}
-            {popularesAmigos.length > 0 && (
-                <div className="mb-12">
-                    <div className="flex items-center justify-between mb-5">
-                        <h2 className="text-xl font-semibold text-dark-text">Popular entre tus amigos</h2>
-                        <Link to="/catalogo" className="text-xs text-dark-muted hover:text-terra transition-colors">Ver más</Link>
-                    </div>
-                    <div className="flex gap-5 overflow-x-auto pb-2">
-                        {popularesAmigos.map((libro) => (
-                            <LibroCard key={libro.idlibro} libro={libro} />
-                        ))}
-                    </div>
+                        <div>
+                            <div className="flex items-baseline justify-between mb-3">
+                                <h2 className="etiqueta">Retos</h2>
+                                <Link to="/retos" className="text-xs text-texto-sec hover:text-acento">Ver todos</Link>
+                            </div>
+                            {retosActivos.length === 0 || !retoActual ? (
+                                <p className="text-texto-sec text-sm">
+                                    Ningún reto en marcha. <Link to="/retos" className="text-acento hover:text-acento-hover">Busca uno</Link>
+                                </p>
+                            ) : (() => {
+                                const tipo = retoActual.tipoReto || retoActual.tipo
+                                const textoProgreso = tipo === 'HORAS'
+                                    ? `${((retoActual.progreso || 0) / 60).toFixed(1)} / ${retoActual.meta} h`
+                                    : `${retoActual.progreso || 0} / ${retoActual.meta}`
+                                const pct = Math.min(100, retoActual.porcentaje || 0)
+                                return (
+                                    <div>
+                                        <p className="font-serif text-lg leading-snug text-texto">{retoActual.tituloReto || retoActual.titulo}</p>
+                                        <div className="relative h-[2px] bg-linea mt-3">
+                                            <div className="absolute inset-y-0 left-0 bg-acento" style={{ width: `${pct}%` }} />
+                                        </div>
+                                        <p className="text-xs text-texto-sec mt-2 tabular-nums">{textoProgreso} · {pct}%</p>
+                                        {retosActivos.length > 1 && (
+                                            <div className="flex items-center gap-3 mt-3 text-texto-sec">
+                                                <button onClick={() => setRetoIndex(i => i === 0 ? retosActivos.length - 1 : i - 1)}
+                                                        className="hover:text-texto" aria-label="Reto anterior">
+                                                    <CaretLeft size={14} />
+                                                </button>
+                                                <span className="text-xs tabular-nums">{retoIndex + 1} de {retosActivos.length}</span>
+                                                <button onClick={() => setRetoIndex(i => i === retosActivos.length - 1 ? 0 : i + 1)}
+                                                        className="hover:text-texto" aria-label="Reto siguiente">
+                                                    <CaretRight size={14} />
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                )
+                            })()}
+                        </div>
+
+                    </aside>
                 </div>
-            )}
+            </section>
+
+            {/* Filas de libros, separadas por filetes */}
+            {librosPopulares.length > 0 && <FilaLibros titulo="Libros populares" libros={librosPopulares} verTodo="/catalogo" />}
+
+            {/* Sin "ver todo": el catálogo no tiene una vista de lo que leen tus amigos */}
+            {popularesAmigos.length > 0 && <FilaLibros titulo="Popular entre tus amigos" libros={popularesAmigos} />}
 
             {/* Actividad de las personas que sigues */}
             <ActividadSeguidos />
 
-            {/* Modal finalizar */}
             {mostrarFinalizarModal && (
-                <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50">
-                    <div className="bg-dark-card border border-dark-border rounded-2xl p-6 max-w-sm w-full mx-4">
-                        <h3 className="text-lg font-bold text-dark-text mb-2">¿Marcar como finalizado?</h3>
-                        <p className="text-dark-muted mb-6">{leyendo[leyendoIndex]?.tituloLibro}</p>
-                        <div className="flex gap-3 justify-end">
-                            <button onClick={() => setMostrarFinalizarModal(false)}
-                                    className="px-4 py-2 text-dark-muted hover:text-dark-text transition-colors">
-                                Cancelar
-                            </button>
-                            <button onClick={async () => { setMostrarFinalizarModal(false); await marcarComoLeido() }}
-                                    className="bg-terra hover:bg-terra-hover text-white font-semibold px-4 py-2 rounded-lg transition-colors">
-                                Sí, finalizar
-                            </button>
-                        </div>
-                    </div>
-                </div>
+                <Dialogo titulo="¿Lo has terminado?" onCerrar={() => setMostrarFinalizarModal(false)}
+                         acciones={<>
+                             <button onClick={() => setMostrarFinalizarModal(false)} className="btn-texto px-2">Todavía no</button>
+                             <button onClick={async () => { setMostrarFinalizarModal(false); await marcarComoLeido() }} className="btn-acento">
+                                 Sí, lo he terminado
+                             </button>
+                         </>}>
+                    {leyendo[leyendoIndex]?.tituloLibro}
+                </Dialogo>
             )}
 
-            {/* Modal abandonar */}
             {mostrarAbandonarModal && (
-                <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50">
-                    <div className="bg-dark-card border border-dark-border rounded-2xl p-6 max-w-sm w-full mx-4">
-                        <h3 className="text-lg font-bold text-dark-text mb-2">¿Abandonar este libro?</h3>
-                        <p className="text-dark-muted mb-6">{leyendo[leyendoIndex]?.tituloLibro}</p>
-                        <div className="flex gap-3 justify-end">
-                            <button onClick={() => setMostrarAbandonarModal(false)}
-                                    className="px-4 py-2 text-dark-muted hover:text-dark-text transition-colors">
-                                Cancelar
-                            </button>
-                            <button onClick={async () => { setMostrarAbandonarModal(false); await marcarComoAbandonado() }}
-                                    className="bg-red-500 hover:bg-red-600 text-white font-semibold px-4 py-2 rounded-lg transition-colors">
-                                Sí, abandonar
-                            </button>
-                        </div>
-                    </div>
-                </div>
+                <Dialogo titulo="¿Lo dejas aquí?" onCerrar={() => setMostrarAbandonarModal(false)}
+                         acciones={<>
+                             <button onClick={() => setMostrarAbandonarModal(false)} className="btn-texto px-2">Seguir leyendo</button>
+                             <button onClick={async () => { setMostrarAbandonarModal(false); await marcarComoAbandonado() }}
+                                     className="btn bg-error text-fondo hover:bg-error/85">
+                                 Sí, abandonar
+                             </button>
+                         </>}>
+                    {leyendo[leyendoIndex]?.tituloLibro}. Siempre puedes retomarlo más adelante.
+                </Dialogo>
             )}
 
-            {/* Modal anotación */}
             {mostrarAnotacionModal && (
-                <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50">
-                    <div className="bg-dark-card border border-dark-border rounded-2xl p-6 max-w-sm w-full mx-4">
-                        <h3 className="text-lg font-bold text-dark-text mb-2">¿Quieres añadir una anotación?</h3>
-                        <p className="text-dark-muted text-sm mb-6">Puedes apuntar tus ideas o reflexiones sobre lo que acabas de leer.</p>
-                        <div className="flex gap-3 justify-end">
-                            <button onClick={() => setMostrarAnotacionModal(false)}
-                                    className="px-4 py-2 text-dark-muted hover:text-dark-text transition-colors">
-                                No, gracias
-                            </button>
-                            <button onClick={() => { setMostrarAnotacionModal(false); navigate(`/libro/${leyendo[leyendoIndex]?.idlibro}/anotaciones`) }}
-                                    className="bg-terra hover:bg-terra-hover text-white font-semibold px-4 py-2 rounded-lg transition-colors">
-                                Sí, anotar
-                            </button>
-                        </div>
-                    </div>
-                </div>
+                <Dialogo titulo="¿Escribes algo en el margen?" onCerrar={() => setMostrarAnotacionModal(false)}
+                         acciones={<>
+                             <button onClick={() => setMostrarAnotacionModal(false)} className="btn-texto px-2">Ahora no</button>
+                             <button onClick={() => { setMostrarAnotacionModal(false); navigate(`/libro/${leyendo[leyendoIndex]?.idlibro}/anotaciones`) }}
+                                     className="btn-acento">
+                                 Anotar
+                             </button>
+                         </>}>
+                    Una idea, una frase que te ha gustado o lo que te ha hecho pensar lo que acabas de leer.
+                </Dialogo>
             )}
         </div>
     )

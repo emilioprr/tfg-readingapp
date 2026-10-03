@@ -25,29 +25,30 @@ export default function Registro() {
     }
 
     return (
-        <div className="flex justify-center mt-20">
-            <form onSubmit={handleSubmit} className="bg-dark-card p-8 rounded-2xl border border-dark-border w-full max-w-md">
-                <h2 className="text-2xl font-bold text-dark-text mb-6 text-center">Crear cuenta</h2>
-                {error && <p className="text-red-400 text-sm mb-4 text-center">{error}</p>}
-                <div className="mb-4">
-                    <label className="block text-dark-muted text-sm mb-1">Nombre</label>
+        <div className="flex justify-center pt-12 sm:pt-20">
+            <form onSubmit={handleSubmit} className="w-full max-w-sm">
+                <h1 className="font-serif text-4xl sm:text-5xl leading-none tracking-tight text-texto text-center">Crear cuenta</h1>
+                <p className="text-texto-sec text-sm text-center mt-3 mb-10">Lleva la cuenta de lo que lees y lo que te dejan los libros.</p>
+                {error && <p className="text-error text-sm mb-5 text-center">{error}</p>}
+                <div className="mb-5">
+                    <label className="etiqueta block mb-2">Nombre</label>
                     <input type="text" value={nombre} onChange={(e) => setNombre(e.target.value)}
-                           className="w-full bg-dark-elevated border border-dark-border rounded-lg px-4 py-2.5 text-dark-text focus:border-terra focus:outline-none transition-colors" required />
+                           className="campo" required />
                 </div>
-                <div className="mb-4">
-                    <label className="block text-dark-muted text-sm mb-1">Email</label>
+                <div className="mb-5">
+                    <label className="etiqueta block mb-2">Email</label>
                     <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
-                           className="w-full bg-dark-elevated border border-dark-border rounded-lg px-4 py-2.5 text-dark-text focus:border-terra focus:outline-none transition-colors" required />
+                           className="campo" required />
                 </div>
-                <div className="mb-6">
-                    <label className="block text-dark-muted text-sm mb-1">Contraseña</label>
+                <div className="mb-8">
+                    <label className="etiqueta block mb-2">Contraseña</label>
                     <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} minLength={6}
-                           className="w-full bg-dark-elevated border border-dark-border rounded-lg px-4 py-2.5 text-dark-text focus:border-terra focus:outline-none transition-colors" required />
-                    <p className="text-dark-muted text-xs mt-1">Mínimo 6 caracteres</p>
+                           className="campo" required />
+                    <p className="text-texto-ter text-xs mt-1.5">Mínimo 6 caracteres</p>
                 </div>
-                <button type="submit" className="w-full bg-terra hover:bg-terra-hover text-white font-semibold py-2.5 rounded-lg transition-colors">Registrarse</button>
-                <p className="text-dark-muted text-sm mt-4 text-center">
-                    ¿Ya tienes cuenta? <Link to="/login" className="text-terra hover:text-terra-hover transition-colors">Inicia sesión</Link>
+                <button type="submit" className="btn-acento w-full py-2.5">Registrarse</button>
+                <p className="text-texto-sec text-sm mt-6 text-center">
+                    ¿Ya tienes cuenta? <Link to="/login" className="text-texto underline underline-offset-4 decoration-texto-ter hover:decoration-texto">Inicia sesión</Link>
                 </p>
             </form>
         </div>

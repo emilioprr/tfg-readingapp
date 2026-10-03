@@ -23,23 +23,24 @@ export default function Login() {
     }
 
     return (
-        <div className="flex justify-center mt-20">
-            <form onSubmit={handleSubmit} className="bg-dark-card p-8 rounded-2xl border border-dark-border w-full max-w-md">
-                <h2 className="text-2xl font-bold text-dark-text mb-6 text-center">Iniciar sesión</h2>
-                {error && <p className="text-red-400 text-sm mb-4 text-center">{error}</p>}
-                <div className="mb-4">
-                    <label className="block text-dark-muted text-sm mb-1">Email</label>
+        <div className="flex justify-center pt-12 sm:pt-20">
+            <form onSubmit={handleSubmit} className="w-full max-w-sm">
+                <h1 className="font-serif text-4xl sm:text-5xl leading-none tracking-tight text-texto text-center">Iniciar sesión</h1>
+                <p className="text-texto-sec text-sm text-center mt-3 mb-10">Vuelve a tu cuaderno de lectura.</p>
+                {error && <p className="text-error text-sm mb-5 text-center">{error}</p>}
+                <div className="mb-5">
+                    <label className="etiqueta block mb-2">Email</label>
                     <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
-                           className="w-full bg-dark-elevated border border-dark-border rounded-lg px-4 py-2.5 text-dark-text focus:border-terra focus:outline-none transition-colors" required />
+                           className="campo" required />
                 </div>
-                <div className="mb-6">
-                    <label className="block text-dark-muted text-sm mb-1">Contraseña</label>
+                <div className="mb-8">
+                    <label className="etiqueta block mb-2">Contraseña</label>
                     <input type="password" value={password} onChange={(e) => setPassword(e.target.value)}
-                           className="w-full bg-dark-elevated border border-dark-border rounded-lg px-4 py-2.5 text-dark-text focus:border-terra focus:outline-none transition-colors" required />
+                           className="campo" required />
                 </div>
-                <button type="submit" className="w-full bg-terra hover:bg-terra-hover text-white font-semibold py-2.5 rounded-lg transition-colors">Entrar</button>
-                <p className="text-dark-muted text-sm mt-4 text-center">
-                    ¿No tienes cuenta? <Link to="/registro" className="text-terra hover:text-terra-hover transition-colors">Regístrate</Link>
+                <button type="submit" className="btn-acento w-full py-2.5">Entrar</button>
+                <p className="text-texto-sec text-sm mt-6 text-center">
+                    ¿No tienes cuenta? <Link to="/registro" className="text-texto underline underline-offset-4 decoration-texto-ter hover:decoration-texto">Regístrate</Link>
                 </p>
             </form>
         </div>

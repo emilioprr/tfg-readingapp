@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 import api from '../api/axios'
+import Balda from '../components/Balda'
+import { useAvisos } from '../context/AvisosContext'
 
 const TITULOS = {
     PENDIENTE: 'Quiero leer',
@@ -10,6 +12,7 @@ const TITULOS = {
 }
 
 export default function EstanteriaCompleta() {
+    const { avisarCarga } = useAvisos()
     const { idusuario, estado } = useParams()
     const [libros, setLibros] = useState([])
     const [loading, setLoading] = useState(true)
@@ -18,41 +21,30 @@ export default function EstanteriaCompleta() {
         try {
             const res = await api.get(`/seguimientos/usuario/${idusuario}/estado/${estado}`)
             setLibros(res.data || [])
-        } catch (err) { console.error('Error:', err) }
+        } catch (err) { console.error('Error:', err); avisarCarga(err, 'No se ha podido cargar la estantería.') }
         finally { setLoading(false) }
-    }, [estado, idusuario])
+    }, [avisarCarga, estado, idusuario])
 
     useEffect(() => { cargarLibros() }, [idusuario, estado, cargarLibros])
 
-    if (loading) return <p className="text-dark-muted">Cargando...</p>
+    if (loading) return <p className="text-texto-sec">Cargando…</p>
 
     return (
         <div className="max-w-5xl mx-auto">
-            <div className="flex items-center justify-between mb-6">
-                <h1 className="text-2xl font-bold text-dark-text tracking-tight">{TITULOS[estado] || estado}</h1>
-                <span className="text-dark-muted text-sm">{libros.length} libros</span>
-            </div>
+            <header className="flex items-end justify-between gap-4 mb-10">
+                <div>
+                    <p className="etiqueta mb-2">Estantería</p>
+                    <h1 className="font-serif text-4xl sm:text-5xl leading-none text-texto">{TITULOS[estado] || estado}</h1>
+                </div>
+                <span className="text-texto-sec text-sm">{libros.length} {libros.length === 1 ? 'libro' : 'libros'}</span>
+            </header>
 
             {libros.length === 0 ? (
-                <div className="text-center py-16 bg-dark-card rounded-2xl">
-                    <p className="text-dark-muted">No hay libros en esta sección</p>
-                </div>
+                <p className="font-serif text-xl text-texto-sec">Esta balda está vacía de momento.</p>
             ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-x-5 gap-y-6">
-                    {libros.map((s) => (
-                        <Link key={s.idseguimiento} to={`/libro/${s.idlibro}`} className="group">
-                            {s.portadaLibro ? (
-                                <img src={s.portadaLibro} alt={s.tituloLibro}
-                                     className="w-full h-56 object-cover rounded-sm shadow-md group-hover:shadow-xl transition-shadow" />
-                            ) : (
-                                <div className="w-full h-56 bg-dark-elevated rounded-sm flex items-center justify-center text-dark-muted text-sm shadow-md">
-                                    Sin portada
-                                </div>
-                            )}
-                            <p className="text-xs text-dark-text truncate mt-2 group-hover:text-terra transition-colors">{s.tituloLibro}</p>
-                        </Link>
-                    ))}
-                </div>
+                <Balda libros={libros.map((s) => ({
+                    key: s.idseguimiento, idlibro: s.idlibro, titulo: s.tituloLibro, autor: s.nombreAutor, portada: s.portadaLibro,
+                }))} />
             )}
         </div>
     )

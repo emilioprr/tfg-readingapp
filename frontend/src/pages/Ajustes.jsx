@@ -3,14 +3,16 @@ import { Link, Navigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import api from '../api/axios'
 
-const estiloInput = 'w-full bg-dark-elevated border border-dark-border rounded-lg px-4 py-2.5 text-dark-text focus:border-terra focus:outline-none transition-colors'
+const estiloInput = 'campo'
 
 function Seccion({ titulo, descripcion, peligro = false, children }) {
     return (
-        <section className={`bg-dark-card rounded-2xl p-6 ${peligro ? 'border border-red-400/20' : ''}`}>
-            <h2 className={`text-base font-semibold ${peligro ? 'text-red-400' : 'text-dark-text'}`}>{titulo}</h2>
-            {descripcion && <p className="text-dark-muted text-sm mt-1">{descripcion}</p>}
-            <div className="mt-4">{children}</div>
+        <section className="border-t border-linea pt-8 grid sm:grid-cols-[14rem_1fr] gap-x-10 gap-y-4">
+            <div>
+                <h2 className={`font-serif text-xl ${peligro ? 'text-error' : 'text-texto'}`}>{titulo}</h2>
+                {descripcion && <p className="text-texto-sec text-sm mt-1.5 leading-relaxed">{descripcion}</p>}
+            </div>
+            <div className="min-w-0">{children}</div>
         </section>
     )
 }
@@ -30,26 +32,25 @@ export default function Ajustes() {
     if (!usuario) return <Navigate to="/login" />
 
     return (
-        <div className="max-w-2xl mx-auto space-y-5">
-            <h1 className="text-2xl font-bold text-dark-text tracking-tight mb-2">Ajustes</h1>
+        <div className="max-w-3xl mx-auto space-y-10">
+            <h1 className="font-serif text-4xl sm:text-5xl leading-none tracking-tight text-texto">Ajustes</h1>
 
             <Seccion titulo="Tu cuenta">
                 <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-sm">
-                    <dt className="text-dark-muted">Nombre de usuario</dt>
-                    <dd className="text-dark-text">{usuario.nombre}</dd>
-                    <dt className="text-dark-muted">Email</dt>
-                    <dd className="text-dark-text break-all">{usuario.email}</dd>
+                    <dt className="text-texto-sec">Nombre de usuario</dt>
+                    <dd className="text-texto">{usuario.nombre}</dd>
+                    <dt className="text-texto-sec">Email</dt>
+                    <dd className="text-texto break-all">{usuario.email}</dd>
                     {fechaAlta && (
                         <>
-                            <dt className="text-dark-muted">Miembro desde</dt>
-                            <dd className="text-dark-text">
+                            <dt className="text-texto-sec">Miembro desde</dt>
+                            <dd className="text-texto">
                                 {new Date(fechaAlta).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}
                             </dd>
                         </>
                     )}
                 </dl>
-                <Link to="/editar-perfil"
-                      className="inline-block mt-4 border border-dark-border text-dark-muted hover:border-terra hover:text-terra px-4 py-1.5 rounded-lg text-sm transition-colors">
+                <Link to="/editar-perfil" className="btn-secundario mt-5">
                     Editar perfil (nombre, biografía y foto)
                 </Link>
             </Seccion>
@@ -59,8 +60,7 @@ export default function Ajustes() {
             </Seccion>
 
             <Seccion titulo="Sesión">
-                <button onClick={logout}
-                        className="border border-dark-border text-dark-muted hover:border-terra hover:text-terra px-4 py-1.5 rounded-lg text-sm transition-colors">
+                <button onClick={logout} className="btn-secundario">
                     Cerrar sesión
                 </button>
             </Seccion>
@@ -101,18 +101,17 @@ function CambiarPassword() {
     }
 
     return (
-        <form onSubmit={cambiar} className="space-y-3">
-            <input type="password" placeholder="Contraseña actual" value={actual} onChange={(e) => setActual(e.target.value)}
+        <form onSubmit={cambiar} className="space-y-3 max-w-sm">
+            <input type="password" placeholder="Contraseña actual" aria-label="Contraseña actual" value={actual} onChange={(e) => setActual(e.target.value)}
                    autoComplete="current-password" required className={estiloInput} />
-            <input type="password" placeholder="Nueva contraseña (mínimo 6 caracteres)" value={nueva} onChange={(e) => setNueva(e.target.value)}
+            <input type="password" placeholder="Nueva contraseña (mínimo 6 caracteres)" aria-label="Nueva contraseña" value={nueva} onChange={(e) => setNueva(e.target.value)}
                    autoComplete="new-password" required className={estiloInput} />
-            <input type="password" placeholder="Repite la nueva contraseña" value={repetida} onChange={(e) => setRepetida(e.target.value)}
+            <input type="password" placeholder="Repite la nueva contraseña" aria-label="Repite la nueva contraseña" value={repetida} onChange={(e) => setRepetida(e.target.value)}
                    autoComplete="new-password" required className={estiloInput} />
-            {error && <p className="text-red-400 text-sm">{error}</p>}
-            {exito && <p className="text-emerald-400 text-sm">{exito}</p>}
-            <button type="submit" disabled={guardando}
-                    className="bg-terra hover:bg-terra-hover text-white font-semibold px-5 py-2 rounded-lg text-sm transition-colors disabled:opacity-50">
-                {guardando ? 'Guardando...' : 'Cambiar contraseña'}
+            {error && <p className="text-error text-sm">{error}</p>}
+            {exito && <p className="text-exito text-sm">{exito}</p>}
+            <button type="submit" disabled={guardando} className="btn-acento">
+                {guardando ? 'Guardando…' : 'Cambiar contraseña'}
             </button>
         </form>
     )
@@ -141,27 +140,26 @@ function EliminarCuenta() {
 
     if (!abierto) {
         return (
-            <button onClick={() => setAbierto(true)}
-                    className="border border-red-400/40 text-red-400 hover:bg-red-400/10 px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+            <button onClick={() => setAbierto(true)} className="btn border border-error/50 text-error hover:bg-error/10">
                 Eliminar mi cuenta
             </button>
         )
     }
 
     return (
-        <form onSubmit={eliminar} className="bg-red-400/5 border border-red-400/30 rounded-xl p-4 space-y-3">
-            <label className="block text-dark-text text-sm">Escribe tu contraseña para confirmar</label>
+        <form onSubmit={eliminar} className="border border-error/40 rounded p-4 space-y-3 max-w-sm">
+            <label className="block text-texto text-sm">Escribe tu contraseña para confirmar</label>
             <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoFocus required
                    autoComplete="current-password"
-                   className="w-full bg-dark-elevated border border-dark-border rounded-lg px-4 py-2.5 text-dark-text focus:border-red-400 focus:outline-none transition-colors" />
-            {error && <p className="text-red-400 text-sm">{error}</p>}
+                   className="campo focus:border-error" />
+            {error && <p className="text-error text-sm">{error}</p>}
             <div className="flex gap-3">
                 <button type="submit" disabled={borrando || !password}
-                        className="bg-red-500 hover:bg-red-600 text-white font-semibold px-4 py-2 rounded-lg text-sm transition-colors disabled:opacity-50">
-                    {borrando ? 'Eliminando...' : 'Eliminar definitivamente'}
+                        className="btn bg-error text-fondo hover:bg-error/85">
+                    {borrando ? 'Eliminando…' : 'Eliminar definitivamente'}
                 </button>
                 <button type="button" onClick={() => { setAbierto(false); setPassword(''); setError('') }}
-                        className="text-dark-muted hover:text-dark-text px-3 py-2 text-sm transition-colors">
+                        className="btn-texto px-2">
                     Cancelar
                 </button>
             </div>

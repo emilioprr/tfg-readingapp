@@ -2,11 +2,13 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import TarjetaCita from './TarjetaCita'
 import api from '../api/axios'
+import { useAvisos } from '../context/AvisosContext'
 
 const TAMANIO = 20
 
 /** Pestaña "Mural de citas" del perfil: las citas de otros lectores que el usuario ha elegido exhibir. */
 export default function MuralCitas({ perfilId, esMio, usuario }) {
+    const { avisar, avisarCarga } = useAvisos()
     const [citas, setCitas] = useState([])
     const [pagina, setPagina] = useState(0)
     const [hayMas, setHayMas] = useState(false)
@@ -25,13 +27,13 @@ export default function MuralCitas({ perfilId, esMio, usuario }) {
                 setPagina(0)
                 setHayMas(res.data.hayMas)
             } catch (err) {
-                console.error('Error:', err)
-                setError('No se ha podido cargar el mural de citas')
+                console.error('Error:', err); avisarCarga(err, 'No se han podido cargar las citas del mural.')
+                setError('No hemos podido cargar el mural. Prueba de nuevo en un momento.')
             }
             finally { setCargando(false) }
         }
         cargar()
-    }, [ruta])
+    }, [avisarCarga, ruta])
 
     const cargarMas = async () => {
         try {
@@ -39,7 +41,7 @@ export default function MuralCitas({ perfilId, esMio, usuario }) {
             setCitas(prev => [...prev, ...(res.data.citas || [])])
             setPagina(p => p + 1)
             setHayMas(res.data.hayMas)
-        } catch (err) { console.error('Error:', err) }
+        } catch (err) { console.error('Error:', err); avisarCarga(err, 'No se han podido cargar más citas.') }
     }
 
     const toggleGuardar = async (cita) => {
@@ -54,20 +56,20 @@ export default function MuralCitas({ perfilId, esMio, usuario }) {
                     ? { ...c, guardada: !c.guardada, vecesGuardada: Math.max((c.vecesGuardada || 0) + (c.guardada ? -1 : 1), 0) }
                     : c))
             }
-        } catch (err) { alert(err.response?.data?.mensaje || 'Error') }
+        } catch (err) { avisar(err.response?.data?.mensaje || 'Algo ha fallado. Inténtalo de nuevo.') }
     }
 
-    if (cargando) return <p className="text-dark-muted">Cargando...</p>
-    if (error) return <p className="text-red-400 text-sm">{error}</p>
+    if (cargando) return <p className="text-texto-sec">Cargando…</p>
+    if (error) return <p className="text-error text-sm">{error}</p>
 
     if (citas.length === 0) {
         return (
-            <div className="text-center py-16 bg-dark-card rounded-2xl">
-                <p className="text-dark-muted text-sm">
+            <div className="py-6">
+                <p className="font-serif text-xl text-texto-sec mb-3">
                     {esMio ? 'Tu mural está vacío. Cuelga en él las citas que te definen.' : 'Su mural de citas está vacío'}
                 </p>
                 {esMio && (
-                    <Link to="/citas" className="inline-block mt-3 text-terra hover:text-terra-hover text-sm transition-colors">
+                    <Link to="/citas" className="inline-block mt-3 text-acento hover:text-acento-hover text-sm transition-colors">
                         Descubre citas de la comunidad
                     </Link>
                 )}
@@ -85,7 +87,7 @@ export default function MuralCitas({ perfilId, esMio, usuario }) {
             {hayMas && (
                 <div className="flex justify-center mt-6">
                     <button onClick={cargarMas}
-                            className="border border-dark-border hover:border-terra hover:text-terra text-dark-muted px-6 py-2 rounded-lg text-sm transition-colors">
+                            className="btn-secundario">
                         Cargar más
                     </button>
                 </div>

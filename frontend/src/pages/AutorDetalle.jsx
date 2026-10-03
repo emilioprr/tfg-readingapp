@@ -3,8 +3,11 @@ import { useParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import LibroCard from '../components/LibroCard'
 import api from '../api/axios'
+import TextoDesplegable from '../components/TextoDesplegable'
+import { useAvisos } from '../context/AvisosContext'
 
 export default function AutorDetalle() {
+    const { avisar, avisarCarga } = useAvisos()
     const { id } = useParams()
     const { usuario } = useAuth()
     const [autor, setAutor] = useState(null)
@@ -14,14 +17,14 @@ export default function AutorDetalle() {
 
     const cargarAutor = useCallback(async () => {
         try { const res = await api.get(`/autores/${id}`); setAutor(res.data) }
-        catch (err) { console.error('Error:', err) }
+        catch (err) { console.error('Error:', err); avisarCarga(err, 'No se ha podido cargar el autor.') }
         finally { setLoading(false) }
-    }, [id])
+    }, [avisarCarga, id])
 
     const cargarLibros = useCallback(async () => {
         try { const res = await api.get(`/libros/autor/${id}`); setLibros(res.data.content || res.data || []) }
-        catch (err) { console.error('Error:', err) }
-    }, [id])
+        catch (err) { console.error('Error:', err); avisarCarga(err, 'No se han podido cargar sus libros.') }
+    }, [avisarCarga, id])
 
     useEffect(() => { cargarAutor(); cargarLibros() }, [cargarAutor, cargarLibros, id])
 
@@ -30,11 +33,11 @@ export default function AutorDetalle() {
             if (siguiendo) await api.delete(`/autores/${id}/seguir/${usuario.id}`)
             else await api.post(`/autores/${id}/seguir/${usuario.id}`)
             setSiguiendo(!siguiendo); cargarAutor()
-        } catch (err) { alert(err.response?.data?.mensaje || 'Error') }
+        } catch (err) { avisar(err.response?.data?.mensaje || 'Algo ha fallado. Inténtalo de nuevo.') }
     }
 
-    if (loading) return <p className="text-dark-muted">Cargando...</p>
-    if (!autor) return <p className="text-red-400">Autor no encontrado</p>
+    if (loading) return <p className="text-texto-sec">Cargando…</p>
+    if (!autor) return <p className="font-serif text-xl text-texto-sec">Este autor no existe o no se ha podido cargar.</p>
 
     return (
         <div className="max-w-4xl mx-auto">
@@ -43,51 +46,45 @@ export default function AutorDetalle() {
                 <div className="flex justify-center mb-4">
                     {autor.foto ? (
                         <img src={autor.foto} alt={autor.nombre}
-                             className="w-28 h-28 rounded-full object-cover ring-4 ring-dark-border" />
+                             className="w-28 h-28 rounded-full object-cover border border-linea" />
                     ) : (
-                        <div className="w-28 h-28 bg-terra/20 rounded-full flex items-center justify-center text-terra text-5xl font-bold ring-4 ring-dark-border">
+                        <div className="w-28 h-28 border border-linea rounded-full flex items-center justify-center text-texto-sec font-serif text-5xl">
                             {autor.nombre?.charAt(0)}
                         </div>
                     )}
                 </div>
 
-                <h1 className="text-3xl font-bold text-dark-text tracking-tight mb-1">{autor.nombre}</h1>
+                <h1 className="font-serif text-4xl sm:text-5xl leading-tight tracking-tight text-texto">{autor.nombre}</h1>
 
                 {autor.nacionalidad && (
-                    <p className="text-dark-muted text-sm mt-1">{autor.nacionalidad}</p>
+                    <p className="text-texto-sec text-sm mt-1">{autor.nacionalidad}</p>
                 )}
 
-                <div className="flex items-center justify-center gap-6 mt-3 text-sm text-dark-muted">
+                <div className="flex items-center justify-center gap-3 mt-3 text-sm text-texto-sec tabular-nums">
                     <span>{autor.seguidores || 0} seguidores</span>
-                    <span className="w-1 h-1 bg-dark-border rounded-full" />
+                    <span className="text-texto-ter">·</span>
                     <span>{libros.length} libros</span>
                 </div>
 
                 {usuario && (
                     <button onClick={toggleSeguir}
-                            className={`mt-4 px-5 py-1.5 rounded-lg text-sm font-semibold transition-colors ${
-                                siguiendo
-                                    ? 'border border-dark-border text-dark-text hover:border-red-400 hover:text-red-400'
-                                    : 'bg-terra hover:bg-terra-hover text-white'
-                            }`}>
+                            className={`mt-5 ${siguiendo ? 'btn-secundario' : 'btn-acento'}`}>
                         {siguiendo ? 'Dejar de seguir' : 'Seguir'}
                     </button>
                 )}
 
                 {autor.biografia && (
-                    <p className="text-dark-muted text-sm max-w-lg mx-auto leading-relaxed mt-5">{autor.biografia}</p>
+                    <TextoDesplegable texto={autor.biografia} lineas={5} className="font-serif text-texto/85 text-[17px] leading-[1.65] max-w-[60ch] mx-auto mt-8" />
                 )}
             </div>
 
             {/* Libros */}
-            <div>
-                <h2 className="text-lg font-semibold text-dark-text mb-5">Libros</h2>
+            <div className="border-t border-linea pt-8">
+                <h2 className="etiqueta mb-6">Libros</h2>
                 {libros.length === 0 ? (
-                    <div className="text-center py-8 bg-dark-card rounded-2xl">
-                        <p className="text-dark-muted text-sm">No hay libros de este autor</p>
-                    </div>
+                    <p className="font-serif text-xl text-texto-sec">Todavía no hay libros suyos en el catálogo.</p>
                 ) : (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-x-4 gap-y-6">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-x-5 gap-y-8">
                         {libros.map((libro) => (
                             <LibroCard key={libro.idlibro} libro={libro} className="w-full" />
                         ))}

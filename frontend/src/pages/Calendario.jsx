@@ -2,8 +2,12 @@ import { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import api from '../api/axios'
+import { mejorarPortada } from '../utils/portadas'
+import PortadaGenerada from '../components/PortadaGenerada'
+import { useAvisos } from '../context/AvisosContext'
 
 export default function Calendario() {
+    const { avisarCarga } = useAvisos()
     const { usuario } = useAuth()
     const [mes, setMes] = useState(new Date().getMonth())
     const [anio, setAnio] = useState(new Date().getFullYear())
@@ -14,9 +18,9 @@ export default function Calendario() {
         try {
             const res = await api.get(`/seguimientos/usuario/${usuario.id}`)
             setSeguimientos(res.data || [])
-        } catch (err) { console.error('Error:', err) }
+        } catch (err) { console.error('Error:', err); avisarCarga(err, 'No se ha podido cargar tu calendario de lectura.') }
         finally { setLoading(false) }
-    }, [usuario])
+    }, [avisarCarga, usuario])
 
     useEffect(() => {
         if (usuario) cargarSeguimientos()
@@ -51,22 +55,25 @@ export default function Calendario() {
     const aniosDisponibles = []
     for (let a = 2024; a <= new Date().getFullYear(); a++) aniosDisponibles.push(a)
 
-    if (loading) return <p className="text-dark-muted">Cargando...</p>
+    if (loading) return <p className="text-texto-sec">Cargando…</p>
 
     return (
         <div className="max-w-6xl mx-auto">
             {/* Cabecera con selectores */}
-            <div className="flex items-center justify-between mb-8">
-                <h1 className="text-2xl font-bold text-dark-text tracking-tight">Calendario de lectura</h1>
+            <div className="flex flex-wrap items-end justify-between gap-4 mb-8">
+                <div>
+                    <p className="etiqueta mb-2">Tu calendario de lectura</p>
+                    <h1 className="font-serif text-4xl sm:text-5xl leading-none text-texto">{meses[mes]} <span className="text-texto-ter">{anio}</span></h1>
+                </div>
                 <div className="flex items-center gap-3">
                     <select value={mes} onChange={(e) => setMes(parseInt(e.target.value))}
-                            className="bg-dark-elevated border border-dark-border rounded-lg px-3 py-2 text-dark-text text-sm focus:border-terra focus:outline-none transition-colors">
+                            className="campo w-auto" aria-label="Mes">
                         {meses.map((nombre, i) => (
                             <option key={i} value={i}>{nombre}</option>
                         ))}
                     </select>
                     <select value={anio} onChange={(e) => setAnio(parseInt(e.target.value))}
-                            className="bg-dark-elevated border border-dark-border rounded-lg px-3 py-2 text-dark-text text-sm focus:border-terra focus:outline-none transition-colors">
+                            className="campo w-auto" aria-label="Año">
                         {aniosDisponibles.map((a) => (
                             <option key={a} value={a}>{a}</option>
                         ))}
@@ -77,7 +84,7 @@ export default function Calendario() {
             {/* Cabeceras días de la semana */}
             <div className="grid grid-cols-7 gap-3 mb-2">
                 {['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'].map((d) => (
-                    <div key={d} className="text-center text-xs text-dark-muted font-medium py-1">{d}</div>
+                    <div key={d} className="text-center text-xs text-texto-sec font-medium py-1">{d}</div>
                 ))}
             </div>
 
@@ -94,20 +101,16 @@ export default function Calendario() {
                     const esHoy = hoy.getFullYear() === anio && hoy.getMonth() === mes && hoy.getDate() === dia
 
                     return (
-                        <div key={dia} className={`aspect-square rounded-xl overflow-hidden relative group ${
-                            esHoy ? 'ring-2 ring-terra' : ''
-                        }`}>
+                        <div key={dia} className={`aspect-square rounded-[2px] overflow-hidden relative group ${esHoy ? 'ring-1 ring-acento ring-offset-2 ring-offset-fondo' : ''}`}>
                             {libros.length > 0 ? (
                                 <div className="w-full h-full relative">
                                     {libros.length === 1 ? (
                                         <Link to={`/libro/${libros[0].idlibro}`} className="block w-full h-full">
                                             {libros[0].portadaLibro ? (
-                                                <img src={libros[0].portadaLibro} alt={libros[0].tituloLibro}
+                                                <img src={mejorarPortada(libros[0].portadaLibro)} alt={libros[0].tituloLibro}
                                                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200" />
                                             ) : (
-                                                <div className="w-full h-full bg-terra/20 flex items-center justify-center text-terra text-xs font-medium">
-                                                    {libros[0].tituloLibro?.substring(0, 10)}
-                                                </div>
+                                                <PortadaGenerada id={libros[0].idlibro} titulo={libros[0].tituloLibro} className="w-full h-full rounded-none" />
                                             )}
                                         </Link>
                                     ) : (
@@ -120,12 +123,10 @@ export default function Calendario() {
                                                 <Link key={libro.idlibro} to={`/libro/${libro.idlibro}`}
                                                       className={`overflow-hidden ${libros.length === 3 && idx === 2 ? 'col-span-2' : ''}`}>
                                                     {libro.portadaLibro ? (
-                                                        <img src={libro.portadaLibro} alt={libro.tituloLibro}
+                                                        <img src={mejorarPortada(libro.portadaLibro)} alt={libro.tituloLibro}
                                                              className="w-full h-full object-cover hover:scale-105 transition-transform duration-200" />
                                                     ) : (
-                                                        <div className="w-full h-full bg-terra/20 flex items-center justify-center text-terra text-xs">
-                                                            📖
-                                                        </div>
+                                                        <PortadaGenerada id={libro.idlibro} titulo={libro.tituloLibro} className="w-full h-full rounded-none" />
                                                     )}
                                                 </Link>
                                             ))}
@@ -133,29 +134,27 @@ export default function Calendario() {
                                     )}
 
                                     {/* Número del día */}
-                                    <div className="absolute top-1 left-1.5 bg-black/60 text-white text-xs font-bold px-1.5 py-0.5 rounded">
+                                    <div className="absolute top-1 left-1 bg-fondo/80 text-texto text-[11px] tabular-nums px-1.5 py-0.5 rounded-[2px]">
                                         {dia}
                                     </div>
 
                                     {/* Indicador de más libros */}
                                     {libros.length > 4 && (
-                                        <div className="absolute bottom-1 right-1.5 bg-terra text-white text-xs font-bold px-1.5 py-0.5 rounded">
+                                        <div className="absolute bottom-1 right-1 bg-fondo/80 text-texto text-[11px] px-1.5 py-0.5 rounded-[2px]">
                                             +{libros.length - 4}
                                         </div>
                                     )}
 
                                     {/* Tooltip con títulos al hover */}
-                                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-fondo/90 to-transparent p-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                         {libros.slice(0, 3).map((libro) => (
-                                            <p key={libro.idlibro} className="text-white text-xs truncate">{libro.tituloLibro}</p>
+                                            <p key={libro.idlibro} className="text-texto text-xs truncate">{libro.tituloLibro}</p>
                                         ))}
                                     </div>
                                 </div>
                             ) : (
-                                <div className={`w-full h-full flex items-center justify-center ${
-                                    esHoy ? 'bg-terra/10' : 'bg-dark-card'
-                                }`}>
-                                    <span className={`text-sm ${esHoy ? 'text-terra font-bold' : 'text-dark-muted/40'}`}>{dia}</span>
+                                <div className="w-full h-full flex items-start justify-start p-1.5 border border-linea/70">
+                                    <span className={`text-[11px] tabular-nums ${esHoy ? 'text-acento' : 'text-texto-ter'}`}>{dia}</span>
                                 </div>
                             )}
                         </div>
@@ -164,17 +163,17 @@ export default function Calendario() {
             </div>
 
             {/* Leyenda */}
-            <div className="flex items-center justify-center gap-6 mt-8 text-xs text-dark-muted">
+            <div className="flex flex-wrap items-center justify-center gap-6 mt-10 text-xs text-texto-sec">
                 <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 bg-dark-card rounded" />
+                    <div className="w-4 h-4 border border-linea rounded-[2px]" />
                     <span>Sin actividad</span>
                 </div>
                 <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 bg-terra/30 rounded" />
-                    <span>Día con lectura</span>
+                    <div className="w-3 h-4 bg-acento/70 rounded-[1px]" />
+                    <span>Día con lectura (la portada de lo que leíste)</span>
                 </div>
                 <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 rounded ring-2 ring-terra" />
+                    <div className="w-4 h-4 rounded-[2px] ring-1 ring-acento" />
                     <span>Hoy</span>
                 </div>
             </div>

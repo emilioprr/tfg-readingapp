@@ -2,8 +2,10 @@ import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '../context/AuthContext'
 import ResenaCard from '../components/ResenaCard'
 import api from '../api/axios'
+import { useAvisos } from '../context/AvisosContext'
 
 export default function Resenas() {
+    const { avisarCarga } = useAvisos()
     const { usuario } = useAuth()
     const [resenasAmigos, setResenasAmigos] = useState([])
     const [resenasPopulares, setResenasPopulares] = useState([])
@@ -17,9 +19,9 @@ export default function Resenas() {
         try {
             const res = await api.get(`/resenas/seguidos/${usuario.id}?size=20`)
             setResenasAmigos(res.data.content || res.data || [])
-        } catch (err) { console.error('Error:', err) }
+        } catch (err) { console.error('Error:', err); avisarCarga(err, 'No se han podido cargar las reseñas de tus amigos.') }
         finally { setLoading(false) }
-    }, [usuario])
+    }, [avisarCarga, usuario])
 
     const cargarResenasPopulares = useCallback(async (pagina = 0, acumular = false) => {
         try {
@@ -31,8 +33,8 @@ export default function Resenas() {
                 setResenasPopulares(nuevas)
             }
             setHayMasPopulares(nuevas.length === 20)
-        } catch (err) { console.error('Error:', err) }
-    }, [])
+        } catch (err) { console.error('Error:', err); avisarCarga(err, 'No se han podido cargar las reseñas populares.') }
+    }, [avisarCarga])
 
     useEffect(() => {
         cargarResenasAmigos()
@@ -47,40 +49,40 @@ export default function Resenas() {
         setCargandoMas(false)
     }
 
-    if (loading) return <p className="text-dark-muted">Cargando...</p>
+    if (loading) return <p className="text-texto-sec">Cargando…</p>
 
     return (
         <div className="max-w-3xl mx-auto">
-            <h1 className="text-2xl font-bold text-dark-text tracking-tight mb-8">Reseñas</h1>
+            <h1 className="font-serif text-4xl leading-none text-texto mb-8">Reseñas</h1>
 
             {/* Nuevas reseñas de amigos */}
             {usuario && (
-                <div className="mb-12">
-                    <h2 className="text-xl font-semibold text-dark-text mb-5">Nuevas reseñas de amigos</h2>
+                <section className="border-t border-linea pt-8 mb-12">
+                    <h2 className="etiqueta mb-2">Nuevas reseñas de amigos</h2>
                     {resenasAmigos.length === 0 ? (
-                        <div className="text-center py-8 bg-dark-card rounded-2xl">
-                            <p className="text-dark-muted">Tus amigos aún no han reseñado libros</p>
+                        <div className="py-6">
+                            <p className="font-serif text-xl text-texto-sec mb-3">Las personas que sigues aún no han reseñado nada.</p>
                         </div>
                     ) : (
-                        <div className="space-y-4">
+                        <div>
                             {resenasAmigos.map((r) => (
                                 <ResenaCard key={r.idresena} resena={r} />
                             ))}
                         </div>
                     )}
-                </div>
+                </section>
             )}
 
             {/* Reseñas populares */}
-            <div className="mb-12">
-                <h2 className="text-xl font-semibold text-dark-text mb-5">Reseñas populares</h2>
+            <section className="border-t border-linea pt-8 mb-12">
+                <h2 className="etiqueta mb-2">Reseñas populares</h2>
                 {resenasPopulares.length === 0 ? (
-                    <div className="text-center py-8 bg-dark-card rounded-2xl">
-                        <p className="text-dark-muted">No hay reseñas populares este mes</p>
+                    <div className="py-6">
+                        <p className="font-serif text-xl text-texto-sec mb-3">Este mes todavía nadie ha escrito una reseña que destaque.</p>
                     </div>
                 ) : (
                     <>
-                        <div className="space-y-4">
+                        <div>
                             {resenasPopulares.map((r) => (
                                 <ResenaCard key={r.idresena} resena={r} />
                             ))}
@@ -88,14 +90,14 @@ export default function Resenas() {
                         {hayMasPopulares && (
                             <div className="text-center mt-6">
                                 <button onClick={cargarMasPopulares} disabled={cargandoMas}
-                                        className="text-sm text-dark-muted hover:text-terra transition-colors disabled:opacity-50">
-                                    {cargandoMas ? 'Cargando...' : 'Ver más'}
+                                        className="btn-secundario">
+                                    {cargandoMas ? 'Cargando…' : 'Ver más'}
                                 </button>
                             </div>
                         )}
                     </>
                 )}
-            </div>
+            </section>
         </div>
     )
 }

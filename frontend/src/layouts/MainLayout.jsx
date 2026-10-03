@@ -5,7 +5,7 @@ import { RachaCelebracion } from '../components/Racha'
 
 export default function MainLayout() {
     return (
-        <div className="min-h-screen bg-dark-base text-dark-text">
+        <div className="min-h-screen bg-fondo text-texto">
             <Navbar />
             <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
                 <Outlet />

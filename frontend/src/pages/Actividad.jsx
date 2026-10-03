@@ -3,11 +3,14 @@ import { Link, Navigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { FilaActividad } from '../components/ActividadSeguidos'
 import api from '../api/axios'
+import { CaretLeft } from '@phosphor-icons/react'
+import { useAvisos } from '../context/AvisosContext'
 
 const TAMANIO = 20
 
 /** Toda la actividad de las personas que sigues, de 20 en 20. */
 export default function Actividad() {
+    const { avisarCarga } = useAvisos()
     const { usuario } = useAuth()
     const [eventos, setEventos] = useState([])
     const [pagina, setPagina] = useState(0)
@@ -22,11 +25,11 @@ export default function Actividad() {
                 const res = await api.get(`/actividad/seguidos/${usuario.id}?page=0&size=${TAMANIO}`)
                 setEventos(res.data.eventos || [])
                 setHayMas(res.data.hayMas)
-            } catch (err) { console.error('Error:', err) }
+            } catch (err) { console.error('Error:', err); avisarCarga(err, 'No se ha podido cargar la actividad.') }
             finally { setCargando(false) }
         }
         cargar()
-    }, [usuario])
+    }, [avisarCarga, usuario])
 
     const cargarMas = async () => {
         setCargandoMas(true)
@@ -35,7 +38,7 @@ export default function Actividad() {
             setEventos(prev => [...prev, ...(res.data.eventos || [])])
             setPagina(p => p + 1)
             setHayMas(res.data.hayMas)
-        } catch (err) { console.error('Error:', err) }
+        } catch (err) { console.error('Error:', err); avisarCarga(err, 'No se ha podido cargar más actividad.') }
         finally { setCargandoMas(false) }
     }
 
@@ -43,23 +46,21 @@ export default function Actividad() {
 
     return (
         <div className="max-w-2xl mx-auto">
-            <Link to="/" className="text-sm text-dark-muted hover:text-terra transition-colors">‹ Inicio</Link>
-            <h1 className="text-2xl font-bold text-dark-text tracking-tight mt-2 mb-6">Actividad de las personas que sigues</h1>
+            <Link to="/" className="btn-texto"><CaretLeft size={14} /> Inicio</Link>
+            <h1 className="font-serif text-4xl leading-none text-texto mt-2 mb-6">Actividad de las personas que sigues</h1>
 
-            {cargando ? <p className="text-dark-muted">Cargando...</p> : eventos.length === 0 ? (
-                <div className="bg-dark-card rounded-2xl p-6 text-center">
-                    <p className="text-dark-muted text-sm">Todavía no hay actividad de las personas que sigues.</p>
-                </div>
+            {cargando ? <p className="text-texto-sec">Cargando…</p> : eventos.length === 0 ? (
+                <p className="font-serif text-xl text-texto-sec py-6">Las personas que sigues todavía no han movido ficha.</p>
             ) : (
                 <>
-                    <div className="bg-dark-card rounded-2xl divide-y divide-dark-border">
+                    <div className="divide-y divide-linea border-y border-linea">
                         {eventos.map((e, i) => <FilaActividad key={`${i}-${e.tipo}-${e.fecha}`} e={e} />)}
                     </div>
                     {hayMas && (
                         <div className="flex justify-center mt-6">
                             <button onClick={cargarMas} disabled={cargandoMas}
-                                    className="border border-dark-border hover:border-terra hover:text-terra text-dark-muted px-6 py-2 rounded-lg text-sm transition-colors disabled:opacity-50">
-                                {cargandoMas ? 'Cargando...' : 'Cargar más'}
+                                    className="btn-secundario">
+                                {cargandoMas ? 'Cargando…' : 'Cargar más'}
                             </button>
                         </div>
                     )}

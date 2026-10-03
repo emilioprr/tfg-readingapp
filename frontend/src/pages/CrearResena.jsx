@@ -2,15 +2,14 @@ import { useState, useEffect, useCallback } from 'react'
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import api from '../api/axios'
-
-const ETIQUETAS = [
-    'MELANCOLICO', 'TRISTE', 'ALEGRE', 'OSCURO', 'ESPERANZADOR',
-    'TENSO', 'ROMANTICO', 'DIVERTIDO', 'REFLEXIVO', 'INQUIETANTE',
-    'INSPIRADOR', 'NOSTALGICO', 'MISTERIOSO', 'EPICO', 'INTIMO',
-    'PERTURBADOR', 'RECONFORTANTE', 'AVENTURERO', 'POETICO', 'PROVOCADOR'
-]
+import { Lightning, X } from '@phosphor-icons/react'
+import Portada from '../components/Portada'
+import { FRASES_RITMO } from '../utils/ritmo'
+import { ETIQUETAS, nombreEtiqueta } from '../utils/etiquetas'
+import { useAvisos } from '../context/AvisosContext'
 
 export default function CrearResena() {
+    const { avisarCarga } = useAvisos()
     const { idlibro } = useParams()
     const [searchParams] = useSearchParams()
     const idresena = searchParams.get('editar')
@@ -33,8 +32,8 @@ export default function CrearResena() {
 
     const cargarLibro = useCallback(async () => {
         try { const res = await api.get(`/libros/${idlibro}`); setLibro(res.data) }
-        catch (err) { console.error('Error:', err) }
-    }, [idlibro])
+        catch (err) { console.error('Error:', err); avisarCarga(err, 'No se ha podido cargar el libro.') }
+    }, [avisarCarga, idlibro])
 
     const cargarResena = useCallback(async () => {
         try {
@@ -49,8 +48,8 @@ export default function CrearResena() {
             setEsPublica(r.esPublica)
             setTieneSpoiler(r.tieneSpoiler)
             setLeidoPreviamente(r.leidopreviamente || false)
-        } catch (err) { console.error('Error:', err) }
-    }, [idresena])
+        } catch (err) { console.error('Error:', err); avisarCarga(err, 'No se ha podido cargar la reseña para editarla.') }
+    }, [avisarCarga, idresena])
 
     // Si ya lo había puntuado desde la ficha (sin reseña), se parte de esa nota: al publicar pasa a la reseña
     const cargarValoracion = useCallback(async () => {
@@ -101,6 +100,17 @@ export default function CrearResena() {
     const handleHoverEstrella = (estrella, esMitadIzquierda) => {
         if (!bloqueadoEstrellas) setHoverPuntuacion(esMitadIzquierda ? estrella - 0.5 : estrella)
     }
+    // Con el teclado: flechas de media en media estrella, Inicio y Fin a los extremos
+    const teclaEstrellas = (e) => {
+        const pasos = { ArrowRight: 0.5, ArrowUp: 0.5, ArrowLeft: -0.5, ArrowDown: -0.5 }
+        let valor = null
+        if (e.key in pasos) valor = Math.min(5, Math.max(0.5, (puntuacion || 0) + pasos[e.key]))
+        else if (e.key === 'Home') valor = 0.5
+        else if (e.key === 'End') valor = 5
+        if (valor == null) return
+        e.preventDefault()
+        setPuntuacion(valor); setBloqueadoEstrellas(true); setHoverPuntuacion(0)
+    }
     const renderEstrellas = () => {
         const activa = bloqueadoEstrellas ? puntuacion : (hoverPuntuacion || puntuacion)
         return [1, 2, 3, 4, 5].map((estrella) => {
@@ -111,9 +121,9 @@ export default function CrearResena() {
                 <span key={estrella} className="relative cursor-pointer text-3xl select-none" onMouseLeave={() => { if (!bloqueadoEstrellas) setHoverPuntuacion(0) }}>
           <span className="absolute inset-0 w-1/2 overflow-hidden z-10" onClick={() => handleClickEstrella(estrella, true)} onMouseEnter={() => handleHoverEstrella(estrella, true)} />
           <span className="absolute inset-0 left-1/2 w-1/2 z-10" onClick={() => handleClickEstrella(estrella, false)} onMouseEnter={() => handleHoverEstrella(estrella, false)} />
-                    {fill === 'full' && <span className="text-terra">★</span>}
-                    {fill === 'half' && <span className="relative"><span className="text-dark-border">★</span><span className="absolute inset-0 overflow-hidden w-1/2 text-terra">★</span></span>}
-                    {fill === 'empty' && <span className="text-dark-border">★</span>}
+                    {fill === 'full' && <span className="text-acento">★</span>}
+                    {fill === 'half' && <span className="relative"><span className="text-texto-ter">★</span><span className="absolute inset-0 overflow-hidden w-1/2 text-acento">★</span></span>}
+                    {fill === 'empty' && <span className="text-texto-ter">★</span>}
         </span>
             )
         })
@@ -126,65 +136,70 @@ export default function CrearResena() {
     const renderRayos = () => {
         const activo = bloqueadoRitmo ? ritmo : (hoverRitmo || ritmo)
         return [1, 2, 3].map((r) => (
-            <span key={r} onClick={() => handleClickRayo(r)} onMouseEnter={() => handleHoverRayo(r)}
-                  onMouseLeave={() => { if (!bloqueadoRitmo) setHoverRitmo(0) }}
-                  className={`cursor-pointer text-2xl select-none px-2 py-1 rounded transition-opacity ${activo >= r ? 'opacity-100' : 'opacity-25'}`}>⚡</span>
+            <button key={r} type="button" onClick={() => handleClickRayo(r)} onMouseEnter={() => handleHoverRayo(r)}
+                    onMouseLeave={() => { if (!bloqueadoRitmo) setHoverRitmo(0) }}
+                    aria-label={`Ritmo ${r} de 3: ${FRASES_RITMO[r].toLowerCase()}`} aria-pressed={ritmo === r}
+                    className={`select-none px-1 py-1 rounded text-acento transition-opacity ${activo >= r ? 'opacity-100' : 'opacity-35'}`}>
+                <Lightning size={26} weight={activo >= r ? 'fill' : 'light'} />
+            </button>
         ))
     }
-    const ritmoLabels = ['', 'Lento', 'Medio', 'Rápido']
 
     return (
         <div className="max-w-3xl mx-auto">
             <div className="flex items-center justify-between mb-6">
-                <h1 className="text-2xl font-bold text-terra tracking-tight">{esEdicion ? 'Editar reseña' : 'Escribir reseña'}</h1>
-                <button onClick={() => navigate(-1)} className="text-dark-muted hover:text-dark-text text-2xl transition-colors">✕</button>
+                <h1 className="font-serif text-4xl leading-none text-texto">{esEdicion ? 'Editar reseña' : 'Escribir reseña'}</h1>
+                <button onClick={() => navigate(-1)} className="text-texto-sec hover:text-texto" aria-label="Cerrar"><X size={22} /></button>
             </div>
             <div className="flex gap-6">
                 {libro && (
-                    <div className="flex-shrink-0">
-                        {libro.portada ? <img src={libro.portada} alt={libro.titulo} className="w-36 h-52 object-cover rounded-xl" />
-                            : <div className="w-36 h-52 bg-dark-elevated rounded-xl flex items-center justify-center text-dark-muted text-sm">Sin portada</div>}
+                    <div className="flex-shrink-0 hidden sm:block">
+                        <Portada src={libro.portada} titulo={libro.titulo} autor={libro.nombreAutor} id={libro.idlibro} elevar={false} className="w-36" />
                     </div>
                 )}
                 <div className="flex-1">
-                    {libro && <div className="mb-4"><h2 className="text-xl font-bold text-dark-text">{libro.titulo}</h2><p className="text-dark-muted text-sm">{libro.nombreAutor}</p></div>}
-                    {error && <p className="text-red-400 text-sm mb-4">{error}</p>}
+                    {libro && <div className="mb-6"><h2 className="font-serif text-2xl leading-tight text-texto">{libro.titulo}</h2><p className="text-texto-sec text-sm mt-1">{libro.nombreAutor}</p></div>}
+                    {error && <p className="text-error text-sm mb-4">{error}</p>}
                     <form onSubmit={handleSubmit} className="space-y-6">
                         <div>
-                            <label className="block text-dark-muted text-sm mb-2">Puntuación</label>
-                            <div className="flex items-center gap-1">{renderEstrellas()}{puntuacion > 0 && <span className="ml-3 text-terra font-bold text-lg">{puntuacion}</span>}</div>
+                            <label className="etiqueta block mb-2">Puntuación</label>
+                            <div className="flex items-center gap-1">
+                                <div role="slider" tabIndex={0} aria-label="Puntuación" aria-valuemin={0.5} aria-valuemax={5} aria-valuenow={puntuacion || undefined}
+                                     aria-valuetext={puntuacion ? `${String(puntuacion).replace('.', ',')} de 5 estrellas` : 'Sin puntuar'}
+                                     onKeyDown={teclaEstrellas} className="flex items-center gap-1 rounded">{renderEstrellas()}</div>{puntuacion > 0 && <span className="ml-3 font-serif text-2xl text-texto">{String(puntuacion).replace('.', ',')}</span>}</div>
                         </div>
                         <div>
-                            <label className="block text-dark-muted text-sm mb-2">Ritmo</label>
-                            <div className="flex items-center gap-1">{renderRayos()}{ritmo > 0 && <span className="ml-3 text-terra font-bold text-sm">{ritmoLabels[ritmo]}</span>}</div>
+                            <label className="etiqueta block mb-2">Ritmo</label>
+                            <div className="flex items-center gap-1">{renderRayos()}{ritmo > 0 && <span className="ml-3 text-texto-sec text-sm">{FRASES_RITMO[ritmo]}</span>}</div>
                         </div>
                         <div>
-                            <label className="block text-dark-muted text-sm mb-2">Etiquetas</label>
+                            <label className="etiqueta block mb-2">Ambiente</label>
                             <div className="flex flex-wrap gap-2">
                                 {ETIQUETAS.map((et) => (
                                     <button key={et} type="button" onClick={() => toggleEtiqueta(et)}
-                                            className={`text-xs px-3 py-1 rounded-full transition-colors ${etiquetas.includes(et) ? 'bg-terra text-white font-bold' : 'bg-dark-elevated text-dark-muted hover:text-dark-text'}`}>{et}</button>
+                                            aria-pressed={etiquetas.includes(et)}
+                                            className={`text-xs px-2.5 py-1 rounded ${etiquetas.includes(et) ? 'bg-texto text-fondo' : 'border border-linea text-texto-sec hover:text-texto'}`}>{nombreEtiqueta(et)}</button>
                                 ))}
                             </div>
                         </div>
                         <div>
-                            <label className="block text-dark-muted text-sm mb-2">Tu reseña</label>
+                            <label className="etiqueta block mb-2">Tu reseña</label>
                             <textarea value={texto} onChange={(e) => setTexto(e.target.value)} rows={5}
-                                      className="w-full bg-dark-elevated border border-dark-border rounded-lg px-4 py-2.5 text-dark-text focus:border-terra focus:outline-none transition-colors" placeholder="¿Qué te ha parecido?" />
+                                      className="campo font-serif text-[17px] leading-[1.65]" placeholder="¿Qué te ha parecido?" />
                         </div>
                         <div className="flex flex-wrap gap-6">
-                            <label className="flex items-center gap-2 text-dark-muted text-sm cursor-pointer"><input type="checkbox" checked={esPublica} onChange={(e) => setEsPublica(e.target.checked)} className="accent-terra" />Pública</label>
-                            <label className="flex items-center gap-2 text-dark-muted text-sm cursor-pointer"><input type="checkbox" checked={tieneSpoiler} onChange={(e) => setTieneSpoiler(e.target.checked)} className="accent-terra" />Spoilers</label>
+                            <label className="flex items-center gap-2 text-texto-sec text-sm cursor-pointer"><input type="checkbox" checked={esPublica} onChange={(e) => setEsPublica(e.target.checked)} className="accent-acento" />Pública</label>
+                            <label className="flex items-center gap-2 text-texto-sec text-sm cursor-pointer"><input type="checkbox" checked={tieneSpoiler} onChange={(e) => setTieneSpoiler(e.target.checked)} className="accent-acento" />Spoilers</label>
                             {!esEdicion && (
-                                <label className="flex items-center gap-2 text-dark-muted text-sm cursor-pointer"><input type="checkbox" checked={leidoPreviamente} onChange={(e) => setLeidoPreviamente(e.target.checked)} className="accent-terra" />Relectura</label>
+                                <label className="flex items-center gap-2 text-texto-sec text-sm cursor-pointer"><input type="checkbox" checked={leidoPreviamente} onChange={(e) => setLeidoPreviamente(e.target.checked)} className="accent-acento" />Relectura</label>
                             )}
                         </div>
-                        <button type="submit" className="w-full bg-terra hover:bg-terra-hover text-white font-semibold py-2.5 rounded-lg transition-colors">
+                        <button type="submit" className="w-full btn-acento">
                             {esEdicion ? 'Guardar cambios' : 'Publicar reseña'}
                         </button>
                         {!esEdicion && (
                             <button type="button" onClick={soloPuntuar}
-                                    className="w-full -mt-3 border border-dark-border hover:border-terra hover:text-terra text-dark-muted py-2.5 rounded-lg text-sm transition-colors">
+                                    className="w-full -mt-3 btn-secundario">
                                 Solo puntuar, sin escribir reseña
                             </button>
                         )}

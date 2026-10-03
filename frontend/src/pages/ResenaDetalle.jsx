@@ -4,8 +4,14 @@ import { useAuth } from '../context/AuthContext'
 import Estrellas from '../components/Estrellas'
 import api from '../api/axios'
 import SpoilerOculto from '../components/SpoilerOculto'
+import { Heart, Lightning } from '@phosphor-icons/react'
+import Portada from '../components/Portada'
+import { useAvisos } from '../context/AvisosContext'
+import { FRASES_RITMO } from '../utils/ritmo'
+import { nombreEtiqueta } from '../utils/etiquetas'
 
 export default function ResenaDetalle() {
+    const { avisar, confirmar, avisarCarga } = useAvisos()
     const { id } = useParams()
     const { usuario } = useAuth()
     const [resena, setResena] = useState(null)
@@ -18,9 +24,9 @@ export default function ResenaDetalle() {
         try {
             const res = await api.get(`/resenas/${id}`)
             setResena(res.data)
-        } catch (err) { console.error('Error:', err) }
+        } catch (err) { console.error('Error:', err); avisarCarga(err, 'No se ha podido cargar la reseña.') }
         finally { setLoading(false) }
-    }, [id])
+    }, [avisarCarga, id])
 
     const comprobarLike = useCallback(async () => {
         if (eliminada) return
@@ -50,149 +56,132 @@ export default function ResenaDetalle() {
                 setLiked(true)
                 setResena(prev => ({ ...prev, numLikes: (prev.numLikes || 0) + 1 }))
             }
-        } catch (err) { alert(err.response?.data?.mensaje || 'Error') }
+        } catch (err) { avisar(err.response?.data?.mensaje || 'Algo ha fallado. Inténtalo de nuevo.') }
     }
 
 
-    if (loading) return <p className="text-dark-muted">Cargando...</p>
-    if (!resena) return <p className="text-red-400">Reseña no encontrada</p>
-    if (eliminada) return <p className="text-dark-muted">Reseña eliminada</p>
+    if (loading) return <p className="text-texto-sec">Cargando…</p>
+    if (!resena) return <p className="font-serif text-2xl text-texto-sec">Esta reseña ya no está aquí.</p>
+    if (eliminada) return <p className="text-texto-sec">Reseña eliminada</p>
 
-    const ritmoLabels = ['', 'Lento', 'Medio', 'Rápido']
 
     return (
-        <div className="max-w-2xl mx-auto">
-            {/* Cabecera: libro + usuario */}
-            <div className="flex gap-5 mb-8">
-                <Link to={`/libro/${resena.idlibro}`} className="flex-shrink-0">
-                    {resena.portadaLibro ? (
-                        <img src={resena.portadaLibro} alt={resena.tituloLibro}
-                             className="w-24 h-36 object-cover rounded-sm shadow-lg" />
-                    ) : (
-                        <div className="w-24 h-36 bg-dark-elevated rounded-sm flex items-center justify-center text-dark-muted text-sm shadow-lg">
-                            Sin portada
-                        </div>
-                    )}
-                </Link>
-                <div className="flex-1">
-                    <Link to={`/libro/${resena.idlibro}`}
-                          className="text-xl font-bold text-dark-text hover:text-terra transition-colors block mb-1">
-                        {resena.tituloLibro}
+        <div>
+            {/* Cabecera sobre la portada difuminada: libro, autor de la reseña y nota */}
+            <section className="relative isolate -mx-4 sm:-mx-6 px-4 sm:px-6 pt-4 pb-10">
+                <div className="relative max-w-3xl mx-auto flex gap-6 sm:gap-8">
+                    <Link to={`/libro/${resena.idlibro}`} className="group flex-shrink-0">
+                        <Portada src={resena.portadaLibro} titulo={resena.tituloLibro} id={resena.idlibro} className="w-24 sm:w-32" />
                     </Link>
-                    <div className="flex items-center gap-2 mb-3">
-                        {resena.avatarUsuario ? (
-                            <img src={resena.avatarUsuario} alt={resena.nombreUsuario} className="w-6 h-6 rounded-full object-cover" />
-                        ) : (
-                            <div className="w-6 h-6 bg-terra/20 rounded-full flex items-center justify-center text-terra text-xs font-bold">
-                                {resena.nombreUsuario?.charAt(0).toUpperCase()}
-                            </div>
-                        )}
-                        <Link to={`/usuario/${resena.idusuario}`}
-                              className="text-dark-muted text-sm hover:text-terra transition-colors">
-                            {resena.nombreUsuario}
+                    <div className="flex-1 min-w-0">
+                        <p className="etiqueta mb-2">Reseña de</p>
+                        <Link to={`/libro/${resena.idlibro}`}
+                              className="font-serif text-3xl sm:text-4xl leading-[1.08] text-texto hover:text-acento block">
+                            {resena.tituloLibro}
                         </Link>
-                        <span className="text-dark-muted text-xs">·</span>
-                        <span className="text-dark-muted text-xs">{new Date(resena.fechaCreacion).toLocaleDateString()}</span>
+                        <div className="mt-4"><Estrellas puntuacion={resena.puntuacion} /></div>
+                        <div className="flex flex-wrap items-center gap-2 mt-4 text-sm">
+                            {resena.avatarUsuario ? (
+                                <img src={resena.avatarUsuario} alt="" className="w-6 h-6 rounded-full object-cover" />
+                            ) : (
+                                <span className="w-6 h-6 border border-linea rounded-full flex items-center justify-center text-texto-sec text-xs font-serif">
+                                    {resena.nombreUsuario?.charAt(0).toUpperCase()}
+                                </span>
+                            )}
+                            <Link to={`/usuario/${resena.idusuario}`} className="text-texto-sec hover:text-acento">
+                                {resena.nombreUsuario}
+                            </Link>
+                            <span className="text-texto-ter text-xs">· {new Date(resena.fechaCreacion).toLocaleDateString()}</span>
+                            {resena.leidopreviamente && (
+                                <span className="text-xs text-texto-sec border border-linea px-1.5 rounded">Relectura</span>
+                            )}
+                        </div>
                     </div>
+                </div>
+            </section>
 
-                    <Estrellas puntuacion={resena.puntuacion} />
-
-                    {resena.leidopreviamente && (
-                        <span className="inline-block mt-2 text-xs bg-dark-elevated text-dark-muted px-2 py-0.5 rounded">Relectura</span>
+            <article className="max-w-3xl mx-auto">
+                {/* El texto, en serif de lectura */}
+                <div className="border-t border-linea pt-8">
+                    {resena.texto ? (
+                        <SpoilerOculto activo={resena.tieneSpoiler && usuario?.id !== resena.idusuario}>
+                            <p className="font-serif text-[18px] leading-[1.7] text-texto/90 max-w-[65ch] whitespace-pre-line">{resena.texto}</p>
+                        </SpoilerOculto>
+                    ) : (
+                        <p className="font-serif italic text-texto-sec">Sin palabras: solo la nota.</p>
                     )}
                 </div>
-            </div>
 
-            {/* Ritmo */}
-            {resena.ritmo ? (
-                <div className="flex items-center gap-3 mb-5">
-                    <span className="text-dark-muted text-sm">Ritmo:</span>
-                    <div className="flex gap-1">
-                        {[1, 2, 3].map((r) => (
-                            <span key={r} className={`text-lg transition-opacity ${resena.ritmo >= r ? 'opacity-100' : 'opacity-25'}`}>⚡</span>
-                        ))}
-                    </div>
-                    <span className="text-dark-muted text-sm">{ritmoLabels[resena.ritmo]}</span>
-                </div>
-            ) : null}
-
-            {/* Etiquetas */}
-            {resena.etiquetas?.length > 0 ? (
-                <div className="flex gap-2 flex-wrap mb-6">
-                    {resena.etiquetas.map((et) => (
-                        <span key={et} className="text-xs bg-terra/10 text-terra px-3 py-1 rounded-full">{et}</span>
-                    ))}
-                </div>
-            ) : null}
-
-            {/* Texto */}
-            <div className="bg-dark-card rounded-2xl p-6 mb-6">
-                {resena.texto ? (
-                    <SpoilerOculto activo={resena.tieneSpoiler && usuario?.id !== resena.idusuario}>
-                        <p className="text-dark-text/90 leading-relaxed">{resena.texto}</p>
-                    </SpoilerOculto>
-                ) : (
-                    <p className="text-dark-muted italic">Sin texto</p>
-                )}
-            </div>
-
-            {/* Like + info */}
-            <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                        {usuario && resena.idusuario !== usuario.id && (
-                            <button onClick={toggleLike} className="flex items-center gap-1.5 transition-colors">
-                                {liked ? (
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-red-500" viewBox="0 0 24 24" fill="currentColor">
-                                        <path d="M11.645 20.91l-.007-.003-.022-.012a15.247 15.247 0 01-.383-.218 25.18 25.18 0 01-4.244-3.17C4.688 15.36 2.25 12.174 2.25 8.25 2.25 5.322 4.714 3 7.688 3A5.5 5.5 0 0112 5.052 5.5 5.5 0 0116.313 3c2.973 0 5.437 2.322 5.437 5.25 0 3.925-2.438 7.111-4.739 9.256a25.175 25.175 0 01-4.244 3.17 15.247 15.247 0 01-.383.219l-.022.012-.007.004-.003.001a.752.752 0 01-.704 0l-.003-.001z" />
-                                    </svg>
-                                ) : (
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-dark-muted hover:text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                                    </svg>
-                                )}
-                                <span className={`text-sm ${liked ? 'text-red-500' : 'text-dark-muted'}`}>{resena.numLikes || 0}</span>
-                            </button>
-                        )}
-                        {(!usuario || resena.idusuario === usuario.id) && (
-                            <div className="flex items-center gap-1.5">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-dark-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                                </svg>
-                                <span className="text-sm text-dark-muted">{resena.numLikes || 0}</span>
+                {/* Ritmo y ambiente */}
+                {(resena.ritmo || resena.etiquetas?.length > 0) && (
+                    <div className="flex flex-wrap items-center gap-x-8 gap-y-3 mt-8">
+                        {resena.ritmo ? (
+                            <div className="flex items-center gap-2">
+                                <span className="etiqueta">Ritmo</span>
+                                <span className="flex gap-0.5 text-acento">
+                                    {[1, 2, 3].map((r) => (
+                                        <Lightning key={r} size={16} weight={resena.ritmo >= r ? 'fill' : 'light'}
+                                                   className={resena.ritmo >= r ? '' : 'opacity-40'} />
+                                    ))}
+                                </span>
+                                <span className="text-texto-sec text-sm">{FRASES_RITMO[resena.ritmo]}</span>
+                            </div>
+                        ) : null}
+                        {resena.etiquetas?.length > 0 && (
+                            <div className="flex flex-wrap items-center gap-2">
+                                <span className="etiqueta mr-1">Ambiente</span>
+                                {resena.etiquetas.map((et) => (
+                                    <span key={et} className="text-xs text-texto-sec border border-linea px-2 py-0.5 rounded">{nombreEtiqueta(et)}</span>
+                                ))}
                             </div>
                         )}
                     </div>
-                    <div className="flex items-center gap-3">
-                        {resena.esPublica ? (
-                            <span className="text-xs bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full">Pública</span>
+                )}
+
+                {/* Me gusta y acciones */}
+                <div className="flex items-center justify-between mt-10 pt-5 border-t border-linea text-sm">
+                    <div className="flex items-center gap-4">
+                        {usuario && resena.idusuario !== usuario.id ? (
+                            <button onClick={toggleLike} aria-label={liked ? 'Quitar me gusta' : 'Me gusta'}
+                                    className={`flex items-center gap-1.5 ${liked ? 'text-acento' : 'text-texto-sec hover:text-acento'}`}>
+                                <Heart size={18} weight={liked ? 'fill' : 'regular'} />
+                                <span className="tabular-nums">{resena.numLikes || 0}</span>
+                            </button>
                         ) : (
-                            <span className="text-xs bg-dark-elevated px-2 py-0.5 rounded-full">Privada</span>
+                            <span className="flex items-center gap-1.5 text-texto-sec">
+                                <Heart size={18} />
+                                <span className="tabular-nums">{resena.numLikes || 0}</span>
+                            </span>
                         )}
+                        <span className="text-xs text-texto-ter">{resena.esPublica ? 'Pública' : 'Privada'}</span>
+                    </div>
+                    <div className="flex items-center gap-4">
                         {usuario && usuario.id === resena.idusuario && (
                             <button onClick={() => navigate(`/libro/${resena.idlibro}/resena?editar=${id}`)}
-                                    className="text-dark-muted hover:text-terra text-sm transition-colors">
+                                    className="text-texto-sec hover:text-texto">
                                 Editar
                             </button>
                         )}
                         {usuario && (usuario.id === resena.idusuario || usuario.rol === 'ADMIN') && (
                             <button onClick={async () => {
-                                if (!window.confirm('¿Eliminar esta reseña?')) return
+                                if (!await confirmar({ titulo: '¿Eliminar esta reseña?', texto: 'Se borrará para siempre. No se puede deshacer.', aceptar: 'Eliminar', peligro: true })) return
                                 try {
                                     await api.delete(`/resenas/${id}`)
                                 } catch (err) {
-                                    alert(err.response?.data?.mensaje || 'No se ha podido eliminar la reseña')
+                                    avisar(err.response?.data?.mensaje || 'No se ha podido eliminar la reseña')
                                     return
                                 }
                                 setEliminada(true)
                                 // De vuelta a la ficha del libro (tu nota se queda como puntuación sin reseña)
                                 navigate(`/libro/${resena.idlibro}`, { replace: true })
                             }}
-                                    className="text-red-400/60 hover:text-red-400 text-sm transition-colors">
+                                    className="text-texto-ter hover:text-error">
                                 Eliminar
                             </button>
                         )}
                     </div>
-            </div>
+                </div>
+            </article>
         </div>
     )
 }

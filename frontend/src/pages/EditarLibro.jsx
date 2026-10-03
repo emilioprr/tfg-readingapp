@@ -2,8 +2,11 @@ import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import api from '../api/axios'
+import { X } from '@phosphor-icons/react'
+import { useAvisos } from '../context/AvisosContext'
 
 export default function EditarLibro() {
+    const { avisarCarga } = useAvisos()
     const { id } = useParams()
     const { usuario } = useAuth()
     const navigate = useNavigate()
@@ -24,9 +27,9 @@ export default function EditarLibro() {
             setGenero(libro.genero || '')
             setNumPaginas(libro.numPaginas || '')
             setPortada(libro.portada || '')
-        } catch (err) { console.error('Error:', err) }
+        } catch (err) { console.error('Error:', err); avisarCarga(err, 'No se ha podido cargar el libro para editarlo.') }
         finally { setLoading(false) }
-    }, [id])
+    }, [avisarCarga, id])
 
     useEffect(() => { cargarLibro() }, [cargarLibro, id])
 
@@ -41,43 +44,46 @@ export default function EditarLibro() {
         }
     }
 
-    if (loading) return <p className="text-dark-muted">Cargando...</p>
-    if (!usuario || usuario.rol !== 'ADMIN') return <p className="text-red-400">No tienes permiso</p>
+    if (loading) return <p className="text-texto-sec">Cargando…</p>
+    if (!usuario || usuario.rol !== 'ADMIN') return <p className="text-error">No tienes permiso</p>
 
     return (
         <div className="max-w-lg mx-auto">
-            <div className="flex items-center justify-between mb-6">
-                <h1 className="text-2xl font-bold text-terra tracking-tight">Editar libro</h1>
-                <button onClick={() => navigate(-1)} className="text-dark-muted hover:text-dark-text text-2xl transition-colors">✕</button>
+            <div className="flex items-start justify-between mb-8">
+                <div>
+                    <p className="etiqueta mb-2">Administración</p>
+                    <h1 className="font-serif text-4xl leading-none tracking-tight text-texto">Editar libro</h1>
+                </div>
+                <button onClick={() => navigate(-1)} className="text-texto-sec hover:text-texto" aria-label="Cerrar"><X size={22} /></button>
             </div>
-            {error && <p className="text-red-400 text-sm mb-4">{error}</p>}
+            {error && <p className="text-error text-sm mb-4">{error}</p>}
             <form onSubmit={handleSubmit} className="space-y-5">
                 <div>
-                    <label className="block text-dark-muted text-sm mb-1">Título</label>
+                    <label className="etiqueta block mb-2">Título</label>
                     <input type="text" value={titulo} onChange={(e) => setTitulo(e.target.value)}
-                           className="w-full bg-dark-elevated border border-dark-border rounded-lg px-4 py-2.5 text-dark-text focus:border-terra focus:outline-none transition-colors" required />
+                           className="campo" required />
                 </div>
                 <div>
-                    <label className="block text-dark-muted text-sm mb-1">Sinopsis</label>
-                    <textarea value={sinopsis} onChange={(e) => setSinopsis(e.target.value)} rows={4}
-                              className="w-full bg-dark-elevated border border-dark-border rounded-lg px-4 py-2.5 text-dark-text focus:border-terra focus:outline-none transition-colors" />
+                    <label className="etiqueta block mb-2">Sinopsis</label>
+                    <textarea value={sinopsis} onChange={(e) => setSinopsis(e.target.value)} rows={6}
+                              className="campo font-serif text-base leading-relaxed" />
                 </div>
                 <div>
-                    <label className="block text-dark-muted text-sm mb-1">Género</label>
+                    <label className="etiqueta block mb-2">Género</label>
                     <input type="text" value={genero} onChange={(e) => setGenero(e.target.value)}
-                           className="w-full bg-dark-elevated border border-dark-border rounded-lg px-4 py-2.5 text-dark-text focus:border-terra focus:outline-none transition-colors" />
+                           className="campo" />
                 </div>
                 <div>
-                    <label className="block text-dark-muted text-sm mb-1">Páginas</label>
+                    <label className="etiqueta block mb-2">Páginas</label>
                     <input type="number" value={numPaginas} onChange={(e) => setNumPaginas(e.target.value)}
-                           className="w-32 bg-dark-elevated border border-dark-border rounded-lg px-3 py-2 text-dark-text focus:border-terra focus:outline-none transition-colors" />
+                           className="campo w-32" />
                 </div>
                 <div>
-                    <label className="block text-dark-muted text-sm mb-1">URL de portada</label>
+                    <label className="etiqueta block mb-2">URL de portada</label>
                     <input type="text" value={portada} onChange={(e) => setPortada(e.target.value)}
-                           className="w-full bg-dark-elevated border border-dark-border rounded-lg px-4 py-2.5 text-dark-text focus:border-terra focus:outline-none transition-colors" />
+                           className="campo" />
                 </div>
-                <button type="submit" className="w-full bg-terra hover:bg-terra-hover text-white font-semibold py-2.5 rounded-lg transition-colors">Guardar cambios</button>
+                <button type="submit" className="btn-acento w-full py-2.5">Guardar cambios</button>
             </form>
         </div>
     )

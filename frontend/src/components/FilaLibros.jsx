@@ -1,46 +1,28 @@
 import { useRef, useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
+import { CaretLeft, CaretRight } from '@phosphor-icons/react'
+import Portada from './Portada'
+import { formatoMedia } from '../utils/notas'
 
-/** Portada de libro para el catálogo: se agranda al pasar el ratón y muestra la nota si la tiene. */
+/** Libro del catálogo: portada, título, autor y la nota media si la tiene. */
 export function PortadaLibro({ libro, className = 'w-36' }) {
     return (
         <Link to={`/libro/${libro.idlibro}`} className={`group flex-shrink-0 snap-start ${className}`}>
-            <div className="relative aspect-[2/3] rounded-md overflow-hidden bg-dark-elevated shadow-md transition-transform duration-300 group-hover:scale-[1.04] group-hover:shadow-2xl">
-                {libro.portada ? (
-                    <img src={libro.portada} alt={libro.titulo} loading="lazy" className="w-full h-full object-cover" />
-                ) : (
-                    <div className="w-full h-full flex flex-col justify-end p-3 bg-gradient-to-br from-dark-elevated to-dark-border">
-                        <p className="text-dark-text text-sm font-semibold leading-snug line-clamp-4">{libro.titulo}</p>
-                        <p className="text-dark-muted text-xs mt-1 truncate">{libro.nombreAutor}</p>
-                    </div>
-                )}
+            <Portada src={libro.portada} titulo={libro.titulo} autor={libro.nombreAutor} id={libro.idlibro} className="w-full" />
+            <p className="font-serif text-[15px] leading-snug text-texto mt-3 line-clamp-2 group-hover:text-acento">{libro.titulo}</p>
+            <p className="flex items-baseline justify-between gap-2 text-xs text-texto-sec mt-0.5">
+                <span className="truncate">{libro.nombreAutor}</span>
                 {libro.notaMedia != null && (
-                    <span className="absolute top-1.5 right-1.5 bg-black/70 backdrop-blur-sm text-amber-400 text-[11px] font-semibold px-1.5 py-0.5 rounded">
-                        ★ {libro.notaMedia.toLocaleString('es-ES')}
-                    </span>
+                    <span className="flex-shrink-0 tabular-nums text-texto-ter">★ {formatoMedia(libro.notaMedia)}</span>
                 )}
-            </div>
-            <p className="text-sm text-dark-text mt-2 truncate group-hover:text-terra transition-colors">{libro.titulo}</p>
-            <p className="text-xs text-dark-muted truncate">{libro.nombreAutor}</p>
+            </p>
         </Link>
     )
 }
 
-function Flecha({ direccion, onClick }) {
-    const izquierda = direccion === 'izquierda'
-    return (
-        <button onClick={onClick} aria-label={izquierda ? 'Anteriores' : 'Siguientes'}
-                className={`hidden md:flex absolute top-0 ${izquierda ? 'left-0 bg-gradient-to-r' : 'right-0 bg-gradient-to-l'} from-dark-base via-dark-base/80 to-transparent
-                            h-[calc(100%-2.75rem)] w-14 items-center ${izquierda ? 'justify-start pl-1' : 'justify-end pr-1'}
-                            opacity-0 group-hover/fila:opacity-100 transition-opacity z-10 text-dark-text hover:text-terra`}>
-            <svg xmlns="http://www.w3.org/2000/svg" className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d={izquierda ? 'M15 19l-7-7 7-7' : 'M9 5l7 7-7 7'} />
-            </svg>
-        </button>
-    )
-}
+const claseFlecha = 'w-8 h-8 rounded-full border border-linea flex items-center justify-center text-texto-sec hover:text-texto hover:border-texto-ter disabled:opacity-30 disabled:pointer-events-none'
 
-/** Fila horizontal estilo Netflix, con flechas para desplazarse de "página" en "página". */
+/** Fila horizontal de libros; se avanza de "página" en "página" con las flechas de la cabecera. */
 export default function FilaLibros({ titulo, libros, verTodo }) {
     const scrollRef = useRef(null)
     const [puedeIzquierda, setPuedeIzquierda] = useState(false)
@@ -65,22 +47,24 @@ export default function FilaLibros({ titulo, libros, verTodo }) {
     }
 
     return (
-        <section className="mb-10">
-            <div className="flex items-baseline justify-between mb-3">
-                <h2 className="text-lg font-semibold text-dark-text">{titulo}</h2>
-                {verTodo && (
-                    <Link to={verTodo} className="text-xs text-dark-muted hover:text-terra transition-colors">
-                        Ver todo ›
-                    </Link>
-                )}
-            </div>
-            <div className="relative group/fila">
-                {puedeIzquierda && <Flecha direccion="izquierda" onClick={() => desplazar(-1)} />}
-                <div ref={scrollRef} onScroll={actualizarFlechas}
-                     className="flex gap-4 overflow-x-auto scrollbar-none snap-x snap-mandatory pt-1 pb-2 -mx-1 px-1">
-                    {libros.map((libro) => <PortadaLibro key={libro.idlibro} libro={libro} />)}
+        <section className="border-t border-linea pt-8 mb-12">
+            <div className="flex items-center justify-between gap-4 mb-6">
+                <h2 className="etiqueta">{titulo}</h2>
+                <div className="flex items-center gap-4">
+                    {verTodo && (
+                        <Link to={verTodo} className="text-xs text-texto-sec hover:text-acento">Ver todo</Link>
+                    )}
+                    {(puedeIzquierda || puedeDerecha) && (
+                        <div className="hidden sm:flex gap-2">
+                            <button onClick={() => desplazar(-1)} disabled={!puedeIzquierda} className={claseFlecha} aria-label="Anteriores"><CaretLeft size={14} /></button>
+                            <button onClick={() => desplazar(1)} disabled={!puedeDerecha} className={claseFlecha} aria-label="Siguientes"><CaretRight size={14} /></button>
+                        </div>
+                    )}
                 </div>
-                {puedeDerecha && <Flecha direccion="derecha" onClick={() => desplazar(1)} />}
+            </div>
+            <div ref={scrollRef} onScroll={actualizarFlechas}
+                 className="flex gap-6 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden snap-x snap-mandatory pt-1 pb-2">
+                {libros.map((libro) => <PortadaLibro key={libro.idlibro} libro={libro} className="w-32 sm:w-36" />)}
             </div>
         </section>
     )

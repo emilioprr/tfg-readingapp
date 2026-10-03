@@ -1,21 +1,57 @@
 @import "tailwindcss";
 
+/*
+ * Bookmark — "tu cuaderno de lectura, con criterio".
+ * Oscuro, plano y en blanco y negro: el color lo ponen las portadas.
+ */
 @theme {
-    --color-dark-base: #111111;
-    --color-dark-card: #1a1a1a;
-    --color-dark-elevated: #222222;
-    --color-dark-border: #2a2a2a;
-    --color-dark-text: #e8e2d9;
-    --color-dark-muted: #8a8078;
-    --color-terra: #c45d3e;
-    --color-terra-hover: #d4724f;
-    --color-terra-glow: #b04a2e;
+    /* Superficies */
+    --color-fondo: #100F0D;          /* fondo general, plano */
+    --color-superficie: #1A1815;     /* bloques destacados puntuales, inputs, menús */
+    --color-superficie-alta: #221F1B; /* hover/pulsado sobre superficie (derivado, no está en la paleta base) */
+    --color-linea: #2A2723;          /* filetes, bordes, separadores */
+
+    /* Texto (beige cálido, nunca blanco puro) */
+    --color-texto: #F5F1E6;
+    --color-texto-sec: #A89F8E;
+    --color-texto-ter: #6E665A;      /* metadatos, fechas */
+
+    /* Acentos */
+    --color-acento: #F5F1E6;         /* blanco y negro: el "acento" es el propio texto (botones principales, enlaces, activo, estrellas, racha, likes) */
+    --color-acento-hover: #FFFFFF;
+    --color-acento-suave: #2A2723;   /* fondos apenas marcados */
+    --color-exito: #7E9A58;
+    --color-error: #D9646E;          /* rojo sin tono naranja, solo para errores y acciones destructivas */
+
+    /* Tipografía: serif para leer y para lo protagonista; sans para la interfaz */
+    --font-serif: "Newsreader", ui-serif, Georgia, serif;
+    --font-sans: "Geist", ui-sans-serif, system-ui, sans-serif;
+
+    /* Movimiento: suave y sin rebotes */
+    --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+html {
+    background-color: var(--color-fondo);
 }
 
 body {
-    font-family: 'Inter', sans-serif;
-    background-color: #111111;
-    color: #e8e2d9;
+    font-family: var(--font-sans);
+    background-color: var(--color-fondo);
+    color: var(--color-texto);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+::selection {
+    background-color: var(--color-acento-suave);
+    color: var(--color-texto);
+}
+
+/* Foco visible para quien navega con teclado */
+:focus-visible {
+    outline: 2px solid var(--color-acento);
+    outline-offset: 2px;
 }
 
 ::-webkit-scrollbar {
@@ -23,14 +59,46 @@ body {
     width: 6px;
 }
 ::-webkit-scrollbar-track {
-    background: #1a1a1a;
+    background: var(--color-fondo);
 }
 ::-webkit-scrollbar-thumb {
-    background: #2a2a2a;
+    background: var(--color-linea);
     border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-    background: #c45d3e;
+    background: var(--color-texto-ter);
+}
+
+/* === Piezas comunes del sistema visual (con @utility para poder combinarlas y usar variantes) === */
+/* Etiqueta de sección: sans pequeña, mayúsculas y tracking amplio ("LEYENDO AHORA") */
+@utility etiqueta {
+    @apply font-sans text-[11px] font-medium uppercase tracking-[0.14em] text-texto-sec;
+}
+
+/* Botones: radio 4 px y texto en frase normal */
+@utility btn {
+    @apply inline-flex items-center justify-center gap-2 rounded px-4 py-2 text-sm font-medium whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed;
+}
+/* Primario: beige con texto oscuro */
+@utility btn-primario {
+    @apply btn bg-texto text-fondo hover:bg-texto/85;
+}
+/* La acción principal de la pantalla: acento (texto oscuro para llegar al contraste AA) */
+@utility btn-acento {
+    @apply btn bg-acento text-fondo hover:bg-acento-hover;
+}
+/* Secundario: contorno fino */
+@utility btn-secundario {
+    @apply btn border border-linea text-texto hover:border-texto-sec;
+}
+/* Terciario: solo texto */
+@utility btn-texto {
+    @apply inline-flex items-center gap-1.5 text-sm text-texto-sec hover:text-texto;
+}
+
+/* Campos de formulario */
+@utility campo {
+    @apply w-full bg-superficie border border-linea rounded px-3 py-2 text-sm text-texto placeholder-texto-ter focus:border-acento focus:outline-none;
 }
 
 /* Filas horizontales del catálogo: se desplazan sin mostrar la barra */
@@ -41,8 +109,11 @@ body {
     display: none;
 }
 
+/* Transiciones cortas y suaves, solo de lo que cambia al interactuar */
 a, button {
-    transition: all 0.2s ease;
+    transition-property: color, background-color, border-color, opacity, transform;
+    transition-duration: 200ms;
+    transition-timing-function: var(--ease-out);
 }
 
 @keyframes slide-in {
@@ -60,21 +131,14 @@ a, button {
     animation: slide-in 0.3s ease-out;
 }
 
-@keyframes racha-in {
-    from { transform: translateY(-24px) scale(0.9); opacity: 0; }
-    to   { transform: translateY(0) scale(1); opacity: 1; }
+/* Tiras de aviso (racha, notificaciones): bajan un poco y aparecen, sin rebote */
+@keyframes tira {
+    from { transform: translateY(-8px); opacity: 0; }
+    to   { transform: translateY(0); opacity: 1; }
 }
-.animate-racha-in { animation: racha-in 0.35s ease-out; }
+.animate-tira { animation: tira 0.28s cubic-bezier(0.22, 1, 0.36, 1); }
 
-@keyframes pop {
-    0%   { transform: scale(0.4); opacity: 0; }
-    60%  { transform: scale(1.25); opacity: 1; }
-    100% { transform: scale(1); }
+@media (prefers-reduced-motion: reduce) {
+    .animate-tira, .animate-slide-in { animation: none; }
+    *, *::before, *::after { transition-duration: 0.01ms !important; }
 }
-.animate-pop { animation: pop 0.45s ease-out; }
-
-@keyframes llama {
-    0%, 100% { transform: scale(1) rotate(-3deg); }
-    50%      { transform: scale(1.1) rotate(3deg); }
-}
-.animate-llama { animation: llama 1.2s ease-in-out infinite; }

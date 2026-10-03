@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import api from '../api/axios'
+import { X } from '@phosphor-icons/react'
 
 export default function CrearReto() {
     const { usuario } = useAuth()
@@ -47,54 +48,54 @@ export default function CrearReto() {
     return (
         <div className="max-w-lg mx-auto">
             <div className="flex items-center justify-between mb-6">
-                <h1 className="text-2xl font-bold text-terra tracking-tight">Crear reto</h1>
-                <button onClick={() => navigate(-1)} className="text-dark-muted hover:text-dark-text text-2xl transition-colors">✕</button>
+                <h1 className="font-serif text-4xl leading-none text-texto">Crear reto</h1>
+                <button onClick={() => navigate(-1)} className="text-texto-sec hover:text-texto" aria-label="Cerrar"><X size={22} /></button>
             </div>
-            {error && <p className="text-red-400 text-sm mb-4">{error}</p>}
+            {error && <p className="text-error text-sm mb-4">{error}</p>}
             <form onSubmit={handleSubmit} className="space-y-5">
                 <div>
-                    <label className="block text-dark-muted text-sm mb-1">Título</label>
+                    <label className="etiqueta block mb-2">Título</label>
                     <input type="text" value={titulo} onChange={(e) => setTitulo(e.target.value)}
-                           className="w-full bg-dark-elevated border border-dark-border rounded-lg px-4 py-2.5 text-dark-text focus:border-terra focus:outline-none transition-colors" placeholder="Ej: Maratón de septiembre" required />
+                           className="campo" placeholder="Ej: Maratón de septiembre" required />
                 </div>
                 <div>
-                    <label className="block text-dark-muted text-sm mb-1">Descripción (opcional)</label>
+                    <label className="etiqueta block mb-2">Descripción (opcional)</label>
                     <textarea value={descripcion} onChange={(e) => setDescripcion(e.target.value)} rows={2}
-                              className="w-full bg-dark-elevated border border-dark-border rounded-lg px-4 py-2.5 text-dark-text focus:border-terra focus:outline-none transition-colors" placeholder="Describe tu reto..." />
+                              className="campo" placeholder="En qué consiste, por qué merece la pena…" />
                 </div>
                 <div>
-                    <label className="block text-dark-muted text-sm mb-2">Tipo de reto</label>
+                    <label className="etiqueta block mb-2">Tipo de reto</label>
                     <div className="grid grid-cols-3 gap-2">
                         {tipos.map((t) => (
                             <button key={t.value} type="button" onClick={() => setTipo(t.value)}
-                                    className={`p-3 rounded-xl text-left text-sm transition-colors ${tipo === t.value ? 'bg-terra/20 border border-terra/40 text-terra' : 'bg-dark-elevated border border-dark-border text-dark-muted hover:text-dark-text'}`}>
+                                    className={`p-3 rounded text-left text-sm transition-colors ${tipo === t.value ? 'border border-texto text-texto bg-superficie' : 'border border-linea text-texto-sec hover:text-texto'}`}>
                                 <p className="font-medium">{t.label}</p><p className="text-xs mt-1 opacity-70">{t.desc}</p>
                             </button>
                         ))}
                     </div>
                 </div>
                 <div>
-                    <label className="block text-dark-muted text-sm mb-2">Modalidad</label>
+                    <label className="etiqueta block mb-2">Modalidad</label>
                     <div className="grid grid-cols-2 gap-2">
                         {modalidades.map((m) => (
                             <button key={m.value} type="button" onClick={() => setModalidad(m.value)}
-                                    className={`flex-1 p-3 rounded-xl text-left text-sm transition-colors ${modalidad === m.value ? 'bg-terra/20 border border-terra/40 text-terra' : 'bg-dark-elevated border border-dark-border text-dark-muted hover:text-dark-text'}`}>
+                                    className={`flex-1 p-3 rounded text-left text-sm transition-colors ${modalidad === m.value ? 'border border-texto text-texto bg-superficie' : 'border border-linea text-texto-sec hover:text-texto'}`}>
                                 <p className="font-medium">{m.label}</p><p className="text-xs mt-1 opacity-70">{m.desc}</p>
                             </button>
                         ))}
                     </div>
                 </div>
                 <div>
-                    <label className="block text-dark-muted text-sm mb-1">Meta ({metaLabel})</label>
+                    <label className="etiqueta block mb-2">Meta ({metaLabel})</label>
                     <input type="number" value={meta} onChange={(e) => setMeta(e.target.value)} min="1"
-                           className="w-32 bg-dark-elevated border border-dark-border rounded-lg px-3 py-2 text-dark-text focus:border-terra focus:outline-none transition-colors" placeholder="Ej: 5" required />
+                           className="campo w-32" placeholder="Ej: 5" required />
                 </div>
                 <div>
-                    <label className="block text-dark-muted text-sm mb-1">Fecha límite</label>
+                    <label className="etiqueta block mb-2">Fecha límite</label>
                     <input type="date" value={fechaFin} onChange={(e) => setFechaFin(e.target.value)} min={hoy}
-                           className="w-full bg-dark-elevated border border-dark-border rounded-lg px-3 py-2 text-dark-text focus:border-terra focus:outline-none transition-colors" required />
+                           className="campo" required />
                 </div>
-                <button type="submit" className="w-full bg-terra hover:bg-terra-hover text-white font-semibold py-2.5 rounded-lg transition-colors">Crear reto</button>
+                <button type="submit" className="w-full btn-acento">Crear reto</button>
             </form>
         </div>
     )

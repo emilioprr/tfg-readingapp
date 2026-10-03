@@ -4,8 +4,12 @@ import { useAuth } from '../context/AuthContext'
 import Estrellas from './Estrellas'
 import SpoilerOculto from './SpoilerOculto'
 import api from '../api/axios'
+import { Heart } from '@phosphor-icons/react'
+import Portada from './Portada'
+import { useAvisos } from '../context/AvisosContext'
 
 export default function ResenaCard({ resena: resenaInicial, mostrarLibro = true, mostrarUsuario = true }) {
+    const { avisar, confirmar, avisarCarga } = useAvisos()
     const { usuario } = useAuth()
     const navigate = useNavigate()
     const [resena, setResena] = useState(resenaInicial)
@@ -38,7 +42,7 @@ export default function ResenaCard({ resena: resenaInicial, mostrarLibro = true,
                 setLiked(true)
                 setResena(prev => ({ ...prev, numLikes: (prev.numLikes || 0) + 1 }))
             }
-        } catch (err) { console.error('Error:', err) }
+        } catch (err) { console.error('Error:', err); avisarCarga(err, 'No se ha podido guardar el me gusta.') }
     }
 
     // El detalle de una reseña requiere cuenta
@@ -48,109 +52,95 @@ export default function ResenaCard({ resena: resenaInicial, mostrarLibro = true,
 
     const eliminarResena = async (e) => {
         e.stopPropagation()
-        if (!window.confirm('¿Eliminar esta reseña?')) return
+        if (!await confirmar({ titulo: '¿Eliminar esta reseña?', texto: 'Se borrará para siempre. No se puede deshacer.', aceptar: 'Eliminar', peligro: true })) return
         try {
             await api.delete(`/resenas/${resena.idresena}`)
             window.location.reload()
         } catch (err) {
-            alert(err.response?.data?.mensaje || 'Error al eliminar')
+            avisar(err.response?.data?.mensaje || 'Error al eliminar')
         }
     }
 
     return (
-        <div onClick={irADetalle}
-             className="bg-dark-card rounded-xl p-5 hover:bg-dark-elevated transition-colors cursor-pointer">
-            {/* Cabecera: usuario arriba a la derecha */}
-            {mostrarUsuario && (
-                <div className="flex justify-end mb-3">
-                    <div className="flex items-center gap-2"
-                         onClick={(e) => { e.stopPropagation(); navigate(`/usuario/${resena.idusuario}`) }}>
-                        {resena.avatarUsuario ? (
-                            <img src={resena.avatarUsuario} alt={resena.nombreUsuario} className="w-5 h-5 rounded-full object-cover" />
-                        ) : (
-                            <div className="w-5 h-5 bg-terra/20 rounded-full flex items-center justify-center text-terra text-xs font-bold">
-                                {resena.nombreUsuario?.charAt(0).toUpperCase()}
-                            </div>
-                        )}
-                        <span className="text-dark-muted text-xs hover:text-terra transition-colors cursor-pointer">
-                            {resena.nombreUsuario}
-                        </span>
-                    </div>
+        <article onClick={irADetalle} onKeyDown={(e) => { if (e.key === 'Enter') irADetalle() }} tabIndex={0}
+                 className="group/resena flex gap-5 py-6 border-b border-linea cursor-pointer focus-visible:outline-offset-4">
+            {/* Portada del libro */}
+            {mostrarLibro && (
+                <div className="group flex-shrink-0 self-start"
+                     onClick={(e) => { e.stopPropagation(); navigate(`/libro/${resena.idlibro}`) }}>
+                    <Portada src={resena.portadaLibro} titulo={resena.tituloLibro} id={resena.idlibro} className="w-16" />
                 </div>
             )}
 
-            {/* Cuerpo: portada + info */}
-            <div className="flex gap-4">
-                {mostrarLibro && (
-                    <div className="flex-shrink-0"
-                         onClick={(e) => { e.stopPropagation(); navigate(`/libro/${resena.idlibro}`) }}>
-                        {resena.portadaLibro ? (
-                            <img src={resena.portadaLibro} alt={resena.tituloLibro} className="w-14 h-20 object-cover rounded-sm" />
-                        ) : (
-                            <div className="w-14 h-20 bg-dark-elevated rounded-sm flex items-center justify-center text-dark-muted text-xs">
-                                Sin portada
-                            </div>
+            <div className="flex-1 min-w-0">
+                <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0">
+                        {mostrarLibro && (
+                            <button type="button" onClick={(e) => { e.stopPropagation(); navigate(`/libro/${resena.idlibro}`) }}
+                                    onKeyDown={(e) => e.stopPropagation()}
+                                    className="font-serif text-lg leading-snug text-texto hover:text-acento block max-w-full truncate text-left">
+                                {resena.tituloLibro}
+                            </button>
                         )}
+                        {/* Nota discreta */}
+                        <div className="scale-75 origin-left -my-0.5">
+                            <Estrellas puntuacion={resena.puntuacion} />
+                        </div>
                     </div>
+
+                    {/* Autor, pequeño, arriba a la derecha */}
+                    {mostrarUsuario && (
+                        <button className="flex items-center gap-2 flex-shrink-0 text-texto-sec hover:text-acento"
+                                onClick={(e) => { e.stopPropagation(); navigate(`/usuario/${resena.idusuario}`) }}>
+                            {resena.avatarUsuario ? (
+                                <img src={resena.avatarUsuario} alt="" className="w-5 h-5 rounded-full object-cover" />
+                            ) : (
+                                <span className="w-5 h-5 border border-linea rounded-full flex items-center justify-center text-[10px] font-serif">
+                                    {resena.nombreUsuario?.charAt(0).toUpperCase()}
+                                </span>
+                            )}
+                            <span className="text-xs">{resena.nombreUsuario}</span>
+                        </button>
+                    )}
+                </div>
+
+                {resena.texto && (
+                    <SpoilerOculto activo={resena.tieneSpoiler && usuario?.id !== resena.idusuario}>
+                        <p className="font-serif text-[17px] leading-[1.65] text-texto/90 mt-2 line-clamp-4 max-w-[65ch] whitespace-pre-line">
+                            {resena.texto}
+                        </p>
+                    </SpoilerOculto>
+                )}
+                {resena.tieneSpoiler && usuario?.id === resena.idusuario && (
+                    <p className="text-acento text-xs mt-1">Marcada con spoilers</p>
                 )}
 
-                <div className="flex-1 min-w-0">
-                    {mostrarLibro && (
-                        <span onClick={(e) => { e.stopPropagation(); navigate(`/libro/${resena.idlibro}`) }}
-                              className="text-terra font-medium text-sm hover:text-terra-hover transition-colors block truncate mb-1 cursor-pointer">
-                            {resena.tituloLibro}
-                        </span>
-                    )}
-
-                    <div className="scale-90 origin-left">
-                        <Estrellas puntuacion={resena.puntuacion} />
-                    </div>
-
-                    {resena.texto && (
-                        <SpoilerOculto activo={resena.tieneSpoiler && usuario?.id !== resena.idusuario}>
-                            <p className="text-dark-text/80 text-sm mt-2 line-clamp-3">{resena.texto}</p>
-                        </SpoilerOculto>
-                    )}
-                    {resena.tieneSpoiler && usuario?.id === resena.idusuario && (
-                        <p className="text-amber-400/80 text-xs mt-1">Marcada con spoilers</p>
-                    )}
-
-                    {/* Footer: like + acciones + fecha */}
-                    <div className="flex items-center justify-between mt-3">
-                        <div className="flex items-center gap-3">
-                            <button onClick={toggleLike}
-                                    className="flex items-center gap-1 transition-colors"
-                                    disabled={!usuario || resena.idusuario === usuario?.id}>
-                                {liked ? (
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-red-500" viewBox="0 0 24 24" fill="currentColor">
-                                        <path d="M11.645 20.91l-.007-.003-.022-.012a15.247 15.247 0 01-.383-.218 25.18 25.18 0 01-4.244-3.17C4.688 15.36 2.25 12.174 2.25 8.25 2.25 5.322 4.714 3 7.688 3A5.5 5.5 0 0112 5.052 5.5 5.5 0 0116.313 3c2.973 0 5.437 2.322 5.437 5.25 0 3.925-2.438 7.111-4.739 9.256a25.175 25.175 0 01-4.244 3.17 15.247 15.247 0 01-.383.219l-.022.012-.007.004-.003.001a.752.752 0 01-.704 0l-.003-.001z" />
-                                    </svg>
-                                ) : (
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-dark-muted hover:text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                                    </svg>
-                                )}
-                                <span className={`text-xs ${liked ? 'text-red-500' : 'text-dark-muted'}`}>{resena.numLikes || 0}</span>
+                {/* Pie: me gusta, acciones y fecha */}
+                <div className="flex items-center justify-between mt-4">
+                    <div className="flex items-center gap-4 text-xs">
+                        <button onClick={toggleLike} disabled={!usuario || resena.idusuario === usuario?.id}
+                                aria-label={liked ? 'Quitar me gusta' : 'Me gusta'}
+                                className={`flex items-center gap-1 ${liked ? 'text-acento' : 'text-texto-sec enabled:hover:text-acento'}`}>
+                            <Heart size={15} weight={liked ? 'fill' : 'regular'} />
+                            <span className="tabular-nums">{resena.numLikes || 0}</span>
+                        </button>
+                        {usuario && usuario.id === resena.idusuario && (
+                            <button onClick={(e) => { e.stopPropagation(); navigate(`/libro/${resena.idlibro}/resena?editar=${resena.idresena}`) }}
+                                    className="text-texto-sec hover:text-texto">
+                                Editar
                             </button>
-                            {usuario && usuario.id === resena.idusuario && (
-                                <button onClick={(e) => { e.stopPropagation(); navigate(`/libro/${resena.idlibro}/resena?editar=${resena.idresena}`) }}
-                                        className="text-dark-muted hover:text-terra text-xs transition-colors">
-                                    Editar
-                                </button>
-                            )}
-                            {usuario && (usuario.id === resena.idusuario || usuario.rol === 'ADMIN') && (
-                                <button onClick={eliminarResena}
-                                        className="text-red-400/60 hover:text-red-400 text-xs transition-colors">
-                                    Eliminar
-                                </button>
-                            )}
-                        </div>
-                        <span className="text-dark-muted text-xs">
-                            {new Date(resena.fechaCreacion).toLocaleDateString()}
-                        </span>
+                        )}
+                        {usuario && (usuario.id === resena.idusuario || usuario.rol === 'ADMIN') && (
+                            <button onClick={eliminarResena} className="text-texto-ter hover:text-error">
+                                Eliminar
+                            </button>
+                        )}
                     </div>
+                    <span className="text-texto-ter text-xs">
+                        {new Date(resena.fechaCreacion).toLocaleDateString()}
+                    </span>
                 </div>
             </div>
-        </div>
+        </article>
     )
 }

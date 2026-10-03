@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import api from '../api/axios'
+import { useAvisos } from '../context/AvisosContext'
 
 const formatoNota = (n) => Number(n).toLocaleString('es-ES', { minimumFractionDigits: 1, maximumFractionDigits: 1 })
 
@@ -8,7 +9,18 @@ function Estrellas5({ valor, activas, onElegir }) {
     const [hover, setHover] = useState(0)
     const mostrada = (activas && hover) || valor || 0
     return (
-        <div className={`flex items-center justify-center ${activas ? '' : 'opacity-40'}`} onMouseLeave={() => setHover(0)}>
+        <div className={`flex items-center justify-center rounded ${activas ? '' : 'opacity-40'}`} onMouseLeave={() => setHover(0)}
+             {...(activas && {
+                 role: 'slider', tabIndex: 0, 'aria-label': 'Tu nota (flechas para elegir, Enter para guardar)',
+                 'aria-valuemin': 0.5, 'aria-valuemax': 5, 'aria-valuenow': mostrada || undefined,
+                 'aria-valuetext': mostrada ? `${formatoNota(mostrada)} de 5 estrellas` : 'Sin nota',
+                 onBlur: () => setHover(0),
+                 onKeyDown: (e) => {
+                     const pasos = { ArrowRight: 0.5, ArrowUp: 0.5, ArrowLeft: -0.5, ArrowDown: -0.5 }
+                     if (e.key in pasos) { e.preventDefault(); setHover(Math.min(5, Math.max(0.5, mostrada + pasos[e.key]))) }
+                     else if ((e.key === 'Enter' || e.key === ' ') && mostrada) { e.preventDefault(); onElegir(mostrada); setHover(0) }
+                 },
+             })}>
             {[1, 2, 3, 4, 5].map((estrella) => {
                 const fill = mostrada >= estrella ? 'full' : mostrada >= estrella - 0.5 ? 'half' : 'empty'
                 return (
@@ -21,9 +33,9 @@ function Estrellas5({ valor, activas, onElegir }) {
                                       onClick={() => onElegir(estrella)} onMouseEnter={() => setHover(estrella)} />
                             </>
                         )}
-                        <span className="text-dark-border">★</span>
+                        <span className="text-texto-ter">★</span>
                         {fill !== 'empty' && (
-                            <span className={`absolute inset-0 overflow-hidden text-terra ${fill === 'half' ? 'w-1/2' : ''}`}>★</span>
+                            <span className={`absolute inset-0 overflow-hidden text-acento ${fill === 'half' ? 'w-1/2' : ''}`}>★</span>
                         )}
                     </span>
                 )
@@ -40,6 +52,7 @@ function Estrellas5({ valor, activas, onElegir }) {
  * - con reseña: la nota es la de la reseña y cambiarla aquí la actualiza.
  */
 export default function PuntuarLibro({ idlibro, estado, lecturaAntigua, miResena, onCambio }) {
+    const { avisar } = useAvisos()
     const [valoracion, setValoracion] = useState(null)
     const [guardando, setGuardando] = useState(false)
 
@@ -56,7 +69,7 @@ export default function PuntuarLibro({ idlibro, estado, lecturaAntigua, miResena
         if (guardando) return
         setGuardando(true)
         try { await accion(); onCambio?.() }
-        catch (err) { alert(err.response?.data?.mensaje || 'Error al guardar la nota') }
+        catch (err) { avisar(err.response?.data?.mensaje || 'Error al guardar la nota') }
         finally { setGuardando(false) }
     }
 
@@ -84,16 +97,16 @@ export default function PuntuarLibro({ idlibro, estado, lecturaAntigua, miResena
         detalle = <span>Podrás puntuarlo cuando lo termines</span>
     } else if (miResena) {
         titulo = 'Tu nota'
-        detalle = <Link to={`/resena/${miResena.idresena}`} className="hover:text-terra transition-colors">Ver tu reseña</Link>
+        detalle = <Link to={`/resena/${miResena.idresena}`} className="hover:text-acento transition-colors">Ver tu reseña</Link>
     } else if (leido) {
         titulo = nota ? (lecturaAntigua ? 'Tu nota · leído hace tiempo' : 'Tu nota') : '¿Qué te ha parecido?'
         detalle = (
             <span className="flex items-center justify-center gap-2">
-                <Link to={`/libro/${idlibro}/resena`} className="text-terra hover:text-terra-hover transition-colors">Escribir reseña</Link>
+                <Link to={`/libro/${idlibro}/resena`} className="text-acento hover:text-acento-hover transition-colors">Escribir reseña</Link>
                 {nota != null && (
                     <>
                         <span aria-hidden>·</span>
-                        <button onClick={quitar} className="hover:text-red-400 transition-colors">Quitar nota</button>
+                        <button onClick={quitar} className="hover:text-error transition-colors">Quitar nota</button>
                     </>
                 )}
             </span>
@@ -105,10 +118,10 @@ export default function PuntuarLibro({ idlibro, estado, lecturaAntigua, miResena
 
     return (
         <div className="w-52 mt-4 text-center">
-            <p className="text-xs uppercase tracking-wide text-dark-muted mb-1.5">{titulo}</p>
+            <p className="text-xs uppercase tracking-wide text-texto-sec mb-1.5">{titulo}</p>
             <Estrellas5 valor={nota} activas={!leyendo && !guardando} onElegir={elegir} />
-            {nota != null && <p className="text-terra font-semibold text-sm mt-1">{formatoNota(nota)}</p>}
-            <div className="text-xs text-dark-muted mt-1.5">{detalle}</div>
+            {nota != null && <p className="font-serif text-texto text-lg mt-1">{formatoNota(nota)}</p>}
+            <div className="text-xs text-texto-sec mt-1.5">{detalle}</div>
         </div>
     )
 }

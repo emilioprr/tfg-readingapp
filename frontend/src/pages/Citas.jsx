@@ -3,6 +3,8 @@ import { Link, Navigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import TarjetaCita from '../components/TarjetaCita'
 import api from '../api/axios'
+import Pestanas from '../components/Pestanas'
+import { useAvisos } from '../context/AvisosContext'
 
 const TAMANIO = 20
 
@@ -13,6 +15,7 @@ const ORDENES = [
 
 /** Muro de citas: frases de los libros compartidas por la comunidad, que se pueden likear y colgar en el perfil. */
 export default function Citas() {
+    const { avisar, avisarCarga } = useAvisos()
     const { usuario } = useAuth()
     const [searchParams, setSearchParams] = useSearchParams()
     const orden = searchParams.get('orden') === 'recientes' ? 'recientes' : 'populares'
@@ -30,11 +33,11 @@ export default function Citas() {
                 setCitas(res.data.citas || [])
                 setPagina(0)
                 setHayMas(res.data.hayMas)
-            } catch (err) { console.error('Error:', err) }
+            } catch (err) { console.error('Error:', err); avisarCarga(err, 'No se han podido cargar las citas.') }
             finally { setCargando(false) }
         }
         cargar()
-    }, [orden, usuario])
+    }, [avisarCarga, orden, usuario])
 
     const cargarMas = async () => {
         try {
@@ -42,7 +45,7 @@ export default function Citas() {
             setCitas(prev => [...prev, ...(res.data.citas || [])])
             setPagina(p => p + 1)
             setHayMas(res.data.hayMas)
-        } catch (err) { console.error('Error:', err) }
+        } catch (err) { console.error('Error:', err); avisarCarga(err, 'No se han podido cargar más citas.') }
     }
 
     const toggleGuardar = async (cita) => {
@@ -52,34 +55,26 @@ export default function Citas() {
             setCitas(prev => prev.map(c => c.idanotacion === cita.idanotacion
                 ? { ...c, guardada: !c.guardada, vecesGuardada: Math.max((c.vecesGuardada || 0) + (c.guardada ? -1 : 1), 0) }
                 : c))
-        } catch (err) { alert(err.response?.data?.mensaje || 'Error') }
+        } catch (err) { avisar(err.response?.data?.mensaje || 'Algo ha fallado. Inténtalo de nuevo.') }
     }
 
     if (!usuario) return <Navigate to="/login" />
 
     return (
         <div className="max-w-5xl mx-auto">
-            <h1 className="text-2xl font-bold text-dark-text tracking-tight">Citas</h1>
-            <p className="text-dark-muted text-sm mt-1 mb-6">
+            <h1 className="font-serif text-4xl leading-none text-texto">Citas</h1>
+            <p className="text-texto-sec text-sm mt-1 mb-6">
                 Frases de los libros que comparte la comunidad. Pulsa el marcador para colgar una en
-                el <Link to="/perfil?tab=citas" className="text-terra hover:text-terra-hover transition-colors">mural de tu perfil</Link>.
+                el <Link to="/perfil?tab=citas" className="text-acento hover:text-acento-hover transition-colors">mural de tu perfil</Link>.
                 Para compartir una, crea una anotación de tipo cita y hazla pública.
             </p>
 
-            <div className="flex gap-2 mb-6 border-b border-dark-border">
-                {ORDENES.map((o) => (
-                    <button key={o.key} onClick={() => setSearchParams(o.key === 'populares' ? {} : { orden: o.key })}
-                            className={`px-4 py-2.5 text-sm font-medium transition-colors relative ${
-                                orden === o.key ? 'text-terra' : 'text-dark-muted hover:text-dark-text'}`}>
-                        {o.label}
-                        {orden === o.key && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-terra rounded-full" />}
-                    </button>
-                ))}
-            </div>
+            <Pestanas pestanas={ORDENES} activa={orden} className="mb-6"
+                      onCambiar={(k) => setSearchParams(k === 'populares' ? {} : { orden: k })} />
 
-            {cargando ? <p className="text-dark-muted">Cargando...</p> : citas.length === 0 ? (
-                <div className="bg-dark-card rounded-2xl py-12 px-6 text-center">
-                    <p className="text-dark-muted">Todavía nadie ha compartido citas.</p>
+            {cargando ? <p className="text-texto-sec">Cargando…</p> : citas.length === 0 ? (
+                <div className="py-6">
+                    <p className="font-serif text-xl text-texto-sec">Todavía nadie ha subrayado nada. Cuando leas una frase que te pare, compártela.</p>
                 </div>
             ) : (
                 <>
@@ -91,7 +86,7 @@ export default function Citas() {
                     {hayMas && (
                         <div className="flex justify-center mt-6">
                             <button onClick={cargarMas}
-                                    className="border border-dark-border hover:border-terra hover:text-terra text-dark-muted px-6 py-2 rounded-lg text-sm transition-colors">
+                                    className="btn-secundario">
                                 Cargar más
                             </button>
                         </div>

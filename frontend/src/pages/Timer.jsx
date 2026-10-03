@@ -4,8 +4,11 @@ import { useAuth } from '../context/AuthContext'
 import { useRacha } from '../context/RachaContext'
 import { useNotificaciones } from '../context/NotificacionesContext'
 import api from '../api/axios'
+import { Play, Pause, ArrowCounterClockwise, Check } from '@phosphor-icons/react'
+import { useAvisos } from '../context/AvisosContext'
 
 export default function Timer() {
+    const { avisar } = useAvisos()
     const { usuario } = useAuth()
 
     const [modo, setModo] = useState('libre')
@@ -149,7 +152,7 @@ export default function Timer() {
             setSesionTerminada(true)
             setGuardado(true)
         } catch (err) {
-            alert(err.response?.data?.mensaje || 'Error al guardar')
+            avisar(err.response?.data?.mensaje || 'Error al guardar')
             setSesionTerminada(true)
             setGuardado(false)
         } finally {
@@ -173,156 +176,122 @@ export default function Timer() {
         return 0
     }
 
+    // Selector de dos opciones con el mismo aspecto en toda la página
+    const opcion = (activa) => `btn flex-1 ${activa ? 'bg-texto text-fondo' : 'border border-linea text-texto-sec hover:text-texto'}`
+
     return (
         <div className="max-w-xl mx-auto">
-            <h1 className="text-2xl font-bold text-dark-text tracking-tight mb-2 text-center">Sesión de lectura</h1>
-            <p className="text-dark-muted text-sm text-center mb-8">
-                Cronometra tus sesiones de lectura. El tiempo se registra automáticamente al terminar y cuenta para tus retos de horas. Si cambias de pestaña, el temporizador se pausa para garantizar un registro real.
+            <h1 className="font-serif text-4xl sm:text-5xl leading-none text-texto text-center">Sesión de lectura</h1>
+            <p className="text-texto-sec text-sm text-center mt-4 mb-10 max-w-md mx-auto">
+                Cronometra el rato que lees. Al terminar se guarda solo y cuenta para tus retos de horas. Si cambias de pestaña, se pausa: así el tiempo es de verdad.
             </p>
 
             {!activo && !sesionTerminada && (
-                <div className="space-y-6">
-                    <div className="bg-dark-card rounded-2xl p-6">
-                        <h3 className="text-sm font-medium text-dark-muted mb-3">Modo</h3>
-                        <div className="flex gap-3 mb-4">
-                            <button onClick={() => setModo('libre')}
-                                    className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-colors ${
-                                        modo === 'libre' ? 'bg-terra text-white' : 'bg-dark-elevated text-dark-muted hover:text-dark-text'
-                                    }`}>
-                                Contador libre
-                            </button>
-                            <button onClick={() => setModo('objetivo')}
-                                    className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-colors ${
-                                        modo === 'objetivo' ? 'bg-terra text-white' : 'bg-dark-elevated text-dark-muted hover:text-dark-text'
-                                    }`}>
-                                Temporizador
-                            </button>
+                <div className="space-y-8">
+                    <div className="border-y border-linea py-6 space-y-6">
+                        <div>
+                            <h3 className="etiqueta mb-3">Modo</h3>
+                            <div className="flex gap-3" role="group" aria-label="Modo">
+                                <button onClick={() => setModo('libre')} aria-pressed={modo === 'libre'} className={opcion(modo === 'libre')}>
+                                    Contador libre
+                                </button>
+                                <button onClick={() => setModo('objetivo')} aria-pressed={modo === 'objetivo'} className={opcion(modo === 'objetivo')}>
+                                    Temporizador
+                                </button>
+                            </div>
                         </div>
 
                         {modo === 'objetivo' && (
                             <div>
-                                <h3 className="text-sm font-medium text-dark-muted mb-3">Duración</h3>
+                                <h3 className="etiqueta mb-3">Duración</h3>
                                 <div className="flex items-center gap-3">
-                                    <input type="number" value={objetivoMinutos}
+                                    <input type="number" value={objetivoMinutos} aria-label="Duración"
                                            onChange={(e) => setObjetivoMinutos(parseInt(e.target.value) || 1)}
                                            min="1" max={unidadTiempo === 'horas' ? 8 : 480}
-                                           className="w-20 bg-dark-elevated border border-dark-border rounded-xl px-3 py-2.5 text-dark-text text-center text-lg font-bold focus:border-terra focus:outline-none transition-colors" />
-                                    <div className="flex bg-dark-elevated rounded-xl overflow-hidden border border-dark-border">
-                                        <button onClick={() => setUnidadTiempo('minutos')}
-                                                className={`px-4 py-2.5 text-sm font-medium transition-colors ${
-                                                    unidadTiempo === 'minutos' ? 'bg-terra text-white' : 'text-dark-muted hover:text-dark-text'
-                                                }`}>
-                                            Minutos
-                                        </button>
-                                        <button onClick={() => setUnidadTiempo('horas')}
-                                                className={`px-4 py-2.5 text-sm font-medium transition-colors ${
-                                                    unidadTiempo === 'horas' ? 'bg-terra text-white' : 'text-dark-muted hover:text-dark-text'
-                                                }`}>
-                                            Horas
-                                        </button>
+                                           className="campo w-24 text-center font-serif text-2xl" />
+                                    <div className="flex gap-2" role="group" aria-label="Unidad">
+                                        <button onClick={() => setUnidadTiempo('minutos')} aria-pressed={unidadTiempo === 'minutos'}
+                                                className={opcion(unidadTiempo === 'minutos')}>Minutos</button>
+                                        <button onClick={() => setUnidadTiempo('horas')} aria-pressed={unidadTiempo === 'horas'}
+                                                className={opcion(unidadTiempo === 'horas')}>Horas</button>
                                     </div>
                                 </div>
                             </div>
                         )}
                     </div>
 
-                    <button onClick={iniciar}
-                            className="w-full bg-terra hover:bg-terra-hover text-white font-semibold py-3 rounded-xl text-lg transition-colors">
-                        Iniciar sesión
-                    </button>
+                    <button onClick={iniciar} className="btn-acento w-full py-3 text-base">Empezar a leer</button>
                 </div>
             )}
 
             {(activo || sesionTerminada) && (
                 <div className="text-center">
                     <div className="relative w-64 h-64 mx-auto mb-8">
-                        <svg className="w-64 h-64 -rotate-90" viewBox="0 0 200 200">
-                            <circle cx="100" cy="100" r="90" fill="none" stroke="#2a2a2a" strokeWidth="4" />
+                        <svg className="w-64 h-64 -rotate-90" viewBox="0 0 200 200" aria-hidden>
+                            <circle cx="100" cy="100" r="90" fill="none" stroke="var(--color-linea)" strokeWidth="1.5" />
                             {modo === 'objetivo' && (
-                                <circle cx="100" cy="100" r="90" fill="none" stroke="#c45d3e" strokeWidth="4"
-                                        strokeLinecap="round"
+                                <circle cx="100" cy="100" r="90" fill="none" stroke="var(--color-acento)" strokeWidth="2"
                                         strokeDasharray={`${getProgreso() * 5.65} 565`}
                                         className="transition-all duration-1000" />
                             )}
                         </svg>
                         <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-5xl font-bold text-dark-text tracking-wider font-mono">
-                {formatTiempo(segundos)}
-              </span>
+                            <span className="font-serif text-6xl text-texto tabular-nums" role="timer" aria-live="off">
+                                {formatTiempo(segundos)}
+                            </span>
                             {modo === 'objetivo' && activo && !sesionTerminada && (
-                                <span className="text-dark-muted text-sm mt-2">restante</span>
+                                <span className="text-texto-ter text-xs mt-2">por delante</span>
                             )}
                             {guardando && (
-                                <span className="text-dark-muted text-sm mt-2">Guardando...</span>
+                                <span className="text-texto-sec text-sm mt-2">Guardando…</span>
                             )}
                         </div>
                     </div>
 
                     {pausadoPorTab && (
-                        <div className="bg-terra/10 border border-terra/30 rounded-xl px-4 py-3 mb-6">
-                            <p className="text-terra text-sm font-medium">Temporizador en pausa: has salido de la página</p>
-                            <p className="text-dark-muted text-xs mt-1">Vuelve a esta pestaña para continuar</p>
+                        <div className="border-t-2 border-acento bg-superficie px-4 py-3 mb-6 text-left rounded">
+                            <p className="text-texto text-sm">En pausa: te has ido de la página.</p>
+                            <p className="text-texto-sec text-xs mt-1">Vuelve a esta pestaña para seguir contando.</p>
                         </div>
                     )}
 
                     {activo && !sesionTerminada && (
-                        <div className="flex items-center justify-center gap-4">
+                        <div className="flex items-center justify-center gap-3">
                             {pausado ? (
-                                <button onClick={reanudar}
-                                        className="bg-terra hover:bg-terra-hover text-white font-semibold px-8 py-3 rounded-xl transition-colors flex items-center gap-2">
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                                        <path d="M8 5v14l11-7z" />
-                                    </svg>
-                                    Reanudar
+                                <button onClick={reanudar} className="btn-primario px-6 py-3">
+                                    <Play size={16} weight="fill" /> Reanudar
                                 </button>
                             ) : (
-                                <button onClick={pausar}
-                                        className="bg-dark-elevated hover:bg-dark-border text-dark-text font-semibold px-8 py-3 rounded-xl transition-colors flex items-center gap-2">
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                                        <path d="M6 4h4v16H6zM14 4h4v16h-4z" />
-                                    </svg>
-                                    Pausar
+                                <button onClick={pausar} className="btn-secundario px-6 py-3">
+                                    <Pause size={16} weight="fill" /> Pausar
                                 </button>
                             )}
-                            <button onClick={terminar}
-                                    className="bg-terra hover:bg-terra-hover text-white font-semibold px-8 py-3 rounded-xl transition-colors">
-                                Terminar
-                            </button>
-                            <button onClick={resetear}
-                                    className="text-dark-muted hover:text-dark-text transition-colors p-3">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                                </svg>
+                            <button onClick={terminar} className="btn-acento px-6 py-3">Terminar</button>
+                            <button onClick={resetear} className="text-texto-sec hover:text-texto p-3" aria-label="Empezar de cero" title="Empezar de cero">
+                                <ArrowCounterClockwise size={20} />
                             </button>
                         </div>
                     )}
 
                     {sesionTerminada && (
-                        <div className="space-y-4">
+                        <div className="space-y-6">
                             {guardado ? (
-                                <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-2xl p-6">
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="w-10 h-10 text-emerald-400 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                                    </svg>
-                                    <p className="text-emerald-400 font-medium">Sesión guardada</p>
-                                    <p className="text-dark-muted text-sm mt-1">
-                                        {getMinutosLeidos()} minutos registrados
+                                <div className="border-y border-linea py-6">
+                                    <p className="font-serif text-2xl text-texto">
+                                        {getMinutosLeidos()} {getMinutosLeidos() === 1 ? 'minuto' : 'minutos'} de lectura guardados.
+                                    </p>
+                                    <p className="text-texto-sec text-sm mt-1 flex items-center justify-center gap-1.5">
+                                        <Check size={14} className="text-exito" /> Ya cuentan para tus retos y tu racha.
                                     </p>
                                 </div>
                             ) : (
-                                <div className="bg-dark-card rounded-2xl p-6">
-                                    <p className="text-dark-muted text-sm">La sesión fue demasiado corta para registrar</p>
+                                <div className="border-y border-linea py-6">
+                                    <p className="font-serif text-xl text-texto-sec">Ha sido demasiado corta para guardarla. Menos de un minuto no cuenta.</p>
                                 </div>
                             )}
                             <div className="flex gap-3 justify-center">
-                                <button onClick={resetear}
-                                        className="bg-terra hover:bg-terra-hover text-white font-semibold px-6 py-3 rounded-xl transition-colors">
-                                    Nueva sesión
-                                </button>
-                                <Link to="/"
-                                      className="bg-dark-elevated hover:bg-dark-border text-dark-text font-semibold px-6 py-3 rounded-xl transition-colors">
-                                    Volver al inicio
-                                </Link>
+                                <button onClick={resetear} className="btn-acento px-6 py-3">Otra sesión</button>
+                                <Link to="/" className="btn-secundario px-6 py-3">Volver al inicio</Link>
                             </div>
                         </div>
                     )}

@@ -38,6 +38,7 @@ import EstanteriaCompleta from './pages/EstanteriaCompleta'
 import ResenasLibro from './pages/ResenasLibro'
 import { RachaProvider } from './context/RachaContext'
 import { NotificacionesProvider } from './context/NotificacionesContext'
+import { AvisosProvider } from './context/AvisosContext'
 
 
 function App() {
@@ -45,6 +46,7 @@ function App() {
         <AuthProvider>
             <RachaProvider>
             <NotificacionesProvider>
+            <AvisosProvider>
                 <BrowserRouter>
                     <Routes>
                         <Route path="/landing" element={<Landing/>}/>
@@ -87,6 +89,7 @@ function App() {
                         </Route>
                     </Routes>
                 </BrowserRouter>
+            </AvisosProvider>
             </NotificacionesProvider>
             </RachaProvider>
         </AuthProvider>

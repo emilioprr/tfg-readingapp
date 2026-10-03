@@ -2,6 +2,9 @@ import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import api from '../api/axios'
+import { CaretLeft, EnvelopeSimple } from '@phosphor-icons/react'
+import Portada from '../components/Portada'
+import { useAvisos } from '../context/AvisosContext'
 
 const ID_SISTEMA = 'sistema'
 
@@ -31,19 +34,14 @@ function Avatar({ nombre, avatar, size = 'w-10 h-10 text-base' }) {
     return avatar ? (
         <img src={avatar} alt={nombre} className={`${size} rounded-full object-cover flex-shrink-0`} />
     ) : (
-        <div className={`${size} bg-terra/20 rounded-full flex items-center justify-center text-terra font-bold flex-shrink-0`}>
+        <div className={`${size} border border-linea rounded-full flex items-center justify-center text-texto-sec font-serif flex-shrink-0`}>
             {nombre?.charAt(0).toUpperCase()}
         </div>
     )
 }
 
 function IconoCarta({ className }) {
-    return (
-        <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-            <path strokeLinecap="round" strokeLinejoin="round"
-                  d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
-        </svg>
-    )
+    return <EnvelopeSimple className={className} weight="light" />
 }
 
 /** Agrupa las recomendaciones por la otra persona; la conversación más reciente primero. */
@@ -71,6 +69,7 @@ function agrupar(todas, idUsuario) {
 }
 
 export default function Recomendaciones() {
+    const { avisarCarga } = useAvisos()
     const { usuario } = useAuth()
     const [todas, setTodas] = useState([])
     const [seleccionadoId, setSeleccionadoId] = useState(null)
@@ -104,7 +103,7 @@ export default function Recomendaciones() {
                 // En escritorio se abre la conversación más reciente al entrar
                 const primera = agrupar(datos, usuario.id)[0]
                 if (primera && window.matchMedia('(min-width: 768px)').matches) abrir(primera)
-            } catch (err) { console.error('Error:', err) } finally { setLoading(false) }
+            } catch (err) { console.error('Error:', err); avisarCarga(err, 'No se han podido cargar tus recomendaciones.') } finally { setLoading(false) }
         }
         cargar()
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -114,21 +113,18 @@ export default function Recomendaciones() {
         finChatRef.current?.scrollIntoView({ block: 'end' })
     }, [seleccionadoId])
 
-    if (loading) return <p className="text-dark-muted">Cargando...</p>
+    if (loading) return <p className="text-texto-sec">Cargando…</p>
 
     if (conversaciones.length === 0) {
         return (
             <div className="max-w-4xl mx-auto">
-                <h1 className="text-2xl font-bold text-dark-text mb-6 tracking-tight">Recomendaciones</h1>
-                <div className="bg-dark-card rounded-2xl py-16 px-6 text-center">
-                    <IconoCarta className="w-12 h-12 text-terra/60 mx-auto mb-4" />
-                    <p className="text-dark-text font-medium">Aún no hay recomendaciones</p>
-                    <p className="text-dark-muted text-sm mt-1 mb-5">
-                        Cuando alguien te recomiende un libro, o tú se lo recomiendes a alguien, aparecerá aquí.
+                <h1 className="font-serif text-4xl leading-none text-texto mb-6">Recomendaciones</h1>
+                <div className="border-y border-linea py-10">
+                    <p className="font-serif text-2xl text-texto">Nadie te ha pasado un libro todavía.</p>
+                    <p className="text-texto-sec text-sm mt-2 mb-6 max-w-prose">
+                        Cuando alguien te recomiende uno, o tú se lo recomiendes a alguien, la conversación aparecerá aquí.
                     </p>
-                    <Link to="/catalogo" className="text-terra hover:text-terra-hover text-sm font-medium transition-colors">
-                        Buscar un libro para recomendar
-                    </Link>
+                    <Link to="/catalogo" className="btn-secundario">Buscar un libro para recomendar</Link>
                 </div>
             </div>
         )
@@ -136,30 +132,30 @@ export default function Recomendaciones() {
 
     return (
         <div className="max-w-5xl mx-auto">
-            <h1 className="text-2xl font-bold text-dark-text mb-6 tracking-tight">Recomendaciones</h1>
+            <h1 className="font-serif text-4xl leading-none text-texto mb-6">Recomendaciones</h1>
 
             <div className="flex gap-4 h-[calc(100vh-200px)] min-h-[420px]">
                 {/* Lista de conversaciones */}
-                <div className={`w-full md:w-80 flex-shrink-0 bg-dark-card rounded-2xl overflow-y-auto p-2 ${seleccionado ? 'hidden md:block' : ''}`}>
+                <div className={`w-full md:w-80 flex-shrink-0 border border-linea rounded overflow-y-auto p-1.5 ${seleccionado ? 'hidden md:block' : ''}`}>
                     {conversaciones.map((c) => {
                         const activa = seleccionado?.id === c.id
                         const ultimaEnviada = c.ultima.idusuarioEmisor === usuario.id
                         return (
                             <button key={c.id} onClick={() => abrir(c)}
-                                    className={`w-full text-left px-3 py-3 rounded-xl flex items-center gap-3 transition-colors ${activa ? 'bg-dark-elevated' : 'hover:bg-dark-elevated/60'}`}>
+                                    className={`w-full text-left px-3 py-3 rounded flex items-center gap-3 ${activa ? 'bg-superficie' : 'hover:bg-superficie/60'}`}>
                                 <Avatar nombre={c.nombre} avatar={c.avatar} size="w-11 h-11 text-base" />
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-baseline justify-between gap-2">
-                                        <p className={`text-sm truncate ${c.noVistas ? 'text-dark-text font-semibold' : 'text-dark-text font-medium'}`}>{c.nombre}</p>
-                                        <span className={`text-[11px] flex-shrink-0 ${c.noVistas ? 'text-terra' : 'text-dark-muted'}`}>{fechaCorta(c.ultima.fecha)}</span>
+                                        <p className={`text-sm truncate ${c.noVistas ? 'text-texto font-semibold' : 'text-texto font-medium'}`}>{c.nombre}</p>
+                                        <span className={`text-[11px] flex-shrink-0 ${c.noVistas ? 'text-acento' : 'text-texto-sec'}`}>{fechaCorta(c.ultima.fecha)}</span>
                                     </div>
                                     <div className="flex items-center justify-between gap-2 mt-0.5">
-                                        <p className={`text-xs truncate ${c.noVistas ? 'text-dark-text' : 'text-dark-muted'}`}>
-                                            {ultimaEnviada && <span className="text-dark-muted">Tú: </span>}
+                                        <p className={`text-xs truncate ${c.noVistas ? 'text-texto' : 'text-texto-sec'}`}>
+                                            {ultimaEnviada && <span className="text-texto-sec">Tú: </span>}
                                             {c.ultima.tituloLibro}
                                         </p>
                                         {c.noVistas > 0 && (
-                                            <span className="bg-terra text-white text-[10px] font-bold min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center flex-shrink-0">
+                                            <span className="bg-acento text-fondo text-[10px] font-semibold min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center flex-shrink-0">
                                                 {c.noVistas}
                                             </span>
                                         )}
@@ -171,30 +167,28 @@ export default function Recomendaciones() {
                 </div>
 
                 {/* Conversación */}
-                <div className={`flex-1 bg-dark-card rounded-2xl flex-col overflow-hidden ${seleccionado ? 'flex' : 'hidden md:flex'}`}>
+                <div className={`flex-1 border border-linea rounded flex-col overflow-hidden ${seleccionado ? 'flex' : 'hidden md:flex'}`}>
                     {!seleccionado ? (
                         <div className="flex-1 flex flex-col items-center justify-center text-center px-6">
-                            <IconoCarta className="w-10 h-10 text-dark-muted/50 mb-3" />
-                            <p className="text-dark-muted text-sm">Elige una conversación</p>
+                            <IconoCarta className="w-10 h-10 text-texto-ter mb-3" />
+                            <p className="font-serif text-xl text-texto-sec">Elige una conversación</p>
                         </div>
                     ) : (
                         <>
-                            <div className="px-5 py-3.5 border-b border-dark-border flex items-center gap-3">
-                                <button onClick={() => setSeleccionadoId(null)} className="md:hidden text-dark-muted hover:text-dark-text -ml-1 mr-1" title="Volver">
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-                                    </svg>
+                            <div className="px-5 py-3.5 border-b border-linea flex items-center gap-3">
+                                <button onClick={() => setSeleccionadoId(null)} className="md:hidden text-texto-sec hover:text-texto -ml-1 mr-1" title="Volver">
+                                    <CaretLeft size={20} />
                                 </button>
                                 <Avatar nombre={seleccionado.nombre} avatar={seleccionado.avatar} size="w-9 h-9 text-sm" />
                                 <div className="min-w-0">
                                     {seleccionado.id === ID_SISTEMA ? (
-                                        <p className="text-dark-text font-semibold text-sm">{seleccionado.nombre}</p>
+                                        <p className="text-texto font-semibold text-sm">{seleccionado.nombre}</p>
                                     ) : (
-                                        <Link to={`/usuario/${seleccionado.id}`} className="text-dark-text font-semibold text-sm hover:text-terra transition-colors">
+                                        <Link to={`/usuario/${seleccionado.id}`} className="text-texto font-semibold text-sm hover:text-acento transition-colors">
                                             {seleccionado.nombre}
                                         </Link>
                                     )}
-                                    <p className="text-dark-muted text-xs">
+                                    <p className="text-texto-sec text-xs">
                                         {seleccionado.mensajes.length} {seleccionado.mensajes.length === 1 ? 'libro recomendado' : 'libros recomendados'}
                                     </p>
                                 </div>
@@ -209,33 +203,30 @@ export default function Recomendaciones() {
                                         <div key={m.idrecomendacion}>
                                             {nuevoDia && (
                                                 <div className="flex justify-center my-4">
-                                                    <span className="text-[11px] text-dark-muted bg-dark-elevated px-3 py-1 rounded-full">{etiquetaDia(m.fecha)}</span>
+                                                    <span className="etiqueta text-texto-ter">{etiquetaDia(m.fecha)}</span>
                                                 </div>
                                             )}
                                             <div className={`flex mb-3 ${esMio ? 'justify-end' : 'justify-start'}`}>
-                                                <div className={`w-72 max-w-[85%] rounded-2xl p-3 ${esMio
-                                                    ? 'bg-terra/15 border border-terra/25 rounded-br-md'
-                                                    : 'bg-dark-elevated border border-dark-border rounded-bl-md'}`}>
+                                                <div className={`w-72 max-w-[85%] rounded p-3 border ${esMio
+                                                    ? 'bg-acento-suave/70 border-acento-suave'
+                                                    : 'bg-superficie border-linea'}`}>
                                                     <Link to={`/libro/${m.idlibro}`} className="group flex gap-3">
-                                                        {m.portadaLibro ? (
-                                                            <img src={m.portadaLibro} alt={m.tituloLibro} className="w-14 h-20 object-cover rounded-sm shadow-md flex-shrink-0" />
-                                                        ) : (
-                                                            <div className="w-14 h-20 bg-dark-border rounded-sm flex-shrink-0" />
-                                                        )}
+                                                        <Portada src={m.portadaLibro} titulo={m.tituloLibro} autor={m.nombreAutorLibro} id={m.idlibro}
+                                                                 className="w-14 flex-shrink-0" />
                                                         <div className="min-w-0 py-0.5">
-                                                            <p className="text-[11px] uppercase tracking-wide text-dark-muted mb-1">
+                                                            <p className="etiqueta mb-1">
                                                                 {esMio ? 'Recomendaste' : 'Te recomienda'}
                                                             </p>
-                                                            <p className="text-dark-text font-semibold text-sm leading-snug line-clamp-2 group-hover:text-terra transition-colors">
+                                                            <p className="font-serif text-texto leading-snug line-clamp-2 group-hover:text-acento">
                                                                 {m.tituloLibro}
                                                             </p>
-                                                            {m.nombreAutorLibro && <p className="text-dark-muted text-xs mt-0.5 truncate">{m.nombreAutorLibro}</p>}
+                                                            {m.nombreAutorLibro && <p className="text-texto-sec text-xs mt-0.5 truncate">{m.nombreAutorLibro}</p>}
                                                         </div>
                                                     </Link>
                                                     {m.mensaje && (
-                                                        <p className="text-dark-text/90 text-sm mt-3 leading-relaxed whitespace-pre-line">{m.mensaje}</p>
+                                                        <p className="font-serif text-texto/90 text-[15px] mt-3 leading-relaxed whitespace-pre-line">{m.mensaje}</p>
                                                     )}
-                                                    <p className="text-[11px] text-dark-muted mt-2 text-right">
+                                                    <p className="text-[11px] text-texto-ter mt-2 text-right">
                                                         {new Date(m.fecha).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
                                                     </p>
                                                 </div>
@@ -246,10 +237,10 @@ export default function Recomendaciones() {
                                 <div ref={finChatRef} />
                             </div>
 
-                            <div className="px-5 py-3 border-t border-dark-border flex items-center justify-center gap-2 text-xs text-dark-muted">
+                            <div className="px-5 py-3 border-t border-linea flex items-center justify-center gap-2 text-xs text-texto-sec">
                                 <IconoCarta className="w-4 h-4" />
                                 <span>Para recomendar un libro, pulsa «Recomendar» en su página.</span>
-                                <Link to="/catalogo" className="text-terra hover:text-terra-hover font-medium transition-colors">Buscar libro</Link>
+                                <Link to="/catalogo" className="text-acento hover:text-acento-hover font-medium transition-colors">Buscar libro</Link>
                             </div>
                         </>
                     )}

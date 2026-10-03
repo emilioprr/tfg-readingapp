@@ -6,7 +6,12 @@ import ListaCard from '../components/ListaCard'
 import api from '../api/axios'
 import SpoilerOculto from '../components/SpoilerOculto'
 import MuralCitas from '../components/MuralCitas'
-import { Llama, colorLlama } from '../components/Racha'
+import Pestanas from '../components/Pestanas'
+import { CaretLeft, CaretRight, X, Plus } from '@phosphor-icons/react'
+import Portada from '../components/Portada'
+import Balda from '../components/Balda'
+import Carrusel from '../components/Carrusel'
+import { useAvisos } from '../context/AvisosContext'
 
 /** Formato corto para contadores: 950 → 950, 1.234 → 1,2K, 1.500.000 → 1,5M.
  *  Se trunca (no redondea) para no mostrar más de lo que hay, p. ej. 999.999 → 999,9K. */
@@ -20,6 +25,7 @@ const formatoCorto = (n) => {
 }
 
 export default function Perfil() {
+    const { avisar, avisarCarga } = useAvisos()
     const { id } = useParams()
     const { usuario } = useAuth()
     const perfilId = id ? parseInt(id) : usuario?.id
@@ -49,9 +55,9 @@ export default function Perfil() {
 
     const cargarPerfil = useCallback(async () => {
         try { const res = await api.get(`/usuarios/${perfilId}`); setPerfil(res.data) }
-        catch (err) { console.error('Error:', err) }
+        catch (err) { console.error('Error:', err); avisarCarga(err, 'No se ha podido cargar el perfil.') }
         finally { setLoading(false) }
-    }, [perfilId])
+    }, [avisarCarga, perfilId])
 
     const cargarFavoritos = useCallback(async () => {
         try {
@@ -59,15 +65,15 @@ export default function Perfil() {
             const datos = res.data || []
             datos.sort((a, b) => a.idlibro - b.idlibro)
             setFavoritos(datos)
-        } catch (err) { console.error('Error:', err) }
-    }, [perfilId])
+        } catch (err) { console.error('Error:', err); avisarCarga(err, 'No se ha podido cargar todo el perfil. Puede que falten partes.') }
+    }, [avisarCarga, perfilId])
 
     const cargarLecturasRecientes = useCallback(async () => {
         try {
             const res = await api.get(`/seguimientos/usuario/${perfilId}/estado/LEIDO`)
             setLecturasRecientes(res.data || [])
-        } catch (err) { console.error('Error:', err) }
-    }, [perfilId])
+        } catch (err) { console.error('Error:', err); avisarCarga(err, 'No se ha podido cargar todo el perfil. Puede que falten partes.') }
+    }, [avisarCarga, perfilId])
 
     const cargarResenas = useCallback(async () => {
         try {
@@ -78,15 +84,15 @@ export default function Perfil() {
             const datos = res.data.content || res.data || []
             datos.sort((a, b) => new Date(b.fechaCreacion) - new Date(a.fechaCreacion))
             setResenas(datos)
-        } catch (err) { console.error('Error:', err) }
-    }, [esMio, perfilId])
+        } catch (err) { console.error('Error:', err); avisarCarga(err, 'No se ha podido cargar todo el perfil. Puede que falten partes.') }
+    }, [avisarCarga, esMio, perfilId])
 
     const cargarAnotaciones = useCallback(async () => {
         try {
             const res = await api.get(`/anotaciones/usuario/${perfilId}`)
             setAnotaciones(res.data.content || res.data || [])
-        } catch (err) { console.error('Error:', err) }
-    }, [perfilId])
+        } catch (err) { console.error('Error:', err); avisarCarga(err, 'No se ha podido cargar todo el perfil. Puede que falten partes.') }
+    }, [avisarCarga, perfilId])
 
     const cargarListasPublicas = useCallback(async () => {
         try {
@@ -98,8 +104,8 @@ export default function Perfil() {
             } else {
                 setListasPublicas(listas.filter(l => l.esPublica))
             }
-        } catch (err) { console.error('Error:', err) }
-    }, [perfilId, usuario])
+        } catch (err) { console.error('Error:', err); avisarCarga(err, 'No se ha podido cargar todo el perfil. Puede que falten partes.') }
+    }, [avisarCarga, perfilId, usuario])
 
     const toggleSeguir = async () => {
         try {
@@ -107,14 +113,14 @@ export default function Perfil() {
             else await api.post(`/usuarios/${usuario.id}/seguir/${perfilId}`)
             setSiguiendo(!siguiendo)
             cargarPerfil()
-        } catch (err) { alert(err.response?.data?.mensaje || 'Error') }
+        } catch (err) { avisar(err.response?.data?.mensaje || 'Algo ha fallado. Inténtalo de nuevo.') }
     }
 
     const quitarFavorito = async (idlibro) => {
         try {
             await api.delete(`/libros/${idlibro}/favorito/${perfilId}`)
             cargarFavoritos()
-        } catch (err) { alert(err.response?.data?.mensaje || 'Error') }
+        } catch (err) { avisar(err.response?.data?.mensaje || 'Algo ha fallado. Inténtalo de nuevo.') }
     }
 
     const comprobarSiguiendo = useCallback(async () => {
@@ -130,40 +136,40 @@ export default function Perfil() {
         try {
             const res = await api.get(`/seguimientos/usuario/${perfilId}/estado/LEYENDO`)
             setLeyendoLibros(res.data || [])
-        } catch (err) { console.error('Error:', err) }
-    }, [perfilId])
+        } catch (err) { console.error('Error:', err); avisarCarga(err, 'No se ha podido cargar todo el perfil. Puede que falten partes.') }
+    }, [avisarCarga, perfilId])
 
     const cargarLeidosLibros = useCallback(async () => {
         try {
             const res = await api.get(`/seguimientos/usuario/${perfilId}/estado/LEIDO`)
             setLeidosLibros(res.data || [])
-        } catch (err) { console.error('Error:', err) }
-    }, [perfilId])
+        } catch (err) { console.error('Error:', err); avisarCarga(err, 'No se ha podido cargar todo el perfil. Puede que falten partes.') }
+    }, [avisarCarga, perfilId])
 
     const cargarPendientesLibros = useCallback(async () => {
         try {
             const res = await api.get(`/seguimientos/usuario/${perfilId}/estado/PENDIENTE`)
             setPendientesLibros(res.data || [])
-        } catch (err) { console.error('Error:', err) }
-    }, [perfilId])
+        } catch (err) { console.error('Error:', err); avisarCarga(err, 'No se ha podido cargar todo el perfil. Puede que falten partes.') }
+    }, [avisarCarga, perfilId])
 
     const cargarAbandonadosLibros = useCallback(async () => {
         try {
             const res = await api.get(`/seguimientos/usuario/${perfilId}/estado/ABANDONADO`)
             setAbandonadosLibros(res.data || [])
-        } catch (err) { console.error('Error:', err) }
-    }, [perfilId])
+        } catch (err) { console.error('Error:', err); avisarCarga(err, 'No se ha podido cargar todo el perfil. Puede que falten partes.') }
+    }, [avisarCarga, perfilId])
 
     const cargarEstadisticas = useCallback(async () => {
         try { const res = await api.get(`/usuarios/${perfilId}/perfil`); setEstadisticas(res.data) }
-        catch (err) { console.error('Error:', err) }
-    }, [perfilId])
+        catch (err) { console.error('Error:', err); avisarCarga(err, 'No se ha podido cargar todo el perfil. Puede que falten partes.') }
+    }, [avisarCarga, perfilId])
 
     // Solo consulta: ver la racha de alguien no la modifica
     const cargarRacha = useCallback(async () => {
         try { const res = await api.get(`/racha/usuario/${perfilId}`); setRacha(res.data) }
-        catch (err) { console.error('Error:', err) }
-    }, [perfilId])
+        catch (err) { console.error('Error:', err); avisarCarga(err, 'No se ha podido cargar todo el perfil. Puede que falten partes.') }
+    }, [avisarCarga, perfilId])
 
     useEffect(() => {
         if (perfilId) {
@@ -184,8 +190,8 @@ export default function Perfil() {
         }
     }, [cargarAbandonadosLibros, cargarAnotaciones, cargarEstadisticas, cargarRacha, cargarFavoritos, cargarLecturasRecientes, cargarLeidosLibros, cargarLeyendoLibros, cargarListasPublicas, cargarPendientesLibros, cargarPerfil, cargarResenas, comprobarSiguiendo, perfilId])
 
-    if (loading) return <p className="text-dark-muted">Cargando...</p>
-    if (!perfil) return <p className="text-red-400">Usuario no encontrado</p>
+    if (loading) return <p className="text-texto-sec">Cargando…</p>
+    if (!perfil) return <p className="font-serif text-xl text-texto-sec">Este perfil no existe o no se ha podido cargar.</p>
 
     const libroLeyendo = leyendoLibros[leyendoIndex] ?? leyendoLibros[0]
     const favoritosSlots = [...favoritos.slice(0, 5)]
@@ -200,426 +206,235 @@ export default function Perfil() {
         { key: 'listas', label: 'Listas' },
     ]
 
-    return (
-        <div className="max-w-4xl mx-auto">
+    // Seguimientos -> libros para las baldas
+    const aBalda = (lista) => lista.map((s) => ({
+        key: s.idseguimiento, idlibro: s.idlibro, titulo: s.tituloLibro, autor: s.nombreAutor, portada: s.portadaLibro,
+    }))
+    const estanterias = [
+        { estado: 'PENDIENTE', titulo: 'Quiero leer', libros: pendientesLibros,
+          vacio: esMio ? 'Tu pila de pendientes está sorprendentemente baja.' : 'No tiene nada pendiente.' },
+        { estado: 'LEYENDO', titulo: 'Leyendo', libros: leyendoLibros,
+          vacio: esMio ? 'Ahora mismo no tienes ningún libro entre manos.' : 'Ahora mismo no está leyendo nada.' },
+        { estado: 'LEIDO', titulo: 'Leídos', libros: leidosLibros,
+          vacio: esMio ? 'Tu estantería de leídos espera su primer libro.' : 'Todavía no ha terminado ningún libro.' },
+        { estado: 'ABANDONADO', titulo: 'Abandonados', libros: abandonadosLibros, ocultarSiVacio: true },
+    ]
+    const vacio = (texto) => <p className="font-serif text-xl text-texto-sec py-4">{texto}</p>
 
-            {/* Header: foto y texto a la izquierda; estadísticas y lectura actual a la derecha */}
-            <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-8 mb-10">
+    return (
+        <div className="max-w-5xl mx-auto">
+
+            {/* Cabecera: nombre en serif grande; cifras y lectura actual en el margen */}
+            <header className="flex flex-col md:flex-row md:items-end md:justify-between gap-8 mb-12 pt-2">
                 <div className="flex items-start gap-5 min-w-0">
-                    <div className="relative flex-shrink-0">
-                        {perfil.avatar ? (
-                            <img src={perfil.avatar} alt={perfil.nombre}
-                                 className="w-24 h-24 rounded-full object-cover ring-4 ring-dark-border" />
-                        ) : (
-                            <div className="w-24 h-24 bg-terra/20 rounded-full flex items-center justify-center text-terra text-4xl font-bold ring-4 ring-dark-border">
-                                {perfil.nombre?.charAt(0).toUpperCase()}
-                            </div>
-                        )}
-                        {/* Racha: insignia sobre el borde de la foto, abajo a la derecha */}
-                        {racha && (
-                            <span className="absolute -bottom-1 -right-2 flex items-center gap-0.5 bg-dark-card border-2 border-dark-border rounded-full pl-1 pr-2 py-0.5 shadow-lg"
-                                  title={`${racha.racha} ${racha.racha === 1 ? 'día' : 'días'} de racha`}>
-                                <Llama n={racha.racha} className="w-4 h-4" />
-                                <span className="font-bold text-sm leading-none" style={{ color: colorLlama(racha.racha) }}>{racha.racha}</span>
-                            </span>
-                        )}
-                    </div>
+                    {perfil.avatar ? (
+                        <img src={perfil.avatar} alt={perfil.nombre} className="w-20 h-20 sm:w-24 sm:h-24 rounded-full object-cover flex-shrink-0" />
+                    ) : (
+                        <div className="w-20 h-20 sm:w-24 sm:h-24 border border-linea rounded-full flex items-center justify-center text-texto-sec text-4xl font-serif flex-shrink-0">
+                            {perfil.nombre?.charAt(0).toUpperCase()}
+                        </div>
+                    )}
 
                     <div className="min-w-0">
-                        <h1 className="text-3xl font-bold text-dark-text tracking-tight">{perfil.nombre}</h1>
-
+                        <h1 className="font-serif text-4xl sm:text-5xl leading-none tracking-tight text-texto break-words">{perfil.nombre}</h1>
                         {perfil.biografia ? (
-                            <p className="text-dark-muted text-sm leading-relaxed mt-1.5 max-w-md">{perfil.biografia}</p>
+                            <p className="text-texto-sec leading-relaxed mt-3 max-w-md">{perfil.biografia}</p>
                         ) : (
-                            <p className="text-dark-muted/50 text-sm mt-1.5 italic">Sin biografía</p>
+                            <p className="text-texto-ter text-sm mt-3 italic">{esMio ? 'Todavía no has escrito nada sobre ti.' : 'Sin biografía.'}</p>
                         )}
-
-                        <div className="mt-3">
+                        <div className="flex flex-wrap items-center gap-4 mt-4">
                             {esMio ? (
-                                <Link to="/editar-perfil"
-                                      className="inline-block border border-dark-border text-dark-muted hover:border-terra hover:text-terra px-4 py-1.5 rounded-lg text-sm transition-colors">
-                                    Editar perfil
-                                </Link>
+                                <Link to="/editar-perfil" className="btn-secundario">Editar perfil</Link>
                             ) : usuario && (
                                 <button onClick={toggleSeguir}
-                                        className={`px-5 py-1.5 rounded-lg text-sm font-semibold transition-colors ${
-                                            siguiendo
-                                                ? 'border border-dark-border text-dark-text hover:border-red-400 hover:text-red-400'
-                                                : 'bg-terra hover:bg-terra-hover text-white'
-                                        }`}>
+                                        className={siguiendo ? 'btn-secundario hover:border-error hover:text-error' : 'btn-acento'}>
                                     {siguiendo ? 'Dejar de seguir' : 'Seguir'}
                                 </button>
+                            )}
+                            {racha && racha.racha > 0 && (
+                                <span className="text-sm text-texto-sec" title={`${racha.racha} ${racha.racha === 1 ? 'día' : 'días'} de racha`}>
+                                    <span className="font-serif text-lg text-acento mr-1">{racha.racha}</span>
+                                    {racha.racha === 1 ? 'día' : 'días'} seguidos leyendo
+                                </span>
                             )}
                         </div>
                     </div>
                 </div>
 
-                <div className="md:w-72 flex-shrink-0 flex flex-col gap-3">
-                    {/* Estadísticas */}
+                <div className="md:w-72 flex-shrink-0 space-y-6">
+                    {/* Cifras */}
                     {estadisticas && (
-                        <div className="flex flex-wrap gap-x-4 gap-y-1">
+                        <dl className="flex gap-6">
                             {[
-                                { valor: estadisticas.librosLeidos, label: 'libros leídos' },
+                                { valor: estadisticas.librosLeidos, label: 'libros' },
                                 { valor: estadisticas.paginasLeidas, label: 'páginas' },
                                 { valor: estadisticas.resenasEscritas, label: 'reseñas' },
                             ].map((e) => (
-                                <p key={e.label} className="text-dark-muted text-sm" title={e.valor?.toLocaleString('es-ES')}>
-                                    <span className="text-dark-text font-bold mr-1">{formatoCorto(e.valor)}</span>
-                                    {e.label}
-                                </p>
+                                <div key={e.label} title={e.valor?.toLocaleString('es-ES')}>
+                                    <dd className="font-serif text-3xl leading-none text-texto">{formatoCorto(e.valor)}</dd>
+                                    <dt className="text-xs text-texto-sec mt-1">{e.label}</dt>
+                                </div>
                             ))}
-                        </div>
+                        </dl>
                     )}
 
-                    {/* Leyendo ahora (carrusel compacto) */}
-                    <div className="bg-dark-card rounded-xl px-3 py-2.5">
-                        <div className="flex items-center justify-between mb-2">
-                            <span className="text-xs text-dark-muted">Leyendo ahora</span>
+                    {/* Leyendo ahora */}
+                    <div className="border-t border-linea pt-4">
+                        <div className="flex items-center justify-between mb-3">
+                            <span className="etiqueta">Leyendo ahora</span>
                             {leyendoLibros.length > 1 && (
-                                <div className="flex items-center gap-1.5">
+                                <div className="flex items-center gap-2 text-texto-sec">
                                     <button onClick={() => setLeyendoIndex(i => i === 0 ? leyendoLibros.length - 1 : i - 1)}
-                                            className="text-dark-muted hover:text-terra transition-colors" title="Anterior">
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-                                        </svg>
-                                    </button>
-                                    {leyendoLibros.map((_, i) => (
-                                        <button key={i} onClick={() => setLeyendoIndex(i)}
-                                                className={`w-1.5 h-1.5 rounded-full transition-colors ${i === leyendoIndex ? 'bg-terra' : 'bg-dark-border hover:bg-dark-muted'}`} />
-                                    ))}
+                                            className="hover:text-texto" aria-label="Anterior"><CaretLeft size={14} /></button>
+                                    <span className="text-[11px] tabular-nums">{leyendoIndex + 1}/{leyendoLibros.length}</span>
                                     <button onClick={() => setLeyendoIndex(i => i === leyendoLibros.length - 1 ? 0 : i + 1)}
-                                            className="text-dark-muted hover:text-terra transition-colors" title="Siguiente">
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                                        </svg>
-                                    </button>
+                                            className="hover:text-texto" aria-label="Siguiente"><CaretRight size={14} /></button>
                                 </div>
                             )}
                         </div>
-
                         {!libroLeyendo ? (
-                            <p className="text-dark-muted/70 text-xs">Nada ahora mismo</p>
+                            <p className="text-texto-ter text-sm">Nada ahora mismo.</p>
                         ) : (
                             <Link to={`/libro/${libroLeyendo.idlibro}`} className="group flex items-center gap-3">
-                                {libroLeyendo.portadaLibro ? (
-                                    <img src={libroLeyendo.portadaLibro} alt={libroLeyendo.tituloLibro}
-                                         className="w-8 h-12 object-cover rounded-sm flex-shrink-0" />
-                                ) : (
-                                    <div className="w-8 h-12 bg-dark-elevated rounded-sm flex-shrink-0" />
-                                )}
+                                <Portada src={libroLeyendo.portadaLibro} titulo={libroLeyendo.tituloLibro} id={libroLeyendo.idlibro}
+                                         elevar={false} className="w-9 flex-shrink-0" />
                                 <div className="flex-1 min-w-0">
-                                    <p className="text-dark-text text-sm truncate group-hover:text-terra transition-colors">{libroLeyendo.tituloLibro}</p>
-                                    <div className="flex items-center gap-2 mt-1.5">
-                                        <div className="bg-dark-border rounded-full h-1 flex-1">
-                                            <div className="bg-gradient-to-r from-orange-500 to-amber-500 h-1 rounded-full"
-                                                 style={{ width: `${libroLeyendo.porcentaje || 0}%` }} />
-                                        </div>
-                                        <span className="text-dark-muted text-xs">{libroLeyendo.porcentaje || 0}%</span>
+                                    <p className="font-serif text-texto truncate group-hover:text-acento">{libroLeyendo.tituloLibro}</p>
+                                    <div className="relative h-[2px] bg-linea mt-2">
+                                        <div className="absolute inset-y-0 left-0 bg-acento" style={{ width: `${libroLeyendo.porcentaje || 0}%` }} />
                                     </div>
+                                    <p className="text-texto-ter text-[11px] mt-1 tabular-nums">{libroLeyendo.porcentaje || 0}%</p>
                                 </div>
                             </Link>
                         )}
                     </div>
                 </div>
-            </div>
+            </header>
 
-            {/* Tabs */}
             {/* En móvil las pestañas no caben: se desplazan con el dedo */}
-            <div className="flex gap-1 sm:gap-2 mb-8 border-b border-dark-border overflow-x-auto [scrollbar-width:none] sm:justify-center">
-                {tabs.map((t) => (
-                    <button key={t.key} onClick={() => setTab(t.key)}
-                            className={`px-3 sm:px-4 py-2.5 text-sm font-medium transition-colors relative whitespace-nowrap flex-shrink-0 ${
-                                tab === t.key ? 'text-terra' : 'text-dark-muted hover:text-dark-text'
-                            }`}>
-                        {t.label}
-                        {tab === t.key && (
-                            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-terra rounded-full" />
-                        )}
-                    </button>
-                ))}
-            </div>
+            <Pestanas pestanas={tabs} activa={tab} onCambiar={setTab} className="mb-10" desplazable centradas />
 
             {/* Tab: Libros */}
             {tab === 'libros' && (
                 <>
-                    {/* Favoritos */}
-                    <div className="mb-12">
-                        <h2 className="text-lg font-semibold text-dark-text mb-5">Libros favoritos</h2>
-                        <div className="grid grid-cols-5 gap-x-4 gap-y-6">
-                            {favoritosSlots.map((libro, i) => (
-                                <div key={libro ? libro.idlibro : `empty-${i}`}>
-                                    {libro ? (
-                                        <div className="group relative">
-                                            <Link to={`/libro/${libro.idlibro}`} className="block">
-                                                {libro.portada ? (
-                                                    <img src={libro.portada} alt={libro.titulo}
-                                                         className="w-full h-56 object-cover rounded-sm shadow-md group-hover:shadow-xl transition-shadow" />
-                                                ) : (
-                                                    <div className="w-full h-56 bg-dark-elevated rounded-sm flex items-center justify-center text-dark-muted text-sm shadow-md">
-                                                        Sin portada
-                                                    </div>
-                                                )}
-                                                <p className="text-xs text-dark-text truncate mt-2 group-hover:text-terra transition-colors">{libro.titulo}</p>
-                                                <p className="text-xs text-dark-muted truncate">{libro.nombreAutor}</p>
-                                            </Link>
-                                            {esMio && (
-                                                <button onClick={() => quitarFavorito(libro.idlibro)}
-                                                        className="absolute top-1 right-1 bg-black/60 text-red-400 hover:text-red-300 rounded-full w-6 h-6 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity">
-                                                    ✕
-                                                </button>
-                                            )}
-                                        </div>
-                                    ) : esMio ? (
-                                        <Link to="/catalogo" className="block">
-                                            <div className="border-2 border-dashed border-dark-border h-56 flex flex-col items-center justify-center hover:border-terra/40 transition-colors group cursor-pointer">
-                                                <div className="w-10 h-10 rounded-full border-2 border-dashed border-dark-border group-hover:border-terra/40 flex items-center justify-center mb-2 transition-colors">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-dark-muted group-hover:text-terra transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-                                                    </svg>
-                                                </div>
-                                                <span className="text-xs text-dark-muted group-hover:text-terra transition-colors">Añadir</span>
-                                            </div>
-                                            <p className="text-xs text-transparent mt-2">-</p>
-                                            <p className="text-xs text-transparent">-</p>
-                                        </Link>
-                                    ) : (
-                                        <div>
-                                            <div className="border-2 border-dashed border-dark-border/30 h-56 flex items-center justify-center">
-                                                <span className="text-xs text-dark-muted/30">Vacío</span>
-                                            </div>
-                                            <p className="text-xs text-transparent mt-2">-</p>
-                                            <p className="text-xs text-transparent">-</p>
-                                        </div>
+                    {/* Favoritos: cinco portadas a todo el ancho */}
+                    <section className="mb-14">
+                        <h2 className="etiqueta mb-6">Libros favoritos</h2>
+                        <div className="grid grid-cols-5 gap-3 sm:gap-5">
+                            {favoritosSlots.map((l, i) => l ? (
+                                <div key={l.idlibro} className="relative group/fav">
+                                    <Link to={`/libro/${l.idlibro}`} className="group block" title={l.nombreAutor ? `${l.titulo} · ${l.nombreAutor}` : l.titulo}>
+                                        <Portada src={l.portada} titulo={l.titulo} autor={l.nombreAutor} id={l.idlibro} className="w-full" />
+                                    </Link>
+                                    {esMio && (
+                                        <button onClick={() => quitarFavorito(l.idlibro)} title="Quitar de favoritos" aria-label="Quitar de favoritos"
+                                                className="absolute top-1 right-1 sm:top-1.5 sm:right-1.5 bg-fondo/80 text-texto-sec hover:text-error rounded-full w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center opacity-100 md:opacity-0 md:group-hover/fav:opacity-100 focus:opacity-100">
+                                            <X size={12} />
+                                        </button>
                                     )}
                                 </div>
+                            ) : esMio ? (
+                                <Link key={`hueco-${i}`} to="/catalogo" title="Añadir un favorito"
+                                      className="aspect-[2/3] border border-dashed border-linea rounded-[2px] flex flex-col items-center justify-center gap-2 text-texto-ter hover:text-acento hover:border-acento/50">
+                                    <Plus size={18} />
+                                    <span className="text-xs hidden sm:inline">Añadir</span>
+                                </Link>
+                            ) : (
+                                <div key={`hueco-${i}`} className="aspect-[2/3] border border-dashed border-linea/60 rounded-[2px]" />
                             ))}
                         </div>
-                    </div>
+                    </section>
 
-                    {/* Lecturas recientes */}
-                    <div className="mb-12">
-                        <h2 className="text-lg font-semibold text-dark-text mb-5">Lecturas recientes</h2>
+                    {/* Lecturas recientes: de cinco en cinco, alineadas con los favoritos */}
+                    <section className="mb-12">
                         {lecturasRecientes.length === 0 ? (
-                            <div className="text-center py-8 bg-dark-card rounded-2xl">
-                                <p className="text-dark-muted text-sm">
-                                    {esMio ? 'No has terminado ningún libro todavía' : 'No ha terminado ningún libro'}
-                                </p>
-                            </div>
+                            <>
+                                <h2 className="etiqueta mb-6">Lecturas recientes</h2>
+                                {vacio(esMio ? 'Todavía no has terminado ningún libro aquí.' : 'Todavía no ha terminado ningún libro.')}
+                            </>
                         ) : (
-                            <div className="flex gap-5 overflow-x-auto pb-2">
+                            <Carrusel titulo={<h2 className="etiqueta">Lecturas recientes</h2>}>
                                 {lecturasRecientes.map((s) => (
-                                    <Link key={s.idseguimiento} to={`/libro/${s.idlibro}`} className="group flex-shrink-0 w-40">
-                                        {s.portadaLibro ? (
-                                            <img src={s.portadaLibro} alt={s.tituloLibro}
-                                                 className="w-full h-56 object-cover shadow-md group-hover:shadow-xl transition-shadow" />
-                                        ) : (
-                                            <div className="w-full h-56 bg-dark-elevated flex items-center justify-center text-dark-muted text-sm shadow-md">
-                                                Sin portada
-                                            </div>
-                                        )}
-                                        <p className="text-sm text-dark-text truncate mt-2 group-hover:text-terra transition-colors">{s.tituloLibro}</p>
-                                        <p className="text-xs text-dark-muted">{s.fecha}</p>
+                                    <Link key={s.idseguimiento} to={`/libro/${s.idlibro}`} className="group snap-start min-w-0">
+                                        <Portada src={s.portadaLibro} titulo={s.tituloLibro} autor={s.nombreAutor} id={s.idlibro} className="w-full" />
+                                        <p className="font-serif text-xs sm:text-[15px] leading-snug text-texto mt-2 sm:mt-3 line-clamp-2 group-hover:text-acento">{s.tituloLibro}</p>
+                                        <p className="hidden sm:block text-xs text-texto-ter mt-0.5">{s.fecha}</p>
                                     </Link>
                                 ))}
-                            </div>
+                            </Carrusel>
                         )}
-                    </div>
+                    </section>
                 </>
             )}
 
+            {/* Tab: Estantería, con los libros sobre sus baldas */}
             {tab === 'estanteria' && (
-                <>
-                    {/* Quiero leer */}
-                    <div className="mb-10">
-                        <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-lg font-semibold text-dark-text">Quiero leer</h2>
-                            {pendientesLibros.length > 6 && (
-                                <Link to={`/estanteria/${perfilId}/PENDIENTE`} className="text-xs text-dark-muted hover:text-terra transition-colors">
-                                    Ver todo ({pendientesLibros.length})
-                                </Link>
-                            )}
-                        </div>
-                        {pendientesLibros.length === 0 ? (
-                            <p className="text-dark-muted text-sm">No hay libros pendientes</p>
-                        ) : (
-                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-x-5 gap-y-6">
-                                {pendientesLibros.slice(0, 6).map((s) => (
-                                    <Link key={s.idseguimiento} to={`/libro/${s.idlibro}`} className="group">
-                                        {s.portadaLibro ? (
-                                            <img src={s.portadaLibro} alt={s.tituloLibro}
-                                                 className="w-full h-56 object-cover rounded-sm shadow-md group-hover:shadow-xl transition-shadow" />
-                                        ) : (
-                                            <div className="w-full h-56 bg-dark-elevated rounded-sm flex items-center justify-center text-dark-muted text-sm shadow-md">
-                                                Sin portada
-                                            </div>
-                                        )}
-                                        <p className="text-xs text-dark-text truncate mt-2 group-hover:text-terra transition-colors">{s.tituloLibro}</p>
-                                    </Link>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Leyendo */}
-                    <div className="mb-10">
-                        <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-lg font-semibold text-dark-text">Leyendo</h2>
-                            {leyendoLibros.length > 6 && (
-                                <Link to={`/estanteria/${perfilId}/LEYENDO`} className="text-xs text-dark-muted hover:text-terra transition-colors">
-                                    Ver todo ({leyendoLibros.length})
-                                </Link>
-                            )}
-                        </div>
-                        {leyendoLibros.length === 0 ? (
-                            <p className="text-dark-muted text-sm">No hay libros en lectura</p>
-                        ) : (
-                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-x-5 gap-y-6">
-                                {leyendoLibros.slice(0, 6).map((s) => (
-                                    <Link key={s.idseguimiento} to={`/libro/${s.idlibro}`} className="group">
-                                        {s.portadaLibro ? (
-                                            <img src={s.portadaLibro} alt={s.tituloLibro}
-                                                 className="w-full h-56 object-cover rounded-sm shadow-md group-hover:shadow-xl transition-shadow" />
-                                        ) : (
-                                            <div className="w-full h-56 bg-dark-elevated rounded-sm flex items-center justify-center text-dark-muted text-sm shadow-md">
-                                                Sin portada
-                                            </div>
-                                        )}
-                                        <p className="text-xs text-dark-text truncate mt-2 group-hover:text-terra transition-colors">{s.tituloLibro}</p>
-                                    </Link>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Leídos */}
-                    <div className="mb-10">
-                        <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-lg font-semibold text-dark-text">Leídos</h2>
-                            {leidosLibros.length > 6 && (
-                                <Link to={`/estanteria/${perfilId}/LEIDO`} className="text-xs text-dark-muted hover:text-terra transition-colors">
-                                    Ver todo ({leidosLibros.length})
-                                </Link>
-                            )}
-                        </div>
-                        {leidosLibros.length === 0 ? (
-                            <p className="text-dark-muted text-sm">No hay libros leídos</p>
-                        ) : (
-                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-x-5 gap-y-6">
-                                {leidosLibros.slice(0, 6).map((s) => (
-                                    <Link key={s.idseguimiento} to={`/libro/${s.idlibro}`} className="group">
-                                        {s.portadaLibro ? (
-                                            <img src={s.portadaLibro} alt={s.tituloLibro}
-                                                 className="w-full h-56 object-cover rounded-sm shadow-md group-hover:shadow-xl transition-shadow" />
-                                        ) : (
-                                            <div className="w-full h-56 bg-dark-elevated rounded-sm flex items-center justify-center text-dark-muted text-sm shadow-md">
-                                                Sin portada
-                                            </div>
-                                        )}
-                                        <p className="text-xs text-dark-text truncate mt-2 group-hover:text-terra transition-colors">{s.tituloLibro}</p>
-                                    </Link>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Abandonados */}
-                    {abandonadosLibros.length > 0 && (
-                        <div className="mb-10">
-                            <div className="flex items-center justify-between mb-4">
-                                <h2 className="text-lg font-semibold text-dark-text">Abandonados</h2>
-                                {abandonadosLibros.length > 6 && (
-                                    <Link to={`/estanteria/${perfilId}/ABANDONADO`} className="text-xs text-dark-muted hover:text-terra transition-colors">
-                                        Ver todo ({abandonadosLibros.length})
+                <div className="space-y-14">
+                    {estanterias.filter((e) => !(e.ocultarSiVacio && e.libros.length === 0)).map((e) => (
+                        <section key={e.estado}>
+                            <div className="flex items-baseline justify-between mb-6">
+                                <h2 className="etiqueta">{e.titulo} <span className="text-texto-ter ml-1">{e.libros.length}</span></h2>
+                                {e.libros.length > 6 && (
+                                    <Link to={`/estanteria/${perfilId}/${e.estado}`} className="text-xs text-texto-sec hover:text-acento">
+                                        Ver toda la balda
                                     </Link>
                                 )}
                             </div>
-                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-x-5 gap-y-6">
-                                {abandonadosLibros.slice(0, 6).map((s) => (
-                                    <Link key={s.idseguimiento} to={`/libro/${s.idlibro}`} className="group">
-                                        {s.portadaLibro ? (
-                                            <img src={s.portadaLibro} alt={s.tituloLibro}
-                                                 className="w-full h-56 object-cover rounded-sm shadow-md group-hover:shadow-xl transition-shadow" />
-                                        ) : (
-                                            <div className="w-full h-56 bg-dark-elevated rounded-sm flex items-center justify-center text-dark-muted text-sm shadow-md">
-                                                Sin portada
-                                            </div>
-                                        )}
-                                        <p className="text-xs text-dark-text truncate mt-2 group-hover:text-terra transition-colors">{s.tituloLibro}</p>
-                                    </Link>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-                </>
+                            {e.libros.length === 0 ? vacio(e.vacio) : <Balda libros={aBalda(e.libros.slice(0, 6))} />}
+                        </section>
+                    ))}
+                </div>
             )}
 
             {/* Tab: Reseñas */}
             {tab === 'resenas' && (
-                <div>
-                    {resenas.length === 0 ? (
-                        <div className="text-center py-16 bg-dark-card rounded-2xl">
-                            <p className="text-dark-muted text-sm">
-                                {esMio ? 'No has escrito reseñas todavía' : 'No tiene reseñas públicas'}
-                            </p>
-                        </div>
-                    ) : (
-                        <div className="space-y-4">
-                            {resenas.map((r) => (
-                                <ResenaCard key={r.idresena} resena={r} mostrarUsuario={false} />
-                            ))}
-                        </div>
-                    )}
-                </div>
+                resenas.length === 0 ? (
+                    vacio(esMio ? 'Todavía no has escrito ninguna reseña.' : 'No tiene reseñas públicas.')
+                ) : (
+                    <div className="border-t border-linea">
+                        {resenas.map((r) => (
+                            <ResenaCard key={r.idresena} resena={r} mostrarUsuario={false} />
+                        ))}
+                    </div>
+                )
             )}
 
             {/* Tab: Anotaciones */}
             {tab === 'anotaciones' && (
-                <div>
-                    {anotaciones.length === 0 ? (
-                        <div className="text-center py-16 bg-dark-card rounded-2xl">
-                            <p className="text-dark-muted text-sm">
-                                {esMio ? 'No tienes anotaciones todavía' : 'No tiene anotaciones'}
-                            </p>
-                        </div>
-                    ) : (
-                        <div className="space-y-4">
-                            {anotaciones.map((a) => (
-                                <div key={a.idanotacion} className="bg-dark-card rounded-xl p-5 hover:bg-dark-elevated transition-colors flex gap-4">
-                                    <Link to={`/libro/${a.idlibro}`} className="flex-shrink-0">
-                                        {a.portadaLibro ? (
-                                            <img src={a.portadaLibro} alt={a.tituloLibro} className="w-14 h-20 object-cover rounded-sm" />
-                                        ) : (
-                                            <div className="w-14 h-20 bg-dark-elevated rounded-sm flex items-center justify-center text-dark-muted text-xs">
-                                                📖
-                                            </div>
-                                        )}
-                                    </Link>
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex items-center justify-between mb-1">
-                                            <Link to={`/libro/${a.idlibro}`} className="text-terra font-medium text-sm hover:text-terra-hover transition-colors truncate">
-                                                {a.tituloLibro}
-                                            </Link>
-                                            <span className="text-dark-muted text-xs flex-shrink-0 ml-2">{new Date(a.fecha).toLocaleDateString()}</span>
-                                        </div>
-                                        <SpoilerOculto activo={a.tieneSpoiler && usuario?.id !== a.idusuario}>
-                                            <div>
-                                                {a.titulo && <p className="text-dark-text font-medium text-sm mb-1">{a.titulo}</p>}
-                                                <p className="text-dark-text/70 text-sm">{a.texto}</p>
-                                            </div>
-                                        </SpoilerOculto>
-                                        {(a.parte || a.numPagina) && (
-                                            <p className="text-dark-muted text-xs mt-2">
-                                                {a.parte && <span>{a.parte}</span>}
-                                                {a.parte && a.numPagina && <span> · </span>}
-                                                {a.numPagina && <span>Página {a.numPagina}</span>}
-                                            </p>
-                                        )}
+                anotaciones.length === 0 ? (
+                    vacio(esMio ? 'Todavía no has escrito en los márgenes.' : 'Todavía no ha escrito en los márgenes.')
+                ) : (
+                    <div className="divide-y divide-linea border-y border-linea">
+                        {anotaciones.map((a) => (
+                            <article key={a.idanotacion} className="flex gap-5 py-6">
+                                <Link to={`/libro/${a.idlibro}`} className="group flex-shrink-0 self-start">
+                                    <Portada src={a.portadaLibro} titulo={a.tituloLibro} id={a.idlibro} className="w-12" />
+                                </Link>
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex items-baseline justify-between gap-4 mb-2">
+                                        <Link to={`/libro/${a.idlibro}`} className="font-serif text-lg text-texto hover:text-acento truncate">
+                                            {a.tituloLibro}
+                                        </Link>
+                                        <span className="text-texto-ter text-xs flex-shrink-0">{new Date(a.fecha).toLocaleDateString()}</span>
                                     </div>
+                                    <SpoilerOculto activo={a.tieneSpoiler && usuario?.id !== a.idusuario}>
+                                        <div className="max-w-[65ch]">
+                                            {a.titulo && <p className="text-texto font-medium mb-1">{a.titulo}</p>}
+                                            <p className="font-serif text-[17px] leading-[1.65] text-texto/90 whitespace-pre-line">{a.texto}</p>
+                                        </div>
+                                    </SpoilerOculto>
+                                    {(a.parte || a.numPagina) && (
+                                        <p className="text-texto-ter text-xs mt-2">
+                                            {a.parte && <span>{a.parte}</span>}
+                                            {a.parte && a.numPagina && <span> · </span>}
+                                            {a.numPagina && <span>pág. {a.numPagina}</span>}
+                                        </p>
+                                    )}
                                 </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
+                            </article>
+                        ))}
+                    </div>
+                )
             )}
 
             {/* Tab: Mural de citas (citas de otros lectores que ha elegido exhibir) */}
@@ -629,15 +444,18 @@ export default function Perfil() {
 
             {/* Tab: Listas */}
             {tab === 'listas' && (
-                <>
-
-                    {/* Listas */}
-                    <div className="space-y-4">
+                listasPublicas.length === 0 ? (
+                    <div>
+                        {vacio(esMio ? 'Todavía no has hecho ninguna lista.' : 'No tiene listas públicas.')}
+                        {esMio && <Link to="/crear-lista" className="btn-secundario">Crear una lista</Link>}
+                    </div>
+                ) : (
+                    <div className="border-t border-linea">
                         {listasPublicas.map((lista) => (
                             <ListaCard key={lista.idlista} lista={lista} />
                         ))}
                     </div>
-                </>
+                )
             )}
         </div>
     )

@@ -2,8 +2,12 @@ import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import api from '../api/axios'
+import { NotePencil, Quotes, X } from '@phosphor-icons/react'
+import Portada from '../components/Portada'
+import { useAvisos } from '../context/AvisosContext'
 
 export default function CrearAnotacion() {
+    const { avisar, avisarCarga } = useAvisos()
     const { idlibro } = useParams()
     const { usuario } = useAuth()
     const navigate = useNavigate()
@@ -19,12 +23,12 @@ export default function CrearAnotacion() {
 
     const cargarLibro = useCallback(async () => {
         try { const res = await api.get(`/libros/${idlibro}`); setLibro(res.data) }
-        catch (err) { console.error('Error:', err) }
-    }, [idlibro])
+        catch (err) { console.error('Error:', err); avisarCarga(err, 'No se ha podido cargar el libro.') }
+    }, [avisarCarga, idlibro])
     const cargarAnotaciones = useCallback(async () => {
         try { const res = await api.get(`/anotaciones/usuario/${usuario.id}/libro/${idlibro}`); setAnotaciones(res.data.content || res.data || []) }
-        catch (err) { console.error('Error:', err) }
-    }, [idlibro, usuario])
+        catch (err) { console.error('Error:', err); avisarCarga(err, 'No se han podido cargar tus anotaciones.') }
+    }, [avisarCarga, idlibro, usuario])
 
     useEffect(() => { cargarLibro(); cargarAnotaciones() }, [cargarAnotaciones, cargarLibro, idlibro])
 
@@ -40,76 +44,94 @@ export default function CrearAnotacion() {
 
     const eliminarAnotacion = async (id) => {
         try { await api.delete(`/anotaciones/${id}`); cargarAnotaciones() }
-        catch (err) { alert(err.response?.data?.mensaje || 'Error') }
+        catch (err) { avisar(err.response?.data?.mensaje || 'Algo ha fallado. Inténtalo de nuevo.') }
     }
 
-    if (!libro) return <p className="text-dark-muted">Cargando...</p>
+    if (!libro) return <p className="text-texto-sec">Cargando…</p>
+
+    const TIPOS = [
+        { valor: 'NOTA', nombre: 'Nota', icono: NotePencil },
+        { valor: 'CITA', nombre: 'Cita', icono: Quotes },
+    ]
 
     return (
         <div className="max-w-3xl mx-auto">
-            <div className="flex items-center justify-between mb-6">
-                <h1 className="text-2xl font-bold text-terra tracking-tight">Anotaciones</h1>
-                <button onClick={() => navigate(`/`)} className="text-dark-muted hover:text-dark-text text-2xl transition-colors">✕</button>
+            <div className="flex items-start justify-between gap-4 mb-8">
+                <div className="flex gap-5 min-w-0">
+                    <Portada src={libro.portada} titulo={libro.titulo} autor={libro.nombreAutor} id={libro.idlibro}
+                             elevar={false} className="w-20 flex-shrink-0" />
+                    <div className="min-w-0">
+                        <p className="etiqueta mb-2">En los márgenes de</p>
+                        <h1 className="font-serif text-3xl sm:text-4xl leading-[1.05] text-texto">{libro.titulo}</h1>
+                        <p className="text-texto-sec mt-2">{libro.nombreAutor}</p>
+                    </div>
+                </div>
+                <button onClick={() => navigate(`/`)} className="text-texto-sec hover:text-texto" aria-label="Cerrar">
+                    <X size={22} />
+                </button>
             </div>
-            <p className="text-dark-muted text-sm mb-6">
-                Apunta reflexiones, citas o ideas sobre lo que estás leyendo. Puedes indicar el capítulo o la página para encontrarlas fácilmente después.
+            <p className="text-texto-sec text-sm mb-8 max-w-prose">
+                Apunta lo que te hace pensar o una frase que quieras guardar. Si indicas el capítulo o la página, luego la encontrarás enseguida.
             </p>
 
-            <div className="flex gap-6 mb-8">
-                {libro.portada ? <img src={libro.portada} alt={libro.titulo} className="w-24 h-36 object-cover rounded-xl flex-shrink-0" />
-                    : <div className="w-24 h-36 bg-dark-elevated rounded-xl flex-shrink-0 flex items-center justify-center text-dark-muted text-sm">Sin portada</div>}
-                <div>
-                    <h2 className="text-xl font-bold text-dark-text">{libro.titulo}</h2>
-                    <p className="text-dark-muted text-sm">{libro.nombreAutor}</p>
-                </div>
-            </div>
+            {error && <p className="text-error text-sm mb-4">{error}</p>}
+            {exito && <p className="text-exito text-sm mb-4">{exito}</p>}
 
-            {error && <p className="text-red-400 text-sm mb-4">{error}</p>}
-            {exito && <p className="text-emerald-400 text-sm mb-4">{exito}</p>}
-
-            <form onSubmit={handleSubmit} className="bg-dark-card p-5 rounded-xl mb-8 space-y-4">
-                <div className="flex gap-3">
-                    <button type="button" onClick={() => setTipo('NOTA')}
-                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${tipo === 'NOTA' ? 'bg-terra text-white' : 'bg-dark-elevated text-dark-muted'}`}>📝 Nota</button>
-                    <button type="button" onClick={() => setTipo('CITA')}
-                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${tipo === 'CITA' ? 'bg-terra text-white' : 'bg-dark-elevated text-dark-muted'}`}>💬 Cita</button>
+            <form onSubmit={handleSubmit} className="border-y border-linea py-6 mb-10 space-y-5">
+                <div className="flex gap-2" role="group" aria-label="Tipo de anotación">
+                    {TIPOS.map(({ valor, nombre, icono: Icono }) => (
+                        <button key={valor} type="button" onClick={() => setTipo(valor)} aria-pressed={tipo === valor}
+                                className={`btn ${tipo === valor ? 'bg-texto text-fondo' : 'border border-linea text-texto-sec hover:text-texto'}`}>
+                            <Icono size={16} /> {nombre}
+                        </button>
+                    ))}
                 </div>
                 <div>
-                    <label className="block text-dark-muted text-sm mb-1">Parte del libro (opcional)</label>
-                    <input type="text" value={parte} onChange={(e) => setParte(e.target.value)}
-                           className="w-full bg-dark-elevated border border-dark-border rounded-lg px-4 py-2.5 text-dark-text focus:border-terra focus:outline-none transition-colors" placeholder="Ej: Capítulo 3, página 42" />
+                    <label htmlFor="parte" className="etiqueta block mb-2">Parte del libro <span className="text-texto-ter normal-case tracking-normal">(opcional)</span></label>
+                    <input id="parte" type="text" value={parte} onChange={(e) => setParte(e.target.value)}
+                           className="campo" placeholder="Capítulo 3, página 42…" />
                 </div>
                 <div>
-                    <label className="block text-dark-muted text-sm mb-1">{tipo === 'NOTA' ? 'Tu nota' : 'La cita'}</label>
-                    <textarea value={texto} onChange={(e) => setTexto(e.target.value)} rows={3}
-                              className="w-full bg-dark-elevated border border-dark-border rounded-lg px-4 py-2.5 text-dark-text focus:border-terra focus:outline-none transition-colors"
-                              placeholder={tipo === 'NOTA' ? 'Escribe tu nota...' : 'Escribe la cita...'} required />
+                    <label htmlFor="texto" className="etiqueta block mb-2">{tipo === 'NOTA' ? 'Tu nota' : 'La frase'}</label>
+                    <textarea id="texto" value={texto} onChange={(e) => setTexto(e.target.value)} rows={4}
+                              className={`campo font-serif text-[17px] leading-[1.6] ${tipo === 'CITA' ? 'italic' : ''}`}
+                              placeholder={tipo === 'NOTA' ? 'Lo que te ha hecho pensar…' : 'Copia la frase tal cual…'} required />
                 </div>
                 <div className="flex gap-6">
-                    <label className="flex items-center gap-2 text-dark-muted text-sm cursor-pointer"><input type="checkbox" checked={esPublica} onChange={(e) => setEsPublica(e.target.checked)} className="accent-terra" />Pública</label>
-                    <label className="flex items-center gap-2 text-dark-muted text-sm cursor-pointer"><input type="checkbox" checked={tieneSpoiler} onChange={(e) => setTieneSpoiler(e.target.checked)} className="accent-terra" />Spoiler</label>
+                    <label className="flex items-center gap-2 text-texto-sec text-sm cursor-pointer"><input type="checkbox" checked={esPublica} onChange={(e) => setEsPublica(e.target.checked)} className="accent-acento" />Pública</label>
+                    <label className="flex items-center gap-2 text-texto-sec text-sm cursor-pointer"><input type="checkbox" checked={tieneSpoiler} onChange={(e) => setTieneSpoiler(e.target.checked)} className="accent-acento" />Tiene spoilers</label>
                 </div>
-                <button type="submit" className="bg-terra hover:bg-terra-hover text-white font-semibold px-6 py-2 rounded-lg transition-colors">Guardar anotación</button>
+                <button type="submit" className="btn-acento">Guardar anotación</button>
             </form>
 
-            <h3 className="text-lg font-semibold text-dark-text mb-4">Mis anotaciones</h3>
-            {anotaciones.length === 0 ? <p className="text-dark-muted">No tienes anotaciones en este libro</p> : (
-                <div className="space-y-3">
+            <h2 className="etiqueta mb-4">Tus anotaciones</h2>
+            {anotaciones.length === 0 ? <p className="font-serif text-xl text-texto-sec">Todavía no has escrito en los márgenes de este libro.</p> : (
+                <div className="divide-y divide-linea border-y border-linea">
                     {anotaciones.map((a) => (
-                        <div key={a.idanotacion} className="bg-dark-card p-4 rounded-xl">
-                            <div className="flex items-center justify-between mb-2">
-                                <div className="flex items-center gap-2">
-                  <span className={`text-xs px-2 py-1 rounded-full ${a.tipo === 'CITA' ? 'bg-terra/10 text-terra' : 'bg-dark-elevated text-dark-muted'}`}>
-                    {a.tipo === 'CITA' ? '💬 Cita' : '📝 Nota'}</span>
-                                    {a.parte && <span className="text-xs text-dark-muted">{a.parte}</span>}
-                                    {a.tieneSpoiler && <span className="text-xs text-red-400">Spoiler</span>}
+                        <article key={a.idanotacion} className="py-5">
+                            <div className="flex items-center justify-between gap-4 mb-2">
+                                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-texto-ter">
+                                    <span className="flex items-center gap-1 text-texto-sec">
+                                        {a.tipo === 'CITA' ? <Quotes size={14} /> : <NotePencil size={14} />}
+                                        {a.tipo === 'CITA' ? 'Cita' : 'Nota'}
+                                    </span>
+                                    {a.parte && <span>· {a.parte}</span>}
+                                    {a.tieneSpoiler && <span className="text-acento">· Spoilers</span>}
+                                    <span>· {new Date(a.fecha).toLocaleString()}</span>
                                 </div>
-                                <button onClick={() => eliminarAnotacion(a.idanotacion)} className="text-dark-muted hover:text-red-400 text-sm transition-colors">✕</button>
+                                <button onClick={() => eliminarAnotacion(a.idanotacion)} className="text-texto-ter hover:text-error"
+                                        aria-label="Eliminar anotación" title="Eliminar">
+                                    <X size={14} />
+                                </button>
                             </div>
-                            <p className={`${a.tipo === 'CITA' ? 'italic text-terra/80' : 'text-dark-text/80'}`}>
-                                {a.tipo === 'CITA' ? `"${a.texto}"` : a.texto}</p>
-                            <p className="text-xs text-dark-muted mt-2">{new Date(a.fecha).toLocaleString()}</p>
-                        </div>
+                            {a.tipo === 'CITA' ? (
+                                <blockquote className="font-serif italic text-[1.2rem] leading-[1.6] text-texto">
+                                    {a.texto}
+                                </blockquote>
+                            ) : (
+                                <p className="font-serif text-[17px] leading-[1.65] text-texto/90 whitespace-pre-line">{a.texto}</p>
+                            )}
+                        </article>
                     ))}
                 </div>
             )}

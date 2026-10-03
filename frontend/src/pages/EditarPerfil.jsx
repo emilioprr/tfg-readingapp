@@ -2,8 +2,11 @@ import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import api from '../api/axios'
+import { X } from '@phosphor-icons/react'
+import { useAvisos } from '../context/AvisosContext'
 
 export default function EditarPerfil() {
+    const { avisarCarga } = useAvisos()
     const { usuario, login } = useAuth()
     const navigate = useNavigate()
     const [nombre, setNombre] = useState('')
@@ -14,8 +17,8 @@ export default function EditarPerfil() {
 
     const cargarPerfil = useCallback(async () => {
         try { const res = await api.get(`/usuarios/${usuario.id}`); setNombre(res.data.nombre || ''); setBiografia(res.data.biografia || ''); setAvatar(res.data.avatar || '') }
-        catch (err) { console.error('Error:', err) }
-    }, [usuario])
+        catch (err) { console.error('Error:', err); avisarCarga(err, 'No se ha podido cargar tu perfil para editarlo.') }
+    }, [avisarCarga, usuario])
 
     useEffect(() => { cargarPerfil() }, [cargarPerfil])
 
@@ -31,30 +34,30 @@ export default function EditarPerfil() {
 
     return (
         <div className="max-w-md mx-auto">
-            <div className="flex items-center justify-between mb-6">
-                <h1 className="text-2xl font-bold text-terra tracking-tight">Editar perfil</h1>
-                <button onClick={() => navigate('/perfil')} className="text-dark-muted hover:text-dark-text text-2xl transition-colors">✕</button>
+            <div className="flex items-start justify-between mb-8">
+                <h1 className="font-serif text-4xl leading-none tracking-tight text-texto">Editar perfil</h1>
+                <button onClick={() => navigate('/perfil')} className="text-texto-sec hover:text-texto" aria-label="Cerrar"><X size={22} /></button>
             </div>
-            {error && <p className="text-red-400 text-sm mb-4">{error}</p>}
-            {exito && <p className="text-emerald-400 text-sm mb-4">{exito}</p>}
-            <form onSubmit={handleSubmit} className="space-y-4">
+            {error && <p className="text-error text-sm mb-4">{error}</p>}
+            {exito && <p className="text-exito text-sm mb-4">{exito}</p>}
+            <form onSubmit={handleSubmit} className="space-y-5">
                 <div>
-                    <label className="block text-dark-muted text-sm mb-1">Nombre</label>
-                    <input type="text" value={nombre} onChange={(e) => setNombre(e.target.value)}
-                           className="w-full bg-dark-elevated border border-dark-border rounded-lg px-4 py-2.5 text-dark-text focus:border-terra focus:outline-none transition-colors" required />
+                    <label className="etiqueta block mb-2">Nombre</label>
+                    <input type="text" value={nombre} onChange={(e) => setNombre(e.target.value)} className="campo" required />
                 </div>
                 <div>
-                    <label className="block text-dark-muted text-sm mb-1">Biografía</label>
+                    <label className="etiqueta block mb-2">Biografía</label>
                     <textarea value={biografia} onChange={(e) => setBiografia(e.target.value)} rows={3}
-                              className="w-full bg-dark-elevated border border-dark-border rounded-lg px-4 py-2.5 text-dark-text focus:border-terra focus:outline-none transition-colors" placeholder="Cuéntanos sobre ti..." />
+                              className="campo resize-none" placeholder="Qué lees, qué buscas, qué no soportas…" />
                 </div>
                 <div>
-                    <label className="block text-dark-muted text-sm mb-1">URL de avatar</label>
-                    <input type="url" value={avatar} onChange={(e) => setAvatar(e.target.value)}
-                           className="w-full bg-dark-elevated border border-dark-border rounded-lg px-4 py-2.5 text-dark-text focus:border-terra focus:outline-none transition-colors" placeholder="https://ejemplo.com/foto.jpg" />
-                    {avatar && <img src={avatar} alt="Preview" className="w-16 h-16 rounded-full object-cover mt-2" />}
+                    <label className="etiqueta block mb-2">Foto (URL)</label>
+                    <div className="flex items-center gap-4">
+                        <input type="url" value={avatar} onChange={(e) => setAvatar(e.target.value)} className="campo" placeholder="https://ejemplo.com/foto.jpg" />
+                        {avatar && <img src={avatar} alt="Vista previa" className="w-12 h-12 rounded-full object-cover border border-linea flex-shrink-0" />}
+                    </div>
                 </div>
-                <button type="submit" className="w-full bg-terra hover:bg-terra-hover text-white font-semibold py-2.5 rounded-lg transition-colors">Guardar cambios</button>
+                <button type="submit" className="btn-acento w-full">Guardar cambios</button>
             </form>
         </div>
     )
