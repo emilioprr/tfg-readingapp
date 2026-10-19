@@ -82,8 +82,6 @@ class ValoracionServiceTest {
         LocalDate hoy = LocalDate.now();
         assertThat(seguimientoRepository.countByUsuarioIdusuarioAndEstadoAndFechaBetween(
                 ana.getIdusuario(), EstadoLectura.LEIDO, hoy.minusDays(1), hoy.plusDays(1))).isZero();
-        assertThat(seguimientoRepository.countByUsuarioIdusuarioAndLibroAutorIdautorAndEstadoAndFechaBetween(
-                ana.getIdusuario(), libro.getAutor().getIdautor(), EstadoLectura.LEIDO, hoy.minusDays(1), hoy.plusDays(1))).isZero();
         assertThat(actividadLecturaRepository.diasConActividad(ana.getIdusuario(), hoy.minusDays(1))).isEmpty();
         assertThat(seguimientoRepository.sumPaginasByUsuario(ana.getIdusuario())).isZero();
     }

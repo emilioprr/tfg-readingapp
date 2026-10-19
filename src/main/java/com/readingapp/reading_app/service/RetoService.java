@@ -29,7 +29,6 @@ public class RetoService {
     private final RetoRepository retoRepository;
     private final ParticipanteRetoRepository participanteRetoRepository;
     private final UsuarioRepository usuarioRepository;
-    private final AutorRepository autorRepository;
     private final SeguimientoRepository seguimientoRepository;
     private final SesionLecturaRepository sesionLecturaRepository;
     private final NotificacionService notificacionService;
@@ -277,9 +276,6 @@ public class RetoService {
             );
             case LIBROS -> seguimientoRepository
                     .countByUsuarioIdusuarioAndEstadoAndFechaBetween(idusuario, EstadoLectura.LEIDO, inicio, fin).intValue();
-            case LIBROS_AUTOR -> seguimientoRepository
-                    .countByUsuarioIdusuarioAndLibroAutorIdautorAndEstadoAndFechaBetween(
-                            idusuario, reto.getAutor().getIdautor(), EstadoLectura.LEIDO, inicio, fin).intValue();
         };
     }
 
@@ -315,8 +311,6 @@ public class RetoService {
                 .fechaFin(reto.getFechaFin().toString())
                 .idCreador(reto.getCreador() != null ? reto.getCreador().getIdusuario() : null)
                 .nombreCreador(reto.getCreador() != null ? reto.getCreador().getNombre() : "ReadingApp")
-                .idAutor(reto.getAutor() != null ? reto.getAutor().getIdautor() : null)
-                .nombreAutor(reto.getAutor() != null ? reto.getAutor().getNombre() : null)
                 .numParticipantes(reto.getParticipantes().size())
                 .progresoColaborativo(progresoColab)
                 .porcentajeColaborativo(porcentajeColab)
@@ -354,7 +348,6 @@ public class RetoService {
                 .modalidad(reto.getModalidad())
                 .meta(reto.getMeta())
                 .fechaCumplimiento(p.getFechaCumplimiento() != null ? p.getFechaCumplimiento().toString() : null)
-                .nombreAutor(reto.getAutor() != null ? reto.getAutor().getNombre() : null)
                 .build();
     }
 }

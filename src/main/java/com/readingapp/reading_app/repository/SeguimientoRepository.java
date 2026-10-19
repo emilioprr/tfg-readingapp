@@ -43,12 +43,6 @@ public interface SeguimientoRepository extends JpaRepository<Seguimiento, Long> 
     Long countByUsuarioIdusuarioAndEstadoAndFechaBetween(@Param("idusuario") Long idusuario, @Param("estado") EstadoLectura estado,
                                                          @Param("inicio") LocalDate inicio, @Param("fin") LocalDate fin);
 
-    @Query("SELECT COUNT(s) FROM Seguimiento s WHERE s.usuario.idusuario = :uid AND s.libro.autor.idautor = :aid AND s.estado = :estado")
-    Long countByUsuarioIdusuarioAndLibroAutorIdautorAndEstado(@Param("uid") Long uid, @Param("aid") Long aid, @Param("estado") EstadoLectura estado);
-
-    @Query("SELECT COUNT(s) FROM Seguimiento s WHERE s.usuario.idusuario = :uid AND s.libro.autor.idautor = :aid AND s.estado = :estado AND s.lecturaAntigua = false AND s.fecha BETWEEN :inicio AND :fin")
-    Long countByUsuarioIdusuarioAndLibroAutorIdautorAndEstadoAndFechaBetween(@Param("uid") Long uid, @Param("aid") Long aid, @Param("estado") EstadoLectura estado, @Param("inicio") LocalDate inicio, @Param("fin") LocalDate fin);
-
     @Query("SELECT COUNT(DISTINCT s.libro.idlibro) FROM Seguimiento s " +
             "WHERE s.usuario.idusuario = :idusuario AND s.estado = 'LEYENDO' " +
             "AND s.idseguimiento = (SELECT MAX(s2.idseguimiento) FROM Seguimiento s2 " +

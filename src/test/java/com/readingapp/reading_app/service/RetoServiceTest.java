@@ -39,7 +39,6 @@ class RetoServiceTest {
     @Mock private RetoRepository retoRepository;
     @Mock private ParticipanteRetoRepository participanteRetoRepository;
     @Mock private UsuarioRepository usuarioRepository;
-    @Mock private AutorRepository autorRepository;
     @Mock private SeguimientoRepository seguimientoRepository;
     @Mock private SesionLecturaRepository sesionLecturaRepository;
     @Mock private NotificacionService notificacionService;
@@ -56,7 +55,7 @@ class RetoServiceTest {
     void setUp() {
         Clock relojFijo = Clock.fixed(HOY.atTime(12, 0).atZone(ZONA).toInstant(), ZONA);
         retoService = new RetoService(retoRepository, participanteRetoRepository, usuarioRepository,
-                autorRepository, seguimientoRepository, sesionLecturaRepository, notificacionService, relojFijo);
+                seguimientoRepository, sesionLecturaRepository, notificacionService, relojFijo);
 
         seguidor = mock(Usuario.class);
         usuario = mock(Usuario.class);

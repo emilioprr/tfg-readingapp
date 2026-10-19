@@ -323,10 +323,9 @@ CREATE TABLE public.reto (
     modalidad character varying(255) NOT NULL,
     tipo character varying(255) NOT NULL,
     titulo character varying(255) NOT NULL,
-    id_autor bigint,
     id_creador bigint,
     CONSTRAINT reto_modalidad_check CHECK (((modalidad)::text = ANY ((ARRAY['PERSONAL'::character varying, 'PREDEFINIDO'::character varying, 'COMPARTIDO'::character varying, 'COLABORATIVO'::character varying])::text[]))),
-    CONSTRAINT reto_tipo_check CHECK (((tipo)::text = ANY ((ARRAY['PAGINAS'::character varying, 'HORAS'::character varying, 'LIBROS'::character varying, 'LIBROS_AUTOR'::character varying])::text[])))
+    CONSTRAINT reto_tipo_check CHECK (((tipo)::text = ANY ((ARRAY['PAGINAS'::character varying, 'HORAS'::character varying, 'LIBROS'::character varying])::text[])))
 );
 
 
@@ -723,14 +722,6 @@ ALTER TABLE ONLY public.sigue_autor
 
 ALTER TABLE ONLY public.recomendacion
     ADD CONSTRAINT fkbmalmolovedon0peeuu2ntd1j FOREIGN KEY (idlibro) REFERENCES public.libro(idlibro);
-
-
---
--- Name: reto fkd0cr2lllx170a4k4nykqqnq8n; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.reto
-    ADD CONSTRAINT fkd0cr2lllx170a4k4nykqqnq8n FOREIGN KEY (id_autor) REFERENCES public.autor(idautor);
 
 
 --

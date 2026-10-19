@@ -43,10 +43,6 @@ public class Reto {
     @JoinColumn(name = "id_creador")
     private Usuario creador; // null en PREDEFINIDO y COLABORATIVO
 
-    @ManyToOne
-    @JoinColumn(name = "id_autor")
-    private Autor autor; // solo para LIBROS_AUTOR
-
     @OneToMany(mappedBy = "reto", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<ParticipanteReto> participantes = new ArrayList<>();

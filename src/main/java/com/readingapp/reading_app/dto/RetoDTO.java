@@ -39,8 +39,6 @@ public class RetoDTO {
         private String fechaFin;
         private Long idCreador;
         private String nombreCreador;
-        private Long idAutor;
-        private String nombreAutor;
         private Integer numParticipantes;
         private Integer progresoColaborativo; // solo COLABORATIVO: suma total
         private Double porcentajeColaborativo;
@@ -71,6 +69,5 @@ public class RetoDTO {
         private ModalidadReto modalidad;
         private Integer meta;
         private String fechaCumplimiento;
-        private String nombreAutor;
     }
 }
