@@ -6,8 +6,6 @@ import { CaretLeft, EnvelopeSimple } from '@phosphor-icons/react'
 import Portada from '../components/Portada'
 import { useAvisos } from '../context/AvisosContext'
 
-const ID_SISTEMA = 'sistema'
-
 const mismoDia = (a, b) => a.toDateString() === b.toDateString()
 
 /** "Hoy", "Ayer" o fecha corta, para separadores del chat y la lista. */
@@ -49,7 +47,7 @@ function agrupar(todas, idUsuario) {
     const mapa = {}
     todas.forEach((r) => {
         const enviada = r.idusuarioEmisor === idUsuario
-        const id = enviada ? r.idusuarioReceptor : (r.idusuarioEmisor ?? ID_SISTEMA)
+        const id = enviada ? r.idusuarioReceptor : r.idusuarioEmisor
         if (!mapa[id]) {
             mapa[id] = {
                 id,
@@ -181,13 +179,9 @@ export default function Recomendaciones() {
                                 </button>
                                 <Avatar nombre={seleccionado.nombre} avatar={seleccionado.avatar} size="w-9 h-9 text-sm" />
                                 <div className="min-w-0">
-                                    {seleccionado.id === ID_SISTEMA ? (
-                                        <p className="text-texto font-semibold text-sm">{seleccionado.nombre}</p>
-                                    ) : (
-                                        <Link to={`/usuario/${seleccionado.id}`} className="text-texto font-semibold text-sm hover:text-acento transition-colors">
-                                            {seleccionado.nombre}
-                                        </Link>
-                                    )}
+                                    <Link to={`/usuario/${seleccionado.id}`} className="text-texto font-semibold text-sm hover:text-acento transition-colors">
+                                        {seleccionado.nombre}
+                                    </Link>
                                     <p className="text-texto-sec text-xs">
                                         {seleccionado.mensajes.length} {seleccionado.mensajes.length === 1 ? 'libro recomendado' : 'libros recomendados'}
                                     </p>

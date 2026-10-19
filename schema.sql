@@ -142,7 +142,6 @@ CREATE TABLE public.likea (
 CREATE TABLE public.lista (
     idlista bigint NOT NULL,
     descripcion text,
-    es_automatica boolean,
     es_publica boolean,
     fecha_creacion timestamp(6) without time zone NOT NULL,
     nombre character varying(200) NOT NULL,
@@ -243,11 +242,10 @@ ALTER TABLE public.participante_reto ALTER COLUMN idparticipante ADD GENERATED B
 
 CREATE TABLE public.recomendacion (
     idrecomendacion bigint NOT NULL,
-    es_automatica boolean,
     fecha timestamp(6) without time zone NOT NULL,
     mensaje text,
     visto boolean,
-    idusuario_emisor bigint,
+    idusuario_emisor bigint NOT NULL,
     idlibro bigint NOT NULL,
     idusuario_receptor bigint NOT NULL
 );

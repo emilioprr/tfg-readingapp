@@ -26,7 +26,7 @@ public class Recomendacion {
     private Boolean visto = false;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "idusuario_emisor")
+    @JoinColumn(name = "idusuario_emisor", nullable = false)
     private Usuario emisor;
 
     @ManyToOne(fetch = FetchType.LAZY)

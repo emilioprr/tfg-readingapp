@@ -91,9 +91,7 @@ public class RecomendacionService {
     public void eliminar(Long id) {
         Recomendacion recomendacion = recomendacionRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Recomendación no encontrada"));
-        boolean esEmisor = recomendacion.getEmisor() != null
-                && SecurityUtils.esUsuarioActual(recomendacion.getEmisor().getIdusuario());
-        if (!esEmisor) {
+        if (!SecurityUtils.esUsuarioActual(recomendacion.getEmisor().getIdusuario())) {
             SecurityUtils.validarUsuarioOAdmin(recomendacion.getReceptor().getIdusuario());
         }
         recomendacionRepository.delete(recomendacion);
@@ -112,9 +110,9 @@ public class RecomendacionService {
                 .mensaje(recomendacion.getMensaje())
                 .fecha(recomendacion.getFecha() != null ? recomendacion.getFecha().toString() : null)
                 .visto(recomendacion.getVisto())
-                .idusuarioEmisor(recomendacion.getEmisor() != null ? recomendacion.getEmisor().getIdusuario() : null)
-                .nombreEmisor(recomendacion.getEmisor() != null ? recomendacion.getEmisor().getNombre() : "Sistema")
-                .avatarEmisor(recomendacion.getEmisor() != null ? recomendacion.getEmisor().getAvatar() : null)
+                .idusuarioEmisor(recomendacion.getEmisor().getIdusuario())
+                .nombreEmisor(recomendacion.getEmisor().getNombre())
+                .avatarEmisor(recomendacion.getEmisor().getAvatar())
                 .idusuarioReceptor(recomendacion.getReceptor().getIdusuario())
                 .nombreReceptor(recomendacion.getReceptor().getNombre())
                 .avatarReceptor(recomendacion.getReceptor().getAvatar())
