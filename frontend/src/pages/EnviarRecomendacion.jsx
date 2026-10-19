@@ -74,7 +74,7 @@ export default function EnviarRecomendacion() {
                     <textarea value={mensaje} onChange={(e) => setMensaje(e.target.value)} rows={3}
                               className="campo" placeholder="Por qué crees que le va a gustar…" />
                 </div>
-                <button type="submit" className="w-full btn-acento">Enviar recomendación</button>
+                <button type="submit" disabled={seguidos.length === 0} className="w-full btn-acento">Enviar recomendación</button>
             </form>
         </div>
     )

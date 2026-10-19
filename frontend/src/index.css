@@ -109,6 +109,14 @@ body {
     display: none;
 }
 
+/* Tailwind v4 ya no pone cursor de mano en los botones; en la capa base para
+   que una utilidad (p. ej. cursor-not-allowed) pueda sobrescribirlo */
+@layer base {
+    button:not(:disabled), [role="button"]:not([aria-disabled="true"]) {
+        cursor: pointer;
+    }
+}
+
 /* Transiciones cortas y suaves, solo de lo que cambia al interactuar */
 a, button {
     transition-property: color, background-color, border-color, opacity, transform;

@@ -54,6 +54,7 @@ export default function LibroDetalle() {
     const [anotacionesAmigos, setAnotacionesAmigos] = useState([])
     const [misAnotaciones, setMisAnotaciones] = useState([])
     const [totalResenas, setTotalResenas] = useState(0)
+    const [puedeRecomendar, setPuedeRecomendar] = useState(false)
 
     const cargarLibro = useCallback(async () => {
         try { const res = await api.get(`/libros/${id}`); setLibro(res.data) }
@@ -136,6 +137,21 @@ export default function LibroDetalle() {
             setMisAnotaciones(res.data || [])
         } catch (err) { console.error('Error:', err) }
     }, [id, usuario])
+
+    // Solo se recomienda a mutuals (os seguís mutuamente); sin ninguno no se muestra el botón
+    const cargarPuedeRecomendar = useCallback(async () => {
+        if (!usuario) return
+        try {
+            const [seguidosRes, seguidoresRes] = await Promise.all([
+                api.get(`/usuarios/${usuario.id}/seguidos`),
+                api.get(`/usuarios/${usuario.id}/seguidores`),
+            ])
+            const meSiguen = new Set((seguidoresRes.data || []).map(u => u.idusuario))
+            setPuedeRecomendar((seguidosRes.data || []).some(u => meSiguen.has(u.idusuario)))
+        } catch (err) { console.error('Error:', err) }
+    }, [usuario])
+
+    useEffect(() => { cargarPuedeRecomendar() }, [cargarPuedeRecomendar])
 
     useEffect(() => {
         cargarLibro()
@@ -269,10 +285,12 @@ export default function LibroDetalle() {
                                             className={esFavorito ? 'text-acento' : 'hover:text-acento'}>
                                         <Star size={22} weight={esFavorito ? 'fill' : 'regular'} />
                                     </button>
-                                    <button onClick={() => navigate(`/libro/${id}/recomendar`)} title="Recomendar" aria-label="Recomendar"
-                                            className="hover:text-texto">
-                                        <PaperPlaneTilt size={22} />
-                                    </button>
+                                    {puedeRecomendar && (
+                                        <button onClick={() => navigate(`/libro/${id}/recomendar`)} title="Recomendar" aria-label="Recomendar"
+                                                className="hover:text-texto">
+                                            <PaperPlaneTilt size={22} />
+                                        </button>
+                                    )}
                                     <button onClick={() => setMostrarListas(true)} title="Guardar en lista" aria-label="Guardar en lista"
                                             className="hover:text-texto">
                                         <ListPlus size={22} />
