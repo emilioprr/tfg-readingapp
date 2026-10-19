@@ -17,7 +17,6 @@ public interface SeguimientoRepository extends JpaRepository<Seguimiento, Long> 
     /** Historial de un libro, del primer al último seguimiento (el último es el estado actual). */
     List<Seguimiento> findByUsuarioIdusuarioAndLibroIdlibroOrderByIdseguimientoAsc(Long idusuario, Long idlibro);
     List<Seguimiento> findByUsuarioIdusuarioAndEstado(Long idusuario, EstadoLectura estado);
-    Optional<Seguimiento> findTopByUsuarioIdusuarioAndLibroIdlibroOrderByFechaDesc(Long idusuario, Long idlibro);
 
     @Query(value = "SELECT COALESCE(SUM(diff), 0) FROM (" +
             "  SELECT GREATEST(s.num_pagina - COALESCE(LAG(s.num_pagina) OVER (" +

@@ -72,7 +72,7 @@ public class RecomendacionService {
     }
 
     public List<RecomendacionDTO.Response> obtenerNoVistas(Long idusuario) {
-        return recomendacionRepository.findByReceptorIdusuarioAndVistoFalse(idusuario).stream()
+        return recomendacionRepository.findNoVistasByReceptor(idusuario).stream()
                 .map(this::toResponse)
                 .toList();
     }

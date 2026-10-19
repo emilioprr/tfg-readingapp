@@ -22,6 +22,7 @@ public class Recomendacion {
     private LocalDateTime fecha = LocalDateTime.now();
 
     @Column
+    @Builder.Default
     private Boolean visto = false;
 
     @ManyToOne(fetch = FetchType.LAZY)

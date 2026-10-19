@@ -143,7 +143,7 @@ public class SeguimientoService {
 
     public SeguimientoDTO.Response obtenerUltimoProgreso(Long idusuario, Long idlibro) {
         Seguimiento seguimiento = seguimientoRepository
-                .findTopByUsuarioIdusuarioAndLibroIdlibroOrderByFechaDesc(idusuario, idlibro)
+                .findTopByUsuarioIdusuarioAndLibroIdlibroOrderByIdseguimientoDesc(idusuario, idlibro)
                 .orElseThrow(() -> new EntityNotFoundException("No hay seguimiento para este libro"));
         return toResponse(seguimiento);
     }
