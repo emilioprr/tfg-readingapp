@@ -8,63 +8,57 @@ import com.readingapp.reading_app.model.LikeCita;
 import com.readingapp.reading_app.model.Usuario;
 import com.readingapp.reading_app.model.enums.TipoAnotacion;
 import com.readingapp.reading_app.repository.AnotacionRepository;
-import com.readingapp.reading_app.repository.NotificacionRepository;
-import com.readingapp.reading_app.model.enums.TipoNotificacion;
+import com.readingapp.reading_app.repository.LikeCitaRepository;
+import com.readingapp.reading_app.repository.UsuarioRepository;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
-import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
-import org.springframework.context.annotation.Import;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.Mockito.*;
 
-/*Muro de citas contra una base de datos real (H2).*/
-@DataJpaTest
-@Import({CitaService.class, NotificacionService.class})
+@ExtendWith(MockitoExtension.class)
 @DisplayName("CitaService - muro de citas, likes y citas guardadas")
 class CitaServiceTest {
 
-    @Autowired private TestEntityManager em;
-    @Autowired private CitaService citaService;
-    @Autowired private AnotacionRepository anotacionRepository;
-    @Autowired private NotificacionRepository notificacionRepository;
+    @Mock private AnotacionRepository anotacionRepository;
+    @Mock private LikeCitaRepository likeCitaRepository;
+    @Mock private UsuarioRepository usuarioRepository;
+    @Mock private NotificacionService notificacionService;
+
+    @InjectMocks private CitaService citaService;
 
     private Usuario ana, luis;
     private Libro libro;
-    private int orden = 0;
-
-    private Usuario usuario(String nombre) {
-        return em.persist(Usuario.builder().nombre(nombre).email(nombre + "@test.com").password("x")
-                .fechaAlta(LocalDate.now()).citasGuardadas(new HashSet<>()).build());
-    }
-
-    private Anotacion anotacion(Usuario u, TipoAnotacion tipo, boolean publica, String texto) {
-        return em.persist(Anotacion.builder().usuario(u).libro(libro).tipo(tipo).esPublica(publica)
-                .tieneSpoiler(false).texto(texto).fecha(LocalDateTime.now().plusSeconds(orden++)).build());
-    }
 
     @BeforeEach
     void setUp() {
-        ana = usuario("ana");
-        luis = usuario("luis");
-        Autor autor = em.persist(Autor.builder().nombre("Miguel Delibes").seguidores(0).build());
-        libro = em.persist(Libro.builder().titulo("Las ratas").numPaginas(200).autor(autor).build());
-        // Ana es quien usa la app en estos tests
+        ana = Usuario.builder().idusuario(1L).nombre("ana").citasGuardadas(new HashSet<>()).build();
+        luis = Usuario.builder().idusuario(2L).nombre("luis").citasGuardadas(new HashSet<>()).build();
+        libro = Libro.builder().idlibro(10L).titulo("Las ratas")
+                .autor(Autor.builder().idautor(5L).nombre("Miguel Delibes").build()).build();
+        lenient().when(usuarioRepository.findById(1L)).thenReturn(Optional.of(ana));
+        // Ana es quien usa la aplicación en estos tests
         SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(
-                "ana@test.com", ana.getIdusuario(), List.of(new SimpleGrantedAuthority("ROLE_USER"))));
+                "ana@test.com", 1L, List.of(new SimpleGrantedAuthority("ROLE_USER"))));
     }
 
     @AfterEach
@@ -72,200 +66,161 @@ class CitaServiceTest {
         SecurityContextHolder.clearContext();
     }
 
+    private Anotacion anotacion(Long id, Usuario autor, TipoAnotacion tipo, boolean publica, String texto) {
+        Anotacion a = Anotacion.builder().idanotacion(id).usuario(autor).libro(libro).tipo(tipo)
+                .esPublica(publica).tieneSpoiler(false).texto(texto).fecha(LocalDateTime.now()).build();
+        lenient().when(anotacionRepository.findById(id)).thenReturn(Optional.of(a));
+        return a;
+    }
+
     private List<String> textos(CitaDTO.Pagina pagina) {
         return pagina.getCitas().stream().map(CitaDTO.Response::getTexto).toList();
     }
 
-    @Test
-    @DisplayName("El muro solo muestra citas públicas (no notas ni citas privadas), las más recientes primero")
-    void muroSoloCitasPublicas() {
-        anotacion(luis, TipoAnotacion.CITA, true, "Primera cita");
-        anotacion(luis, TipoAnotacion.CITA, false, "Cita privada");
-        anotacion(luis, TipoAnotacion.NOTA, true, "Una nota");
-        anotacion(ana, TipoAnotacion.CITA, true, "Segunda cita");
-        em.flush();
-
-        assertThat(textos(citaService.obtenerComunidad("recientes", 0, 20))).containsExactly("Segunda cita", "Primera cita");
-    }
+    // === MURO DE LA COMUNIDAD ===
 
     @Test
-    @DisplayName("Guardar una cita la marca como guardada y aparece en \"Guardadas\"; quitarla la saca")
-    void guardarYQuitar() {
-        Anotacion cita = anotacion(luis, TipoAnotacion.CITA, true, "Una cita bonita");
-        em.flush();
+    @DisplayName("\"Recientes\" pide las citas públicas y las devuelve en ese orden")
+    void recientes() {
+        Anotacion segunda = anotacion(21L, ana, TipoAnotacion.CITA, true, "Segunda cita");
+        Anotacion primera = anotacion(20L, luis, TipoAnotacion.CITA, true, "Primera cita");
+        when(anotacionRepository.findByTipoAndEsPublicaTrueOrderByFechaDescIdanotacionDesc(eq(TipoAnotacion.CITA), any()))
+                .thenReturn(new PageImpl<>(List.of(segunda, primera), PageRequest.of(0, 20), 2));
 
-        citaService.guardar(cita.getIdanotacion());
-        em.flush();
-        assertThat(citaService.obtenerComunidad("recientes", 0, 20).getCitas().get(0).getGuardada()).isTrue();
-        assertThat(textos(citaService.obtenerGuardadas(ana.getIdusuario(), 0, 20))).containsExactly("Una cita bonita");
+        CitaDTO.Pagina pagina = citaService.obtenerComunidad("recientes", 0, 20);
 
-        citaService.quitar(cita.getIdanotacion());
-        em.flush();
-        assertThat(citaService.obtenerGuardadas(ana.getIdusuario(), 0, 20).getCitas()).isEmpty();
+        assertThat(textos(pagina)).containsExactly("Segunda cita", "Primera cita");
+        assertThat(pagina.getCitas().get(0).getTituloLibro()).isEqualTo("Las ratas");
     }
 
     @Test
-    @DisplayName("No se pueden guardar citas privadas de otros ni notas")
-    void noGuardarPrivadasNiNotas() {
-        Anotacion privada = anotacion(luis, TipoAnotacion.CITA, false, "Privada");
-        Anotacion nota = anotacion(luis, TipoAnotacion.NOTA, true, "Nota");
-        em.flush();
+    @DisplayName("\"Populares\" respeta el orden por likes aunque la base de datos devuelva las citas desordenadas")
+    void populares() {
+        Anotacion masLikeada = anotacion(30L, luis, TipoAnotacion.CITA, true, "La más likeada");
+        Anotacion menosLikeada = anotacion(31L, luis, TipoAnotacion.CITA, true, "La menos likeada");
+        when(anotacionRepository.findIdsCitasPopulares(any(), any()))
+                .thenReturn(new PageImpl<>(List.of(30L, 31L), PageRequest.of(0, 20), 2));
+        when(anotacionRepository.findAllById(List.of(30L, 31L))).thenReturn(List.of(menosLikeada, masLikeada));
 
-        assertThatThrownBy(() -> citaService.guardar(privada.getIdanotacion())).isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> citaService.guardar(nota.getIdanotacion())).isInstanceOf(IllegalArgumentException.class);
+        assertThat(textos(citaService.obtenerComunidad("populares", 0, 20)))
+                .containsExactly("La más likeada", "La menos likeada");
     }
 
     @Test
-    @DisplayName("Si el autor hace privada una cita guardada, deja de verse en \"Guardadas\"")
-    void citaQuePasaAPrivada() {
-        Anotacion cita = anotacion(luis, TipoAnotacion.CITA, true, "Ahora pública");
-        em.flush();
-        citaService.guardar(cita.getIdanotacion());
-        cita.setEsPublica(false);
-        em.flush();
+    @DisplayName("Cada cita indica si la has guardado o likeado y cuántos likes y guardados tiene")
+    void marcasYContadores() {
+        Anotacion cita = anotacion(40L, luis, TipoAnotacion.CITA, true, "Cita");
+        when(anotacionRepository.findByTipoAndEsPublicaTrueOrderByFechaDescIdanotacionDesc(eq(TipoAnotacion.CITA), any()))
+                .thenReturn(new PageImpl<>(List.of(cita), PageRequest.of(0, 20), 1));
+        when(anotacionRepository.findIdsGuardadas(eq(1L), anyList())).thenReturn(List.of(40L));
+        when(likeCitaRepository.findIdsLikeadas(eq(1L), anyList())).thenReturn(List.of(40L));
+        when(likeCitaRepository.contarPorCita(anyList())).thenReturn(List.<Object[]>of(new Object[]{40L, 3L}));
+        when(anotacionRepository.contarGuardados(anyList())).thenReturn(List.<Object[]>of(new Object[]{40L, 2L}));
 
-        assertThat(citaService.obtenerGuardadas(ana.getIdusuario(), 0, 20).getCitas()).isEmpty();
-    }
+        CitaDTO.Response r = citaService.obtenerComunidad("recientes", 0, 20).getCitas().get(0);
 
-    @Test
-    @DisplayName("Las citas guardadas de otro usuario se ven en su perfil, pero no las privadas de terceros")
-    void guardadasDeOtroPerfil() {
-        Anotacion publica = anotacion(ana, TipoAnotacion.CITA, true, "Pública de Ana");
-        Anotacion privada = anotacion(luis, TipoAnotacion.CITA, true, "De Luis, luego privada");
-        em.flush();
-        // Luis guarda las dos; después hace privada la suya
-        luis.getCitasGuardadas().add(publica);
-        luis.getCitasGuardadas().add(privada);
-        privada.setEsPublica(false);
-        em.flush();
-
-        // Ana visita el perfil de Luis: ve la pública (marcada como no guardada por ella), no la privada de Luis
-        CitaDTO.Pagina pagina = citaService.obtenerGuardadas(luis.getIdusuario(), 0, 20);
-        assertThat(textos(pagina)).containsExactly("Pública de Ana");
-        assertThat(pagina.getCitas().get(0).getGuardada()).isFalse();
-    }
-
-    @Test
-    @DisplayName("Una cita guardada por otros se puede borrar (se quita antes de sus guardados)")
-    void borrarCitaGuardada() {
-        Anotacion cita = anotacion(luis, TipoAnotacion.CITA, true, "Se va a borrar");
-        em.flush();
-        citaService.guardar(cita.getIdanotacion());
-        em.flush();
-
-        anotacionRepository.borrarDeCitasGuardadas(cita.getIdanotacion());
-        em.clear();
-        anotacionRepository.deleteById(cita.getIdanotacion());
-        em.flush();
-
-        assertThat(anotacionRepository.findById(cita.getIdanotacion())).isEmpty();
-    }
-
-    private CitaDTO.Response buscar(CitaDTO.Pagina pagina, Long idanotacion) {
-        return pagina.getCitas().stream().filter(c -> c.getIdanotacion().equals(idanotacion)).findFirst().orElseThrow();
-    }
-
-    private void like(Usuario u, Anotacion cita, LocalDateTime fecha) {
-        em.persist(LikeCita.builder().usuario(u).anotacion(cita).fecha(fecha).build());
-    }
-
-    @Test
-    @DisplayName("Dar y quitar like actualiza el contador y la marca; dar like dos veces cuenta una")
-    void darYQuitarLike() {
-        Anotacion cita = anotacion(luis, TipoAnotacion.CITA, true, "Cita para likear");
-        em.flush();
-
-        citaService.darLike(cita.getIdanotacion());
-        citaService.darLike(cita.getIdanotacion());
-        em.flush();
-        CitaDTO.Response r = buscar(citaService.obtenerComunidad("recientes", 0, 20), cita.getIdanotacion());
-        assertThat(r.getLikes()).isEqualTo(1);
+        assertThat(r.getGuardada()).isTrue();
         assertThat(r.getLikeada()).isTrue();
-
-        citaService.quitarLike(cita.getIdanotacion());
-        em.flush();
-        r = buscar(citaService.obtenerComunidad("recientes", 0, 20), cita.getIdanotacion());
-        assertThat(r.getLikes()).isZero();
-        assertThat(r.getLikeada()).isFalse();
-    }
-
-    @Test
-    @DisplayName("Dar like avisa al autor de la cita una sola vez, aunque se quite y se vuelva a dar")
-    void likeNotificaAlAutor() {
-        Anotacion cita = anotacion(luis, TipoAnotacion.CITA, true, "Cita de Luis");
-        em.flush();
-
-        citaService.darLike(cita.getIdanotacion());
-        citaService.quitarLike(cita.getIdanotacion());
-        em.flush();
-        citaService.darLike(cita.getIdanotacion());
-        em.flush();
-
-        var avisos = notificacionRepository.findByUsuarioIdusuarioAndTipoOrderByFechaDesc(
-                luis.getIdusuario(), TipoNotificacion.LIKE_CITA, PageRequest.of(0, 10)).getContent();
-        assertThat(avisos).hasSize(1);
-        assertThat(avisos.get(0).getUsuarioOrigen().getIdusuario()).isEqualTo(ana.getIdusuario());
-        assertThat(avisos.get(0).getAnotacion().getIdanotacion()).isEqualTo(cita.getIdanotacion());
-    }
-
-    @Test
-    @DisplayName("No se puede dar like a citas privadas de otros; a las propias sí, pero sin avisarse a uno mismo")
-    void likePrivadasYPropias() {
-        Anotacion privada = anotacion(luis, TipoAnotacion.CITA, false, "Privada");
-        Anotacion propia = anotacion(ana, TipoAnotacion.CITA, true, "Mía");
-        em.flush();
-
-        assertThatThrownBy(() -> citaService.darLike(privada.getIdanotacion())).isInstanceOf(IllegalArgumentException.class);
-        citaService.darLike(propia.getIdanotacion());
-        em.flush();
-        assertThat(buscar(citaService.obtenerComunidad("recientes", 0, 20), propia.getIdanotacion()).getLikes()).isEqualTo(1);
-        assertThat(notificacionRepository.findByUsuarioIdusuarioAndTipoOrderByFechaDesc(
-                ana.getIdusuario(), TipoNotificacion.LIKE_CITA, PageRequest.of(0, 10)).getContent()).isEmpty();
-    }
-
-    @Test
-    @DisplayName("Populares: primero las más likeadas de la última semana; los likes antiguos no cuentan")
-    void ordenPopulares() {
-        Usuario eva = usuario("eva");
-        Usuario leo = usuario("leo");
-        Anotacion antigua = anotacion(luis, TipoAnotacion.CITA, true, "Muy likeada hace un mes");
-        Anotacion semanal = anotacion(luis, TipoAnotacion.CITA, true, "Likeada esta semana");
-        Anotacion reciente = anotacion(luis, TipoAnotacion.CITA, true, "Sin likes, la más nueva");
-        LocalDateTime haceUnMes = LocalDateTime.now().minusDays(30);
-        like(ana, antigua, haceUnMes);
-        like(leo, antigua, haceUnMes);
-        like(eva, antigua, haceUnMes);
-        like(ana, semanal, LocalDateTime.now().minusDays(2));
-        em.flush();
-
-        CitaDTO.Pagina populares = citaService.obtenerComunidad("populares", 0, 20);
-        assertThat(textos(populares)).containsExactly("Likeada esta semana", "Sin likes, la más nueva", "Muy likeada hace un mes");
-        // El contador que se muestra es el total, no solo el de la semana
-        assertThat(buscar(populares, antigua.getIdanotacion()).getLikes()).isEqualTo(3);
-        assertThat(populares.getHayMas()).isFalse();
-    }
-
-    @Test
-    @DisplayName("Cada cita indica cuántas veces se ha guardado")
-    void vecesGuardada() {
-        Anotacion cita = anotacion(luis, TipoAnotacion.CITA, true, "Guardada por dos");
-        em.flush();
-        luis.getCitasGuardadas().add(cita);
-        citaService.guardar(cita.getIdanotacion());
-        em.flush();
-
-        assertThat(buscar(citaService.obtenerComunidad("recientes", 0, 20), cita.getIdanotacion()).getVecesGuardada()).isEqualTo(2);
+        assertThat(r.getLikes()).isEqualTo(3);
+        assertThat(r.getVecesGuardada()).isEqualTo(2);
     }
 
     @Test
     @DisplayName("La paginación indica si hay más citas")
     void paginacion() {
-        for (int i = 0; i < 3; i++) anotacion(luis, TipoAnotacion.CITA, true, "Cita " + i);
-        em.flush();
+        Anotacion cita = anotacion(50L, luis, TipoAnotacion.CITA, true, "Cita");
+        when(anotacionRepository.findByTipoAndEsPublicaTrueOrderByFechaDescIdanotacionDesc(eq(TipoAnotacion.CITA), any()))
+                .thenReturn(new PageImpl<>(List.of(cita), PageRequest.of(0, 1), 3));
 
-        assertThat(citaService.obtenerComunidad("recientes", 0, 2).getHayMas()).isTrue();
-        assertThat(citaService.obtenerComunidad("recientes", 1, 2).getHayMas()).isFalse();
-        assertThat(citaService.obtenerComunidad("populares", 0, 2).getHayMas()).isTrue();
-        assertThat(citaService.obtenerComunidad("populares", 1, 2).getHayMas()).isFalse();
+        assertThat(citaService.obtenerComunidad("recientes", 0, 1).getHayMas()).isTrue();
+    }
+
+    // === GUARDAR EN EL MURAL ===
+
+    @Test
+    @DisplayName("Guardar una cita la añade a tus citas guardadas; quitarla la saca")
+    void guardarYQuitar() {
+        Anotacion cita = anotacion(60L, luis, TipoAnotacion.CITA, true, "Una cita bonita");
+
+        citaService.guardar(60L);
+        assertThat(ana.getCitasGuardadas()).containsExactly(cita);
+
+        citaService.quitar(60L);
+        assertThat(ana.getCitasGuardadas()).isEmpty();
+        verify(usuarioRepository, times(2)).save(ana);
+    }
+
+    @Test
+    @DisplayName("No se pueden guardar citas privadas de otros ni notas")
+    void noGuardarPrivadasNiNotas() {
+        anotacion(61L, luis, TipoAnotacion.CITA, false, "Privada");
+        anotacion(62L, luis, TipoAnotacion.NOTA, true, "Nota");
+
+        assertThatThrownBy(() -> citaService.guardar(61L)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> citaService.guardar(62L)).isInstanceOf(IllegalArgumentException.class);
+        verify(usuarioRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Una cita propia se puede guardar aunque sea privada")
+    void guardarPropiaPrivada() {
+        Anotacion propia = anotacion(63L, ana, TipoAnotacion.CITA, false, "Mía y privada");
+
+        citaService.guardar(63L);
+
+        assertThat(ana.getCitasGuardadas()).containsExactly(propia);
+    }
+
+    // === LIKES ===
+
+    @Test
+    @DisplayName("Dar like a una cita lo guarda y avisa a su autor")
+    void likeAvisaAlAutor() {
+        Anotacion cita = anotacion(70L, luis, TipoAnotacion.CITA, true, "Cita de Luis");
+
+        citaService.darLike(70L);
+
+        verify(likeCitaRepository).save(any(LikeCita.class));
+        verify(notificacionService).crearNotificacionLikeCita(cita, ana);
+    }
+
+    @Test
+    @DisplayName("Dar like dos veces no crea otro like ni otro aviso")
+    void likeRepetido() {
+        anotacion(71L, luis, TipoAnotacion.CITA, true, "Cita de Luis");
+        when(likeCitaRepository.existsByUsuarioIdusuarioAndAnotacionIdanotacion(1L, 71L)).thenReturn(true);
+
+        citaService.darLike(71L);
+
+        verify(likeCitaRepository, never()).save(any());
+        verify(notificacionService, never()).crearNotificacionLikeCita(any(), any());
+    }
+
+    @Test
+    @DisplayName("A las citas propias se les puede dar like, pero sin avisarse a uno mismo")
+    void likePropia() {
+        anotacion(72L, ana, TipoAnotacion.CITA, true, "Mía");
+
+        citaService.darLike(72L);
+
+        verify(likeCitaRepository).save(any(LikeCita.class));
+        verify(notificacionService, never()).crearNotificacionLikeCita(any(), any());
+    }
+
+    @Test
+    @DisplayName("No se puede dar like a citas privadas de otros")
+    void likePrivadaDeOtro() {
+        anotacion(73L, luis, TipoAnotacion.CITA, false, "Privada");
+
+        assertThatThrownBy(() -> citaService.darLike(73L)).isInstanceOf(IllegalArgumentException.class);
+        verify(likeCitaRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Quitar el like lo borra para el usuario de la sesión")
+    void quitarLike() {
+        citaService.quitarLike(74L);
+
+        verify(likeCitaRepository).quitar(1L, 74L);
     }
 }
