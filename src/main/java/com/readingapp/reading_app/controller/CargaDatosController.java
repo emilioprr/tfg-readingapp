@@ -1,11 +1,8 @@
 package com.readingapp.reading_app.controller;
 
 import com.readingapp.reading_app.config.SecurityUtils;
-import com.readingapp.reading_app.model.Autor;
-import com.readingapp.reading_app.repository.AutorRepository;
 import com.readingapp.reading_app.service.GoogleBooksService;
 import com.readingapp.reading_app.service.OpenLibraryService;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -20,7 +17,6 @@ public class CargaDatosController {
 
     private final GoogleBooksService googleBooksService;
     private final OpenLibraryService openLibraryService;
-    private final AutorRepository autorRepository;
 
     @PostMapping("/categoria")
     public ResponseEntity<Map<String, Object>> importarCategoria(
@@ -54,11 +50,7 @@ public class CargaDatosController {
     @PostMapping("/autor/{id}/enriquecer")
     public ResponseEntity<Map<String, Object>> enriquecerAutor(@PathVariable Long id) {
         SecurityUtils.validarAdmin();
-        Autor autor = autorRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Autor no encontrado"));
-        String fotoAntes = autor.getFoto();
-        openLibraryService.enriquecerAutor(autor);
-        boolean enriquecido = autor.getFoto() != null && !autor.getFoto().equals(fotoAntes);
+        boolean enriquecido = openLibraryService.enriquecerAutor(id);
         return ResponseEntity.ok(Map.of("idautor", id, "enriquecido", enriquecido));
     }
 

@@ -2,6 +2,7 @@ package com.readingapp.reading_app.service;
 
 import com.readingapp.reading_app.model.Autor;
 import com.readingapp.reading_app.repository.AutorRepository;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -22,6 +23,16 @@ public class OpenLibraryService {
     private static final String AUTHOR_SEARCH_URL = "https://openlibrary.org/search/authors.json?q={query}&limit=1";
     private static final String AUTHOR_DETAIL_URL = "https://openlibrary.org/authors/{key}.json";
     private static final String AUTHOR_PHOTO_URL = "https://covers.openlibrary.org/a/olid/{key}-M.jpg";
+
+    /** Enriquece un autor concreto; devuelve si ha conseguido una foto nueva. */
+    @Transactional
+    public boolean enriquecerAutor(Long idautor) {
+        Autor autor = autorRepository.findById(idautor)
+                .orElseThrow(() -> new EntityNotFoundException("Autor no encontrado"));
+        String fotoAntes = autor.getFoto();
+        enriquecerAutor(autor);
+        return autor.getFoto() != null && !autor.getFoto().equals(fotoAntes);
+    }
 
     @Transactional
     public void enriquecerAutor(Autor autor) {
