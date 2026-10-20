@@ -131,8 +131,10 @@ export default function Timer() {
         setActivo(false)
         setPausado(false)
 
+        // segundosRef y no el estado: al llegar a cero, terminar() se ejecuta desde el intervalo, que conserva
+        // el valor del estado de cuando se arrancó o reanudó
         const minutosLeidos = modo === 'objetivo'
-            ? getTotalMinutosObjetivo() - Math.ceil(segundos / 60)
+            ? getTotalMinutosObjetivo() - Math.ceil(segundosRef.current / 60)
             : Math.floor(segundosRef.current / 60)
 
         if (minutosLeidos < 1) {
