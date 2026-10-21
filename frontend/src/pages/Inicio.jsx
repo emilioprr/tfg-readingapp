@@ -12,6 +12,7 @@ import ProgresoLectura from '../components/ProgresoLectura'
 import Dialogo from '../components/Dialogo'
 import { SemanaRacha } from '../components/Racha'
 import { useAvisos } from '../context/AvisosContext'
+import { formatoProgreso } from '../utils/retos'
 
 export default function Inicio() {
     const { avisar, confirmar, avisarCarga } = useAvisos()
@@ -53,11 +54,8 @@ export default function Inicio() {
     const cargarRetos = useCallback(async () => {
         try {
             const res = await api.get(`/retos/usuario/${usuario.id}/activos?size=10`)
-            const nuevos = res.data.content || res.data || []
-            setRetosActivos(nuevos)
-            return nuevos
+            setRetosActivos(res.data.content || res.data || [])
         } catch (err) { console.error('Error:', err); avisarCarga(err, 'No se han podido cargar tus retos.') }
-        return []
     }, [avisarCarga, usuario])
 
     const cargarPopularesAmigos = useCallback(async () => {
@@ -130,6 +128,7 @@ export default function Inicio() {
                 idusuario: usuario.id,
                 idlibro: libroActual.idlibro,
             })
+            refrescarRacha() // terminar un libro también cuenta como día de lectura
             refrescarNotificaciones()
             navigate(`/libro/${libroActual.idlibro}/resena`)
         } catch (err) {
@@ -152,9 +151,11 @@ export default function Inicio() {
         }
     }
 
+    const cancelarEdicion = () => { setEditandoProgreso(false); setNuevaPagina(''); setErrorProgreso('') }
+
     const handleKeyDown = (e) => {
         if (e.key === 'Enter') actualizarProgreso()
-        if (e.key === 'Escape') { setEditandoProgreso(false); setNuevaPagina(''); setErrorProgreso('') }
+        if (e.key === 'Escape') cancelarEdicion()
     }
 
     if (!usuario) return <Navigate to="/landing" />
@@ -162,7 +163,6 @@ export default function Inicio() {
 
     const libroActual = leyendo[leyendoIndex]
     const retoActual = retosActivos[retoIndex]
-    const cancelarEdicion = () => { setEditandoProgreso(false); setNuevaPagina(''); setErrorProgreso('') }
 
     return (
         <div>
@@ -273,19 +273,16 @@ export default function Inicio() {
                                 <h2 className="etiqueta">Retos</h2>
                                 <Link to="/retos" className="text-xs text-texto-sec hover:text-acento">Ver todos</Link>
                             </div>
-                            {retosActivos.length === 0 || !retoActual ? (
+                            {!retoActual ? (
                                 <p className="text-texto-sec text-sm">
                                     Ningún reto en marcha. <Link to="/retos" className="text-acento hover:text-acento-hover">Busca uno</Link>
                                 </p>
                             ) : (() => {
-                                const tipo = retoActual.tipoReto || retoActual.tipo
-                                const textoProgreso = tipo === 'HORAS'
-                                    ? `${((retoActual.progreso || 0) / 60).toFixed(1)} / ${retoActual.meta} h`
-                                    : `${retoActual.progreso || 0} / ${retoActual.meta}`
+                                const textoProgreso = formatoProgreso(retoActual.tipoReto, retoActual.progreso || 0, retoActual.meta)
                                 const pct = Math.min(100, retoActual.porcentaje || 0)
                                 return (
                                     <div>
-                                        <p className="font-serif text-lg leading-snug text-texto">{retoActual.tituloReto || retoActual.titulo}</p>
+                                        <p className="font-serif text-lg leading-snug text-texto">{retoActual.tituloReto}</p>
                                         <div className="relative h-[2px] bg-linea mt-3">
                                             <div className="absolute inset-y-0 left-0 bg-acento" style={{ width: `${pct}%` }} />
                                         </div>

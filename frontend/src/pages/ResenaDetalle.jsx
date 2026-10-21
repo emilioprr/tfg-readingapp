@@ -91,7 +91,7 @@ export default function ResenaDetalle() {
                             <Link to={`/usuario/${resena.idusuario}`} className="text-texto-sec hover:text-acento">
                                 {resena.nombreUsuario}
                             </Link>
-                            <span className="text-texto-ter text-xs">· {new Date(resena.fechaCreacion).toLocaleDateString()}</span>
+                            <span className="text-texto-ter text-xs">· {new Date(resena.fechaCreacion).toLocaleDateString('es-ES')}</span>
                             {resena.leidopreviamente && (
                                 <span className="text-xs text-texto-sec border border-linea px-1.5 rounded">Relectura</span>
                             )}

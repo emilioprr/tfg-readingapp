@@ -49,9 +49,9 @@ export default function LibroDetalle() {
     const [tabPrincipal, setTabPrincipal] = useState('resenas')
     const [subTabResenas, setSubTabResenas] = useState('todas')
     const [subTabAnotaciones, setSubTabAnotaciones] = useState('todas')
-    const [resenasAmigos, setResenasAmigos] = useState([])
+    const [resenasLibro, setResenasLibro] = useState([])
+    const [seguidos, setSeguidos] = useState(new Set())
     const [misResenas, setMisResenas] = useState([])
-    const [anotacionesAmigos, setAnotacionesAmigos] = useState([])
     const [misAnotaciones, setMisAnotaciones] = useState([])
     const [totalResenas, setTotalResenas] = useState(0)
     const [puedeRecomendar, setPuedeRecomendar] = useState(false)
@@ -98,14 +98,12 @@ export default function LibroDetalle() {
         } catch (err) { console.error('Error:', err); avisarCarga(err, 'No se han podido cargar las anotaciones.') }
     }, [avisarCarga, id])
 
-    const cargarResenasAmigos = useCallback(async () => {
+    // Reseñas públicas del libro sin filtrar; las "de amigos" se sacan de aquí con la lista de seguidos
+    const cargarResenasLibro = useCallback(async () => {
         if (!usuario) return
         try {
             const res = await api.get(`/resenas/libro/${id}?size=50`)
-            const todas = res.data.content || res.data || []
-            const segRes = await api.get(`/usuarios/${usuario.id}/seguidos`)
-            const seguidos = (segRes.data || []).map(u => u.idusuario)
-            setResenasAmigos(todas.filter(r => seguidos.includes(r.idusuario)))
+            setResenasLibro(res.data.content || res.data || [])
         } catch (err) { console.error('Error:', err) }
     }, [id, usuario])
 
@@ -119,17 +117,6 @@ export default function LibroDetalle() {
         } catch (err) { console.error('Error:', err) }
     }, [id, usuario])
 
-    const cargarAnotacionesAmigos = useCallback(async () => {
-        if (!usuario) return
-        try {
-            const res = await api.get(`/anotaciones/libro/${id}/publicas`)
-            const todas = res.data || []
-            const segRes = await api.get(`/usuarios/${usuario.id}/seguidos`)
-            const seguidos = (segRes.data || []).map(u => u.idusuario)
-            setAnotacionesAmigos(todas.filter(a => seguidos.includes(a.idusuario)))
-        } catch (err) { console.error('Error:', err) }
-    }, [id, usuario])
-
     const cargarMisAnotaciones = useCallback(async () => {
         if (!usuario) return
         try {
@@ -138,20 +125,23 @@ export default function LibroDetalle() {
         } catch (err) { console.error('Error:', err) }
     }, [id, usuario])
 
-    // Solo se recomienda a mutuals (os seguís mutuamente); sin ninguno no se muestra el botón
-    const cargarPuedeRecomendar = useCallback(async () => {
+    // A quién sigues (para los filtros "De amigos") y si puedes recomendar: solo a mutuals (os seguís
+    // mutuamente); sin ninguno no se muestra el botón
+    const cargarSeguidos = useCallback(async () => {
         if (!usuario) return
         try {
             const [seguidosRes, seguidoresRes] = await Promise.all([
                 api.get(`/usuarios/${usuario.id}/seguidos`),
                 api.get(`/usuarios/${usuario.id}/seguidores`),
             ])
+            const ids = (seguidosRes.data || []).map(u => u.idusuario)
             const meSiguen = new Set((seguidoresRes.data || []).map(u => u.idusuario))
-            setPuedeRecomendar((seguidosRes.data || []).some(u => meSiguen.has(u.idusuario)))
+            setSeguidos(new Set(ids))
+            setPuedeRecomendar(ids.some(i => meSiguen.has(i)))
         } catch (err) { console.error('Error:', err) }
     }, [usuario])
 
-    useEffect(() => { cargarPuedeRecomendar() }, [cargarPuedeRecomendar])
+    useEffect(() => { cargarSeguidos() }, [cargarSeguidos])
 
     useEffect(() => {
         cargarLibro()
@@ -159,11 +149,10 @@ export default function LibroDetalle() {
         cargarEstado()
         cargarFavoritos()
         cargarAnotaciones()
-        cargarResenasAmigos()
+        cargarResenasLibro()
         cargarMisResenas()
-        cargarAnotacionesAmigos()
         cargarMisAnotaciones()
-    }, [cargarAnotaciones, cargarAnotacionesAmigos, cargarEstado, cargarFavoritos, cargarLibro, cargarMisAnotaciones, cargarMisResenas, cargarResenas, cargarResenasAmigos, id, usuario])
+    }, [cargarAnotaciones, cargarEstado, cargarFavoritos, cargarLibro, cargarMisAnotaciones, cargarMisResenas, cargarResenas, cargarResenasLibro, id, usuario])
 
     const toggleFavorito = async () => {
         try {
@@ -206,6 +195,8 @@ export default function LibroDetalle() {
     const maxDist = Math.max(...distKeys.map(k => dist[k] || 0), 1)
     const notaMedia = libro.notaMedia // sobre 5
     // Tu reseña más reciente de este libro (si lo has releído puede haber varias)
+    const resenasAmigos = resenasLibro.filter(r => seguidos.has(r.idusuario))
+    const anotacionesAmigos = anotacionesPublicas.filter(a => seguidos.has(a.idusuario))
     const miResena = [...misResenas].sort((a, b) => new Date(b.fechaCreacion) - new Date(a.fechaCreacion))[0]
 
     const opcionesFiltro = [
@@ -454,10 +445,8 @@ export default function LibroDetalle() {
                                                             className="text-texto text-sm hover:text-acento">
                                                         {a.nombreUsuario}
                                                     </button>
-                                                    <span>{new Date(a.fecha).toLocaleDateString()}</span>
-                                                    {(a.parte || a.numPagina) && (
-                                                        <span>· {a.parte}{a.parte && a.numPagina ? ' · ' : ''}{a.numPagina ? `pág. ${a.numPagina}` : ''}</span>
-                                                    )}
+                                                    <span>{new Date(a.fecha).toLocaleDateString('es-ES')}</span>
+                                                    {a.parte && <span>· {a.parte}</span>}
                                                     {!a.esPublica && <span className="border border-linea px-1.5 rounded">Privada</span>}
                                                 </div>
                                                 {usuario && (usuario.id === a.idusuario || usuario.rol === 'ADMIN') && (
@@ -468,7 +457,6 @@ export default function LibroDetalle() {
                                                             await api.delete(`/anotaciones/${a.idanotacion}`)
                                                             cargarAnotaciones()
                                                             cargarMisAnotaciones()
-                                                            cargarAnotacionesAmigos()
                                                         } catch { avisar('No se ha podido eliminar. Inténtalo de nuevo.') }
                                                     }}
                                                             className="text-texto-ter hover:text-error text-xs">
@@ -478,7 +466,6 @@ export default function LibroDetalle() {
                                             </div>
                                             <SpoilerOculto activo={a.tieneSpoiler && usuario?.id !== a.idusuario}>
                                                 <div className="max-w-[65ch]">
-                                                    {a.titulo && <p className="text-texto font-medium mb-1">{a.titulo}</p>}
                                                     <p className="font-serif text-[17px] leading-[1.65] text-texto/90 whitespace-pre-line">{a.texto}</p>
                                                 </div>
                                             </SpoilerOculto>

@@ -6,13 +6,11 @@ import api from '../api/axios'
 import Pestanas from '../components/Pestanas'
 import { Sello } from '../components/Racha'
 import { useAvisos } from '../context/AvisosContext'
+import { formatoProgreso } from '../utils/retos'
 
 const MODALIDAD = { PERSONAL: 'Personal', COMPARTIDO: 'Con amigos', PREDEFINIDO: 'Oficial', COLABORATIVO: 'Colaborativo' }
 const TIPO = { LIBROS: 'Libros', PAGINAS: 'Páginas', HORAS: 'Horas' }
 const UNIDAD = { LIBROS: 'libros', PAGINAS: 'páginas', HORAS: 'horas' }
-
-const formatoProgreso = (tipo, progreso = 0, meta = 0) =>
-    tipo === 'HORAS' ? `${(progreso / 60).toFixed(1)} / ${meta} h` : `${progreso} / ${meta}`
 
 /** Línea fina de progreso, como la de lectura. */
 function BarraProgreso({ porcentaje = 0 }) {
@@ -105,7 +103,7 @@ function TarjetaExplorar({ reto, onUnirse }) {
                     <Etiquetas tipo={reto.tipo} modalidad={reto.modalidad} />
                     <p className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-texto-ter mt-2">
                         <span>Meta: {reto.meta}{reto.tipo === 'HORAS' ? ' h' : ''}</span>
-                        {reto.fechaFin && <span>Hasta el {new Date(reto.fechaFin).toLocaleDateString()}</span>}
+                        {reto.fechaFin && <span>Hasta el {new Date(reto.fechaFin).toLocaleDateString('es-ES')}</span>}
                         <span>{reto.numParticipantes || 0} {reto.numParticipantes === 1 ? 'participante' : 'participantes'}</span>
                         {reto.modalidad === 'COMPARTIDO' && reto.nombreCreador && <span>Lo propone {reto.nombreCreador}</span>}
                     </p>
@@ -253,7 +251,7 @@ export default function Retos() {
                                     <h3 className="font-serif text-lg leading-snug text-texto">{l.tituloReto}</h3>
                                     <p className="text-xs text-texto-sec mt-1">{MODALIDAD[l.modalidad] || l.modalidad}</p>
                                     {l.fechaCumplimiento && (
-                                        <p className="text-xs text-texto-ter mt-1">Cumplido el {new Date(l.fechaCumplimiento).toLocaleDateString()}</p>
+                                        <p className="text-xs text-texto-ter mt-1">Cumplido el {new Date(l.fechaCumplimiento).toLocaleDateString('es-ES')}</p>
                                     )}
                                 </div>
                             </article>

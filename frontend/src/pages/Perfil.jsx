@@ -33,7 +33,6 @@ export default function Perfil() {
 
     const [perfil, setPerfil] = useState(null)
     const [favoritos, setFavoritos] = useState([])
-    const [lecturasRecientes, setLecturasRecientes] = useState([])
     const [resenas, setResenas] = useState([])
     const [anotaciones, setAnotaciones] = useState([])
     const [siguiendo, setSiguiendo] = useState(false)
@@ -68,13 +67,6 @@ export default function Perfil() {
         } catch (err) { console.error('Error:', err); avisarCarga(err, 'No se ha podido cargar todo el perfil. Puede que falten partes.') }
     }, [avisarCarga, perfilId])
 
-    const cargarLecturasRecientes = useCallback(async () => {
-        try {
-            const res = await api.get(`/seguimientos/usuario/${perfilId}/estado/LEIDO`)
-            setLecturasRecientes(res.data || [])
-        } catch (err) { console.error('Error:', err); avisarCarga(err, 'No se ha podido cargar todo el perfil. Puede que falten partes.') }
-    }, [avisarCarga, perfilId])
-
     const cargarResenas = useCallback(async () => {
         try {
             const endpoint = esMio
@@ -96,16 +88,11 @@ export default function Perfil() {
 
     const cargarListasPublicas = useCallback(async () => {
         try {
+            // El backend ya devuelve solo las públicas si el perfil no es tuyo
             const res = await api.get(`/listas/usuario/${perfilId}`)
-            const listas = res.data.content || res.data || []
-            const propio = usuario && parseInt(perfilId) === usuario.id
-            if (propio) {
-                setListasPublicas(listas)
-            } else {
-                setListasPublicas(listas.filter(l => l.esPublica))
-            }
+            setListasPublicas(res.data.content || res.data || [])
         } catch (err) { console.error('Error:', err); avisarCarga(err, 'No se ha podido cargar todo el perfil. Puede que falten partes.') }
-    }, [avisarCarga, perfilId, usuario])
+    }, [avisarCarga, perfilId])
 
     const toggleSeguir = async () => {
         try {
@@ -132,31 +119,11 @@ export default function Perfil() {
         } catch (err) { console.error('Error:', err) }
     }, [esMio, perfilId, usuario])
 
-    const cargarLeyendoLibros = useCallback(async () => {
+    // Libros de una balda de la estantería (LEYENDO, LEIDO, PENDIENTE o ABANDONADO)
+    const cargarBalda = useCallback(async (estado, guardar) => {
         try {
-            const res = await api.get(`/seguimientos/usuario/${perfilId}/estado/LEYENDO`)
-            setLeyendoLibros(res.data || [])
-        } catch (err) { console.error('Error:', err); avisarCarga(err, 'No se ha podido cargar todo el perfil. Puede que falten partes.') }
-    }, [avisarCarga, perfilId])
-
-    const cargarLeidosLibros = useCallback(async () => {
-        try {
-            const res = await api.get(`/seguimientos/usuario/${perfilId}/estado/LEIDO`)
-            setLeidosLibros(res.data || [])
-        } catch (err) { console.error('Error:', err); avisarCarga(err, 'No se ha podido cargar todo el perfil. Puede que falten partes.') }
-    }, [avisarCarga, perfilId])
-
-    const cargarPendientesLibros = useCallback(async () => {
-        try {
-            const res = await api.get(`/seguimientos/usuario/${perfilId}/estado/PENDIENTE`)
-            setPendientesLibros(res.data || [])
-        } catch (err) { console.error('Error:', err); avisarCarga(err, 'No se ha podido cargar todo el perfil. Puede que falten partes.') }
-    }, [avisarCarga, perfilId])
-
-    const cargarAbandonadosLibros = useCallback(async () => {
-        try {
-            const res = await api.get(`/seguimientos/usuario/${perfilId}/estado/ABANDONADO`)
-            setAbandonadosLibros(res.data || [])
+            const res = await api.get(`/seguimientos/usuario/${perfilId}/estado/${estado}`)
+            guardar(res.data || [])
         } catch (err) { console.error('Error:', err); avisarCarga(err, 'No se ha podido cargar todo el perfil. Puede que falten partes.') }
     }, [avisarCarga, perfilId])
 
@@ -178,17 +145,16 @@ export default function Perfil() {
             cargarRacha()
             setLeyendoIndex(0)
             cargarFavoritos()
-            cargarLecturasRecientes()
             cargarResenas()
             cargarAnotaciones()
-            cargarLeyendoLibros()
-            cargarLeidosLibros()
-            cargarPendientesLibros()
-            cargarAbandonadosLibros()
+            cargarBalda('LEYENDO', setLeyendoLibros)
+            cargarBalda('LEIDO', setLeidosLibros)
+            cargarBalda('PENDIENTE', setPendientesLibros)
+            cargarBalda('ABANDONADO', setAbandonadosLibros)
             cargarListasPublicas()
             comprobarSiguiendo()
         }
-    }, [cargarAbandonadosLibros, cargarAnotaciones, cargarEstadisticas, cargarRacha, cargarFavoritos, cargarLecturasRecientes, cargarLeidosLibros, cargarLeyendoLibros, cargarListasPublicas, cargarPendientesLibros, cargarPerfil, cargarResenas, comprobarSiguiendo, perfilId])
+    }, [cargarAnotaciones, cargarBalda, cargarEstadisticas, cargarRacha, cargarFavoritos, cargarListasPublicas, cargarPerfil, cargarResenas, comprobarSiguiendo, perfilId])
 
     if (loading) return <p className="text-texto-sec">Cargando…</p>
     if (!perfil) return <p className="font-serif text-xl text-texto-sec">Este perfil no existe o no se ha podido cargar.</p>
@@ -347,14 +313,14 @@ export default function Perfil() {
 
                     {/* Lecturas recientes: de cinco en cinco, alineadas con los favoritos */}
                     <section className="mb-12">
-                        {lecturasRecientes.length === 0 ? (
+                        {leidosLibros.length === 0 ? (
                             <>
                                 <h2 className="etiqueta mb-6">Lecturas recientes</h2>
                                 {vacio(esMio ? 'Todavía no has terminado ningún libro aquí.' : 'Todavía no ha terminado ningún libro.')}
                             </>
                         ) : (
                             <Carrusel titulo={<h2 className="etiqueta">Lecturas recientes</h2>}>
-                                {lecturasRecientes.map((s) => (
+                                {leidosLibros.map((s) => (
                                     <Link key={s.idseguimiento} to={`/libro/${s.idlibro}`} className="group snap-start min-w-0">
                                         <Portada src={s.portadaLibro} titulo={s.tituloLibro} autor={s.nombreAutor} id={s.idlibro} className="w-full" />
                                         <p className="font-serif text-xs sm:text-[15px] leading-snug text-texto mt-2 sm:mt-3 line-clamp-2 group-hover:text-acento">{s.tituloLibro}</p>
@@ -415,21 +381,14 @@ export default function Perfil() {
                                         <Link to={`/libro/${a.idlibro}`} className="font-serif text-lg text-texto hover:text-acento truncate">
                                             {a.tituloLibro}
                                         </Link>
-                                        <span className="text-texto-ter text-xs flex-shrink-0">{new Date(a.fecha).toLocaleDateString()}</span>
+                                        <span className="text-texto-ter text-xs flex-shrink-0">{new Date(a.fecha).toLocaleDateString('es-ES')}</span>
                                     </div>
                                     <SpoilerOculto activo={a.tieneSpoiler && usuario?.id !== a.idusuario}>
                                         <div className="max-w-[65ch]">
-                                            {a.titulo && <p className="text-texto font-medium mb-1">{a.titulo}</p>}
                                             <p className="font-serif text-[17px] leading-[1.65] text-texto/90 whitespace-pre-line">{a.texto}</p>
                                         </div>
                                     </SpoilerOculto>
-                                    {(a.parte || a.numPagina) && (
-                                        <p className="text-texto-ter text-xs mt-2">
-                                            {a.parte && <span>{a.parte}</span>}
-                                            {a.parte && a.numPagina && <span> · </span>}
-                                            {a.numPagina && <span>pág. {a.numPagina}</span>}
-                                        </p>
-                                    )}
+                                    {a.parte && <p className="text-texto-ter text-xs mt-2">{a.parte}</p>}
                                 </div>
                             </article>
                         ))}

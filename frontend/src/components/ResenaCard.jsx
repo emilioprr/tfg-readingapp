@@ -137,7 +137,7 @@ export default function ResenaCard({ resena: resenaInicial, mostrarLibro = true,
                         )}
                     </div>
                     <span className="text-texto-ter text-xs">
-                        {new Date(resena.fechaCreacion).toLocaleDateString()}
+                        {new Date(resena.fechaCreacion).toLocaleDateString('es-ES')}
                     </span>
                 </div>
             </div>

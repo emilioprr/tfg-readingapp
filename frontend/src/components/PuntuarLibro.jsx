@@ -2,8 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import api from '../api/axios'
 import { useAvisos } from '../context/AvisosContext'
-
-const formatoNota = (n) => Number(n).toLocaleString('es-ES', { minimumFractionDigits: 1, maximumFractionDigits: 1 })
+import { formatoMedia } from '../utils/notas'
 
 function Estrellas5({ valor, activas, onElegir }) {
     const [hover, setHover] = useState(0)
@@ -13,7 +12,7 @@ function Estrellas5({ valor, activas, onElegir }) {
              {...(activas && {
                  role: 'slider', tabIndex: 0, 'aria-label': 'Tu nota (flechas para elegir, Enter para guardar)',
                  'aria-valuemin': 0.5, 'aria-valuemax': 5, 'aria-valuenow': mostrada || undefined,
-                 'aria-valuetext': mostrada ? `${formatoNota(mostrada)} de 5 estrellas` : 'Sin nota',
+                 'aria-valuetext': mostrada ? `${formatoMedia(mostrada)} de 5 estrellas` : 'Sin nota',
                  onBlur: () => setHover(0),
                  onKeyDown: (e) => {
                      const pasos = { ArrowRight: 0.5, ArrowUp: 0.5, ArrowLeft: -0.5, ArrowDown: -0.5 }
@@ -27,9 +26,9 @@ function Estrellas5({ valor, activas, onElegir }) {
                     <span key={estrella} className={`relative text-3xl leading-none select-none ${activas ? 'cursor-pointer' : ''}`}>
                         {activas && (
                             <>
-                                <span className="absolute inset-0 w-1/2 z-10" title={formatoNota(estrella - 0.5)}
+                                <span className="absolute inset-0 w-1/2 z-10" title={formatoMedia(estrella - 0.5)}
                                       onClick={() => onElegir(estrella - 0.5)} onMouseEnter={() => setHover(estrella - 0.5)} />
-                                <span className="absolute inset-0 left-1/2 w-1/2 z-10" title={formatoNota(estrella)}
+                                <span className="absolute inset-0 left-1/2 w-1/2 z-10" title={formatoMedia(estrella)}
                                       onClick={() => onElegir(estrella)} onMouseEnter={() => setHover(estrella)} />
                             </>
                         )}
@@ -120,7 +119,7 @@ export default function PuntuarLibro({ idlibro, estado, lecturaAntigua, miResena
         <div className="w-52 mt-4 text-center">
             <p className="text-xs uppercase tracking-wide text-texto-sec mb-1.5">{titulo}</p>
             <Estrellas5 valor={nota} activas={!leyendo && !guardando} onElegir={elegir} />
-            {nota != null && <p className="font-serif text-texto text-lg mt-1">{formatoNota(nota)}</p>}
+            {nota != null && <p className="font-serif text-texto text-lg mt-1">{formatoMedia(nota)}</p>}
             <div className="text-xs text-texto-sec mt-1.5">{detalle}</div>
         </div>
     )
