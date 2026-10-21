@@ -81,6 +81,7 @@ public class RetoService {
                     .retoCumplido(false)
                     .fechaUnion(LocalDateTime.now(clock))
                     .build();
+            participante.setProgresoInicial(calcularProgreso(reto, participante));
             participanteRetoRepository.save(participante);
         }
 
@@ -119,9 +120,9 @@ public class RetoService {
                 .retoCumplido(false)
                 .fechaUnion(LocalDateTime.now(clock))
                 .build();
+        participante.setProgresoInicial(calcularProgreso(reto, participante));
 
         participante = participanteRetoRepository.save(participante);
-        // Se calcula al momento (solo cuenta lo leído desde que te unes, que puede incluir algo de hoy)
         return recalcular(reto, participante);
     }
 
@@ -261,9 +262,15 @@ public class RetoService {
 
     /**
      * Progreso de un participante: solo cuenta lo leído desde que se unió al reto (o desde que empezó el reto,
-     * si se unió antes), para que unirse a un reto no lo complete con lecturas anteriores.
+     * si se unió antes), para que unirse a un reto no lo complete con lecturas anteriores. Los seguimientos
+     * solo guardan el día, así que lo leído ese mismo día antes de unirse se descuenta con progresoInicial.
      */
     private int calcularProgreso(Reto reto, ParticipanteReto participante) {
+        int previo = participante.getProgresoInicial() != null ? participante.getProgresoInicial() : 0;
+        return Math.max(0, progresoBruto(reto, participante) - previo);
+    }
+
+    private int progresoBruto(Reto reto, ParticipanteReto participante) {
         Long idusuario = participante.getUsuario().getIdusuario();
         LocalDateTime union = participante.getFechaUnion();
         LocalDateTime desde = union != null && union.isAfter(reto.getFechaInicio().atStartOfDay())

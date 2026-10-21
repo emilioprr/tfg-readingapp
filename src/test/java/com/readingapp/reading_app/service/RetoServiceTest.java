@@ -198,13 +198,16 @@ class RetoServiceTest {
         }
 
         @Test
-        @DisplayName("Al unirse, el progreso se calcula al momento")
+        @DisplayName("Al unirse, lo leído ese mismo día antes de unirse no cuenta")
         void unirseCalculaProgreso() {
             reto(1L, TipoReto.LIBROS, ModalidadReto.COMPARTIDO, 5);
             when(participanteRetoRepository.existsByRetoIdretoAndUsuarioIdusuario(1L, ID_USUARIO)).thenReturn(false);
-            librosLeidos(2);
+            librosLeidos(2); // terminados hoy, antes de unirse
 
-            assertThat(retoService.unirse(1L, ID_USUARIO).getProgreso()).isEqualTo(2);
+            RetoDTO.ParticipanteResponse res = retoService.unirse(1L, ID_USUARIO);
+
+            assertThat(res.getProgreso()).isZero();
+            verify(participanteRetoRepository, atLeastOnce()).save(argThat(p -> p.getProgresoInicial() == 2));
         }
 
         @Test
