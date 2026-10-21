@@ -3,6 +3,7 @@ package com.readingapp.reading_app.service;
 import com.readingapp.reading_app.dto.LibroDTO;
 import com.readingapp.reading_app.model.Autor;
 import com.readingapp.reading_app.model.Libro;
+import com.readingapp.reading_app.model.Usuario;
 import com.readingapp.reading_app.repository.AutorRepository;
 import com.readingapp.reading_app.repository.LibroRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -27,6 +28,7 @@ public class GoogleBooksService {
     private final AutorRepository autorRepository;
     private final LibroRepository libroRepository;
     private final OpenLibraryService openLibraryService;
+    private final NotificacionService notificacionService;
 
     @Value("${google.books.api.key}")
     private String apiKey;
@@ -357,6 +359,13 @@ public class GoogleBooksService {
 
         libroRepository.save(libro);
         log.info("GUARDADO OK: '{}' de '{}'", titulo, autor.getNombre());
+
+        // Avisa a quien sigue al autor (un autor recién creado todavía no tiene seguidores)
+        if (autor.getSeguidoresList() != null) {
+            for (Usuario seguidor : autor.getSeguidoresList()) {
+                notificacionService.crearNotificacionNuevoLibro(libro, seguidor);
+            }
+        }
         return true;
     }
 

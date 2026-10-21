@@ -1,31 +1,39 @@
 package com.readingapp.reading_app.service;
 
+import com.readingapp.reading_app.model.Autor;
+import com.readingapp.reading_app.model.Libro;
+import com.readingapp.reading_app.model.Usuario;
 import com.readingapp.reading_app.repository.AutorRepository;
 import com.readingapp.reading_app.repository.LibroRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("GoogleBooksService - búsqueda con caché")
+@DisplayName("GoogleBooksService - búsqueda con caché e importación")
 class GoogleBooksServiceTest {
 
     @Mock private RestTemplate restTemplate;
     @Mock private AutorRepository autorRepository;
     @Mock private LibroRepository libroRepository;
     @Mock private OpenLibraryService openLibraryService;
+    @Mock private NotificacionService notificacionService;
 
     @InjectMocks private GoogleBooksService googleBooksService;
 
@@ -79,5 +87,47 @@ class GoogleBooksServiceTest {
         googleBooksService.buscarEnGoogle("nada", 0);
 
         assertThat(llamadasAGoogle()).isEqualTo(llamadas * 2);
+    }
+
+    // === IMPORTACIÓN Y AVISO A LOS SEGUIDORES DEL AUTOR ===
+
+    private static final Map<String, Object> FICHA = Map.of("id", "id-nuevo",
+            "volumeInfo", Map.of("title", "Un libro nuevo", "authors", List.of("Miguel Delibes")));
+
+    /** Importa la ficha cuando el autor ya existe en la base de datos con los seguidores indicados. */
+    private Libro importarConAutor(Usuario... seguidores) {
+        Autor delibes = Autor.builder().idautor(5L).nombre("Miguel Delibes")
+                .seguidoresList(new HashSet<>(Set.of(seguidores))).build();
+        Libro guardado = Libro.builder().idlibro(10L).titulo("Un libro nuevo").autor(delibes).build();
+        when(restTemplate.getForObject(anyString(), eq(Map.class), any(), any())).thenReturn(FICHA);
+        when(autorRepository.findByNombreNormalizado("Miguel Delibes")).thenReturn(Optional.of(delibes));
+        // antes de guardarlo no está en el catálogo; después sí
+        when(libroRepository.findFirstByIdapiexterna("id-nuevo")).thenReturn(Optional.empty(), Optional.of(guardado));
+
+        googleBooksService.importarPorIdExterno("id-nuevo");
+        return guardado;
+    }
+
+    @Test
+    @DisplayName("Al importar un libro se avisa a cada usuario que sigue a su autor")
+    void importarAvisaASeguidores() {
+        Usuario ana = Usuario.builder().idusuario(1L).nombre("ana").build();
+        Usuario luis = Usuario.builder().idusuario(2L).nombre("luis").build();
+
+        importarConAutor(ana, luis);
+
+        ArgumentCaptor<Libro> libro = ArgumentCaptor.forClass(Libro.class);
+        verify(notificacionService).crearNotificacionNuevoLibro(libro.capture(), eq(ana));
+        verify(notificacionService).crearNotificacionNuevoLibro(any(), eq(luis));
+        assertThat(libro.getValue().getTitulo()).isEqualTo("Un libro nuevo");
+    }
+
+    @Test
+    @DisplayName("Si nadie sigue al autor, importar un libro no genera avisos")
+    void importarSinSeguidoresNoAvisa() {
+        importarConAutor();
+
+        verify(libroRepository).save(any(Libro.class));
+        verifyNoInteractions(notificacionService);
     }
 }
