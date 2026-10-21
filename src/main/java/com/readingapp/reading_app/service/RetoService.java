@@ -99,6 +99,12 @@ public class RetoService {
             throw new IllegalArgumentException("Este reto ya ha terminado");
         }
 
+        // Si la meta común ya se alcanzó, quien se una ahora lo tendría cumplido sin haber leído nada
+        if (reto.getModalidad() == ModalidadReto.COLABORATIVO
+                && participanteRetoRepository.sumProgresoByReto(idreto) >= metaReal(reto)) {
+            throw new IllegalArgumentException("Este reto ya se ha completado");
+        }
+
         if (participanteRetoRepository.existsByRetoIdretoAndUsuarioIdusuario(idreto, idusuario)) {
             throw new IllegalArgumentException("Ya participas en este reto");
         }
@@ -171,13 +177,11 @@ public class RetoService {
 
         if (reto.getModalidad() == ModalidadReto.COLABORATIVO) {
             int progresoTotal = participanteRetoRepository.sumProgresoByReto(idreto);
-            int metaReal = reto.getTipo().name().equals("HORAS") ? reto.getMeta() * 60 : reto.getMeta();
-            if (progresoTotal >= metaReal) {
+            if (progresoTotal >= metaReal(reto)) {
                 completarRetoColaborativo(reto);
             }
         } else {
-            int metaReal = reto.getTipo().name().equals("HORAS") ? reto.getMeta() * 60 : reto.getMeta();
-            if (nuevoProgreso >= metaReal) {
+            if (nuevoProgreso >= metaReal(reto)) {
                 completarParticipante(participante, reto);
             }
         }
@@ -281,6 +285,11 @@ public class RetoService {
 
     // --- Helpers ---
 
+    /*Meta en la unidad del progreso: los retos de horas guardan el progreso en minutos.*/
+    private int metaReal(Reto reto) {
+        return reto.getTipo() == TipoReto.HORAS ? reto.getMeta() * 60 : reto.getMeta();
+    }
+
     private Reto buscarPorId(Long id) {
         return retoRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Reto no encontrado con id: " + id));
@@ -295,7 +304,7 @@ public class RetoService {
         Double porcentajeColab = null;
         if (reto.getModalidad() == ModalidadReto.COLABORATIVO) {
             progresoColab = participanteRetoRepository.sumProgresoByReto(reto.getIdreto());
-            int metaRealColab = reto.getTipo() == TipoReto.HORAS ? reto.getMeta() * 60 : reto.getMeta();
+            int metaRealColab = metaReal(reto);
             porcentajeColab = metaRealColab > 0
                     ? Math.min(100.0, Math.round(progresoColab * 1000.0 / metaRealColab) / 10.0) : 0.0;
         }
@@ -320,7 +329,7 @@ public class RetoService {
 
     private RetoDTO.ParticipanteResponse toParticipanteResponse(ParticipanteReto p, Integer meta) {
         Reto reto = p.getReto();
-        int metaReal = reto.getTipo().name().equals("HORAS") ? meta * 60 : meta;
+        int metaReal = metaReal(reto);
         double porcentaje = metaReal > 0 ? Math.min(100.0, (p.getProgreso() * 100.0) / metaReal) : 0;
         return RetoDTO.ParticipanteResponse.builder()
                 .idparticipante(p.getIdparticipante())
