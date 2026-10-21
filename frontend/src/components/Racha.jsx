@@ -4,29 +4,8 @@ import { useRacha } from '../context/RachaContext.jsx'
 
 const HITOS = [7, 30, 100, 365]
 
-// === Números en letras (para "Ocho días seguidos leyendo") ===
-const UNIDADES = ['cero', 'uno', 'dos', 'tres', 'cuatro', 'cinco', 'seis', 'siete', 'ocho', 'nueve', 'diez',
-    'once', 'doce', 'trece', 'catorce', 'quince', 'dieciséis', 'diecisiete', 'dieciocho', 'diecinueve', 'veinte',
-    'veintiuno', 'veintidós', 'veintitrés', 'veinticuatro', 'veinticinco', 'veintiséis', 'veintisiete', 'veintiocho', 'veintinueve']
-const DECENAS = ['', '', '', 'treinta', 'cuarenta', 'cincuenta', 'sesenta', 'setenta', 'ochenta', 'noventa']
-const CENTENAS = ['', 'ciento', 'doscientos', 'trescientos', 'cuatrocientos', 'quinientos', 'seiscientos', 'setecientos', 'ochocientos', 'novecientos']
-
-/** Número en letras hasta 999; a partir de ahí, en cifras. "Un día" / "Veintiún días" concuerdan con "día". */
-function enLetras(n) {
-    if (n >= 1000) return n.toLocaleString('es-ES')
-    if (n === 100) return 'cien'
-    const c = Math.floor(n / 100), resto = n % 100
-    let texto
-    if (resto < 30) texto = UNIDADES[resto]
-    else texto = DECENAS[Math.floor(resto / 10)] + (resto % 10 ? ' y ' + UNIDADES[resto % 10] : '')
-    if (c > 0) texto = CENTENAS[c] + (resto ? ' ' + texto : '')
-    // Delante de "día(s)": uno -> un, veintiuno -> veintiún
-    return texto.replace(/veintiuno$/, 'veintiún').replace(/(^| )uno$/, '$1un')
-}
-const mayuscula = (t) => t.charAt(0).toUpperCase() + t.slice(1)
-
-/** "Ocho días seguidos leyendo"; con uno, "Primer día de racha". */
-const diasSeguidos = (n) => n === 1 ? 'Primer día de racha' : `${mayuscula(enLetras(n))} días seguidos leyendo`
+/** "14 días seguidos leyendo"; con uno, "Primer día de racha". */
+const diasSeguidos = (n) => n === 1 ? 'Primer día de racha' : `${n.toLocaleString('es-ES')} días seguidos leyendo`
 
 /** Icono de la racha: una llama de trazo fino (en acento si hay racha, apagada si no). */
 export function IconoRacha({ activa = true, size = 18 }) {
@@ -139,7 +118,7 @@ export function RachaCelebracion() {
     const esHito = celebracion.diaNuevo && HITOS.includes(n)
     const dias = `${n === 1 ? 'día' : 'días'}`
     const frase = esHito
-        ? `${mayuscula(enLetras(n))} ${dias} seguidos. Eso ya es costumbre.`
+        ? `${n.toLocaleString('es-ES')} ${dias} seguidos. Eso ya es costumbre.`
         : celebracion.diaNuevo ? diasSeguidos(n) : 'Sigues en racha. Buen trabajo.'
 
     return (
