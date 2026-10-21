@@ -5,7 +5,6 @@ import com.readingapp.reading_app.dto.UsuarioDTO;
 import com.readingapp.reading_app.service.UsuarioService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,12 +16,6 @@ import java.util.List;
 public class UsuarioController {
 
     private final UsuarioService usuarioService;
-
-    @PostMapping("/registro")
-    /*@valid comprueba las validaciones del DTO*/
-    public ResponseEntity<UsuarioDTO.Response> registrar(@Valid @RequestBody UsuarioDTO.RegistroRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(usuarioService.registrar(request));
-    }
 
     /*dos peticiones similares, la primera para consultas rapidas y la segunda para la pagina del perfil con estadisticas completas*/
     @GetMapping("/{id}")

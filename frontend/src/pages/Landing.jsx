@@ -8,7 +8,7 @@ const QUE_HACE = [
 ]
 
 const DIFERENCIAS = [
-    ['Retos con amigos', 'Personales o compartidos: por páginas, horas, libros o autor. El progreso se actualiza solo mientras lees.'],
+    ['Retos con amigos', 'Personales o compartidos: por libros, páginas u horas. El progreso se actualiza solo mientras lees.'],
     ['Recomendaciones directas', 'Pásale un libro a alguien en una conversación privada. Sin algoritmos, solo personas que conoces.'],
     ['Notas y citas', 'Anota lo que piensas y guarda las frases que te marcan mientras lees. Privadas o compartidas con la comunidad.'],
     ['Tu mural de citas', 'Cuelga en tu perfil las citas que más te han dicho, tuyas o de otros lectores.'],
