@@ -87,8 +87,7 @@ public class ListaService {
 
     @Transactional
     public ListaDTO.Response actualizar(Long id, ListaDTO.UpdateRequest request) {
-        Lista lista = listaRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Lista no encontrada con id: " + id));
+        Lista lista = buscarPorId(id);
         SecurityUtils.validarUsuario(lista.getUsuario().getIdusuario());
         if (request.getNombre() != null) lista.setNombre(request.getNombre());
         if (request.getDescripcion() != null) lista.setDescripcion(request.getDescripcion());
@@ -99,8 +98,7 @@ public class ListaService {
 
     @Transactional
     public void eliminar(Long id) {
-        Lista lista = listaRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Lista no encontrada con id: " + id));
+        Lista lista = buscarPorId(id);
         SecurityUtils.validarUsuarioOAdmin(lista.getUsuario().getIdusuario());
         likeListaRepository.borrarDeLista(id);
         notificacionRepository.deleteByListaIdlista(id);
@@ -142,8 +140,7 @@ public class ListaService {
 
     @Transactional
     public void agregarLibro(Long idlista, Long idlibro) {
-        Lista lista = listaRepository.findById(idlista)
-                .orElseThrow(() -> new EntityNotFoundException("Lista no encontrada"));
+        Lista lista = buscarPorId(idlista);
         SecurityUtils.validarUsuario(lista.getUsuario().getIdusuario());
         Libro libro = libroRepository.findById(idlibro)
                 .orElseThrow(() -> new EntityNotFoundException("Libro no encontrado"));
@@ -155,8 +152,7 @@ public class ListaService {
 
     @Transactional
     public void quitarLibro(Long idlista, Long idlibro) {
-        Lista lista = listaRepository.findById(idlista)
-                .orElseThrow(() -> new EntityNotFoundException("Lista no encontrada"));
+        Lista lista = buscarPorId(idlista);
         SecurityUtils.validarUsuario(lista.getUsuario().getIdusuario());
         lista.getLibros().removeIf(l -> l.getIdlibro().equals(idlibro));
         listaRepository.save(lista);

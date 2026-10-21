@@ -105,8 +105,7 @@ public class AnotacionService {
 
     @Transactional
     public AnotacionDTO.Response actualizar(Long id, AnotacionDTO.UpdateRequest request) {
-        Anotacion anotacion = anotacionRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Anotación no encontrada con id: " + id));
+        Anotacion anotacion = buscarPorId(id);
         SecurityUtils.validarUsuario(anotacion.getUsuario().getIdusuario());
         if (request.getTexto() != null) anotacion.setTexto(request.getTexto());
         if (request.getParte() != null) anotacion.setParte(request.getParte());
@@ -119,8 +118,7 @@ public class AnotacionService {
 
     @Transactional
     public void eliminar(Long id) {
-        Anotacion anotacion = anotacionRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Anotación no encontrada con id: " + id));
+        Anotacion anotacion = buscarPorId(id);
         SecurityUtils.validarUsuarioOAdmin(anotacion.getUsuario().getIdusuario());
         anotacionRepository.borrarDeCitasGuardadas(id);
         likeCitaRepository.borrarDeAnotacion(id);

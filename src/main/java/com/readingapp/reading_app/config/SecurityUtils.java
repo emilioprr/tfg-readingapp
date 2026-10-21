@@ -45,14 +45,6 @@ public class SecurityUtils {
     }
 
     public static void validarUsuarioOAdmin(Long idusuario) {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        boolean isAdmin = auth.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
-        if (isAdmin) return;
-
-        Long tokenId = getUsuarioAutenticadoId();
-        if (!tokenId.equals(idusuario)) {
-            throw new IllegalArgumentException("No tienes permiso para realizar esta acción");
-        }
+        if (!esAdmin()) validarUsuario(idusuario);
     }
 }
