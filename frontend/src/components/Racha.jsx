@@ -93,6 +93,9 @@ export function RachaNavbar() {
                             <ShieldCheck size={14} className="text-acento" /> {racha.protectores} de 2
                         </span>
                     </div>
+                    <p className="text-texto-ter text-xs leading-snug mt-2">
+                        Ganas un protector por cada 7 días seguidos (máximo 2). Si un día no lees, se gasta solo para no perder la racha.
+                    </p>
                 </div>
             </div>
         </div>
