@@ -3,6 +3,7 @@ package com.readingapp.reading_app.service;
 import com.readingapp.reading_app.dto.LibroDTO;
 import com.readingapp.reading_app.model.Autor;
 import com.readingapp.reading_app.model.Libro;
+import com.readingapp.reading_app.model.Usuario;
 import com.readingapp.reading_app.repository.AutorRepository;
 import com.readingapp.reading_app.repository.LibroRepository;
 import com.readingapp.reading_app.repository.ResenaRepository;
@@ -15,11 +16,13 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.*;
@@ -87,5 +90,21 @@ class LibroServiceTest {
 
         assertThat(detalle.getNotaMedia()).isNull();
         assertThat(detalle.getNumResenas()).isZero();
+    }
+
+    @Test
+    @DisplayName("No se puede añadir un sexto favorito, pero volver a marcar uno que ya lo es no falla")
+    void limiteDeFavoritos() {
+        List<Libro> favoritos = List.of(libro(1), libro(2), libro(3), libro(4), libro(5));
+        Usuario usuario = Usuario.builder().idusuario(9L).librosFavoritos(new HashSet<>(favoritos)).build();
+        when(usuarioRepository.findById(9L)).thenReturn(Optional.of(usuario));
+        when(libroRepository.findById(6L)).thenReturn(Optional.of(libro(6)));
+        when(libroRepository.findById(1L)).thenReturn(Optional.of(favoritos.get(0)));
+
+        assertThatThrownBy(() -> libroService.agregarFavorito(9L, 6L))
+                .isInstanceOf(IllegalArgumentException.class);
+        libroService.agregarFavorito(9L, 1L);
+
+        assertThat(usuario.getLibrosFavoritos()).hasSize(LibroService.MAX_FAVORITOS);
     }
 }

@@ -26,6 +26,8 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class LibroService {
 
+    public static final int MAX_FAVORITOS = 5;
+
     private final LibroRepository libroRepository;
     private final AutorRepository autorRepository;
     private final UsuarioRepository usuarioRepository;
@@ -119,6 +121,10 @@ public class LibroService {
         Usuario usuario = usuarioRepository.findById(usuarioId)
                 .orElseThrow(() -> new EntityNotFoundException("Usuario no encontrado"));
         Libro libro = buscarPorId(libroId);
+        // El perfil solo muestra 5 huecos: el límite se comprueba aquí y no solo en el frontend
+        if (!usuario.getLibrosFavoritos().contains(libro) && usuario.getLibrosFavoritos().size() >= MAX_FAVORITOS) {
+            throw new IllegalArgumentException("Ya tienes " + MAX_FAVORITOS + " libros favoritos. Quita uno para añadir otro.");
+        }
         usuario.getLibrosFavoritos().add(libro);
         usuarioRepository.save(usuario);
     }
