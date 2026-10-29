@@ -5,6 +5,11 @@ target/
 !**/src/test/**/target/
 src/main/resources/application-local.properties
 
+### Material del TFG que no forma parte del código ###
+*.pdf
+*.sql
+demo/
+
 ### STS ###
 .apt_generated
 .classpath
