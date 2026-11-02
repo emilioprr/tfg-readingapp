@@ -18,6 +18,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -86,7 +87,7 @@ class ListaServiceTest {
     @Test
     @DisplayName("Solo puedes consultar tus propias listas para un libro")
     void misListasParaLibroSoloPropias() {
-        assertThatThrownBy(() -> listaService.obtenerMiasParaLibro(2L, 10L)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> listaService.obtenerMiasParaLibro(2L, 10L)).isInstanceOf(AccessDeniedException.class);
     }
 
     @Test
@@ -124,7 +125,7 @@ class ListaServiceTest {
         Lista privada = Lista.builder().idlista(30L).nombre("Secreta").esPublica(false).usuario(luis).libros(new HashSet<>()).build();
         when(listaRepository.findById(30L)).thenReturn(Optional.of(privada));
 
-        assertThatThrownBy(() -> listaService.darLike(30L)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> listaService.darLike(30L)).isInstanceOf(AccessDeniedException.class);
         verify(likeListaRepository, never()).save(any());
     }
 
@@ -224,6 +225,6 @@ class ListaServiceTest {
                 "luis@test.com", 2L, List.of(new SimpleGrantedAuthority("ROLE_USER"))));
 
         assertThatThrownBy(() -> listaService.agregarLibro(20L, 10L))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(AccessDeniedException.class);
     }
 }

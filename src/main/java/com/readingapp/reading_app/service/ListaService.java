@@ -14,6 +14,7 @@ import com.readingapp.reading_app.repository.LibroRepository;
 import com.readingapp.reading_app.repository.UsuarioRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -114,7 +115,7 @@ public class ListaService {
         Long idusuario = SecurityUtils.getUsuarioAutenticadoId();
         boolean propia = lista.getUsuario().getIdusuario().equals(idusuario);
         if (!Boolean.TRUE.equals(lista.getEsPublica()) && !propia) {
-            throw new IllegalArgumentException("Esta lista es privada");
+            throw new AccessDeniedException("Esta lista es privada");
         }
         if (!likeListaRepository.existsByUsuarioIdusuarioAndListaIdlista(idusuario, idlista)) {
             Usuario usuario = usuarioRepository.findById(idusuario)

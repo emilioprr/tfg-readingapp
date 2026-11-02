@@ -1,5 +1,6 @@
 package com.readingapp.reading_app.config;
 
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 
@@ -34,13 +35,13 @@ public class SecurityUtils {
     public static void validarUsuario(Long idusuario) {
         Long tokenId = getUsuarioAutenticadoId();
         if (!tokenId.equals(idusuario)) {
-            throw new IllegalArgumentException("No tienes permiso para actuar en nombre de otro usuario");
+            throw new AccessDeniedException("No tienes permiso para actuar en nombre de otro usuario");
         }
     }
 
     public static void validarAdmin() {
         if (!esAdmin()) {
-            throw new IllegalArgumentException("Se requieren permisos de administrador");
+            throw new AccessDeniedException("Se requieren permisos de administrador");
         }
     }
 

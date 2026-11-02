@@ -18,6 +18,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -156,7 +157,7 @@ class CitaServiceTest {
         anotacion(61L, luis, TipoAnotacion.CITA, false, "Privada");
         anotacion(62L, luis, TipoAnotacion.NOTA, true, "Nota");
 
-        assertThatThrownBy(() -> citaService.guardar(61L)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> citaService.guardar(61L)).isInstanceOf(AccessDeniedException.class);
         assertThatThrownBy(() -> citaService.guardar(62L)).isInstanceOf(IllegalArgumentException.class);
         verify(usuarioRepository, never()).save(any());
     }
@@ -212,7 +213,7 @@ class CitaServiceTest {
     void likePrivadaDeOtro() {
         anotacion(73L, luis, TipoAnotacion.CITA, false, "Privada");
 
-        assertThatThrownBy(() -> citaService.darLike(73L)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> citaService.darLike(73L)).isInstanceOf(AccessDeniedException.class);
         verify(likeCitaRepository, never()).save(any());
     }
 

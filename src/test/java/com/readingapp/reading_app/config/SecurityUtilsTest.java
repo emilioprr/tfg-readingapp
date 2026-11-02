@@ -4,6 +4,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -101,7 +102,7 @@ class SecurityUtilsTest {
         void validarUsuarioOtro() {
             autenticarComo(ID_USUARIO, "USER");
             assertThatThrownBy(() -> SecurityUtils.validarUsuario(ID_OTRO))
-                    .isInstanceOf(IllegalArgumentException.class);
+                    .isInstanceOf(AccessDeniedException.class);
         }
 
         @Test
@@ -109,7 +110,7 @@ class SecurityUtilsTest {
         void validarAdminUsuarioNormal() {
             autenticarComo(ID_USUARIO, "USER");
             assertThatThrownBy(SecurityUtils::validarAdmin)
-                    .isInstanceOf(IllegalArgumentException.class)
+                    .isInstanceOf(AccessDeniedException.class)
                     .hasMessageContaining("administrador");
         }
 
@@ -139,7 +140,7 @@ class SecurityUtilsTest {
         void usuarioOAdminOtro() {
             autenticarComo(ID_USUARIO, "USER");
             assertThatThrownBy(() -> SecurityUtils.validarUsuarioOAdmin(ID_OTRO))
-                    .isInstanceOf(IllegalArgumentException.class);
+                    .isInstanceOf(AccessDeniedException.class);
         }
     }
 }

@@ -10,6 +10,7 @@ import com.readingapp.reading_app.repository.*;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -223,7 +224,7 @@ public class RetoService {
 
         // Los retos del sistema (sin creador) solo los puede borrar un admin
         if (!esCreador && !SecurityUtils.esAdmin()) {
-            throw new IllegalArgumentException("Solo el creador o un administrador pueden eliminar el reto");
+            throw new AccessDeniedException("Solo el creador o un administrador pueden eliminar el reto");
         }
         retoRepository.delete(reto);
     }

@@ -14,6 +14,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -118,7 +119,7 @@ class PermisosServiceTest {
         void otroNoBorra() {
             autenticarComo(ID_OTRO, "USER");
             assertThatThrownBy(() -> notificacionService.eliminar(20L))
-                    .isInstanceOf(IllegalArgumentException.class);
+                    .isInstanceOf(AccessDeniedException.class);
             verify(notificacionRepository, never()).delete(any());
         }
     }
@@ -156,7 +157,7 @@ class PermisosServiceTest {
         void otroNoBorra() {
             autenticarComo(ID_OTRO, "USER");
             assertThatThrownBy(() -> seguimientoService.eliminar(30L))
-                    .isInstanceOf(IllegalArgumentException.class);
+                    .isInstanceOf(AccessDeniedException.class);
             verify(seguimientoRepository, never()).delete(any());
         }
     }
@@ -196,7 +197,7 @@ class PermisosServiceTest {
         void terceroNoBorra() {
             autenticarComo(ID_TERCERO, "USER");
             assertThatThrownBy(() -> recomendacionService.eliminar(40L))
-                    .isInstanceOf(IllegalArgumentException.class);
+                    .isInstanceOf(AccessDeniedException.class);
             verify(recomendacionRepository, never()).delete(any());
         }
     }
@@ -213,7 +214,7 @@ class PermisosServiceTest {
             autenticarComo(ID_PROPIETARIO, "USER");
 
             assertThatThrownBy(() -> retoService.eliminar(50L, ID_PROPIETARIO))
-                    .isInstanceOf(IllegalArgumentException.class);
+                    .isInstanceOf(AccessDeniedException.class);
             verify(retoRepository, never()).delete(any());
         }
 
@@ -247,7 +248,7 @@ class PermisosServiceTest {
             autenticarComo(ID_OTRO, "USER");
 
             assertThatThrownBy(() -> retoService.eliminar(51L, ID_OTRO))
-                    .isInstanceOf(IllegalArgumentException.class);
+                    .isInstanceOf(AccessDeniedException.class);
             verify(retoRepository, never()).delete(any());
         }
     }
@@ -264,7 +265,7 @@ class PermisosServiceTest {
             request.setNombre("Nuevo autor");
 
             assertThatThrownBy(() -> autorService.crear(request))
-                    .isInstanceOf(IllegalArgumentException.class)
+                    .isInstanceOf(AccessDeniedException.class)
                     .hasMessageContaining("administrador");
             verify(autorRepository, never()).save(any());
         }
@@ -274,7 +275,7 @@ class PermisosServiceTest {
         void usuarioNoBorra() {
             autenticarComo(ID_PROPIETARIO, "USER");
             assertThatThrownBy(() -> autorService.eliminar(5L))
-                    .isInstanceOf(IllegalArgumentException.class);
+                    .isInstanceOf(AccessDeniedException.class);
             verify(autorRepository, never()).deleteById(any());
         }
 
@@ -301,7 +302,7 @@ class PermisosServiceTest {
             autenticarComo(ID_OTRO, "USER");
 
             assertThatThrownBy(() -> listaService.obtenerPorId(60L))
-                    .isInstanceOf(IllegalArgumentException.class);
+                    .isInstanceOf(AccessDeniedException.class);
         }
 
         @Test
@@ -357,7 +358,7 @@ class PermisosServiceTest {
             autenticarComo(ID_OTRO, "USER");
 
             assertThatThrownBy(() -> resenaService.obtenerPorId(70L))
-                    .isInstanceOf(IllegalArgumentException.class);
+                    .isInstanceOf(AccessDeniedException.class);
         }
 
         @Test
@@ -385,7 +386,7 @@ class PermisosServiceTest {
             autenticarComo(ID_OTRO, "USER");
 
             assertThatThrownBy(() -> anotacionService.obtenerPorId(80L))
-                    .isInstanceOf(IllegalArgumentException.class);
+                    .isInstanceOf(AccessDeniedException.class);
         }
 
         @Test

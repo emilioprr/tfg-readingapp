@@ -6,6 +6,7 @@ import com.readingapp.reading_app.dto.UsuarioDTO;
 import com.readingapp.reading_app.model.Usuario;
 import com.readingapp.reading_app.repository.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -27,7 +28,7 @@ public class AuthService {
         if (usuario == null || !passwordEncoder.matches(request.getPassword(), usuario.getPassword())) {
             // Mismo mensaje exista o no el email, para no revelar qué cuentas existen
             intentosLoginService.registrarFallo(email);
-            throw new IllegalArgumentException("Email o contraseña incorrectos");
+            throw new BadCredentialsException("Email o contraseña incorrectos");
         }
         intentosLoginService.registrarExito(email);
 

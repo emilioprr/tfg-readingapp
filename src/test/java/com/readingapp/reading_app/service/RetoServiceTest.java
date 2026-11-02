@@ -17,6 +17,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -162,7 +163,7 @@ class RetoServiceTest {
             autenticarComo("USER");
 
             assertThatThrownBy(() -> retoService.crear(peticion(ModalidadReto.PREDEFINIDO, HOY.plusDays(30))))
-                    .isInstanceOf(IllegalArgumentException.class)
+                    .isInstanceOf(AccessDeniedException.class)
                     .hasMessageContaining("administrador");
             verify(retoRepository, never()).save(any());
         }
@@ -497,7 +498,7 @@ class RetoServiceTest {
             reto.setCreador(usuario);
 
             assertThatThrownBy(() -> retoService.eliminar(1L, 2L))
-                    .isInstanceOf(IllegalArgumentException.class)
+                    .isInstanceOf(AccessDeniedException.class)
                     .hasMessageContaining("Solo el creador");
             verify(retoRepository, never()).delete(any());
         }

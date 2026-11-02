@@ -11,6 +11,7 @@ import com.readingapp.reading_app.repository.LikeCitaRepository;
 import com.readingapp.reading_app.repository.UsuarioRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -112,7 +113,7 @@ public class CitaService {
         }
         boolean propia = cita.getUsuario().getIdusuario().equals(idusuario);
         if (!Boolean.TRUE.equals(cita.getEsPublica()) && !propia) {
-            throw new IllegalArgumentException("Esta cita es privada");
+            throw new AccessDeniedException("Esta cita es privada");
         }
         return cita;
     }
