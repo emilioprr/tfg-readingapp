@@ -4,7 +4,8 @@ COPY .mvn .mvn
 COPY mvnw pom.xml ./
 COPY src src
 RUN chmod +x mvnw
-RUN ./mvnw clean package -DskipTests
+# Sin -DskipTests: si falla algún test, falla la construcción y Render no despliega
+RUN ./mvnw clean package
 
 FROM eclipse-temurin:21-jre
 WORKDIR /app
