@@ -381,11 +381,14 @@ export default function Perfil() {
                                         <Link to={`/libro/${a.idlibro}`} className="font-serif text-lg text-texto hover:text-acento truncate">
                                             {a.tituloLibro}
                                         </Link>
-                                        <span className="text-texto-ter text-xs flex-shrink-0">{new Date(a.fecha).toLocaleDateString('es-ES')}</span>
+                                        <span className="text-texto-ter text-xs flex-shrink-0">
+                                            <span className="border border-linea px-1.5 rounded mr-2">{a.tipo === 'CITA' ? 'Cita' : 'Nota'}</span>
+                                            {new Date(a.fecha).toLocaleDateString('es-ES')}
+                                        </span>
                                     </div>
                                     <SpoilerOculto activo={a.tieneSpoiler && usuario?.id !== a.idusuario}>
                                         <div className="max-w-[65ch]">
-                                            <p className="font-serif text-[17px] leading-[1.65] text-texto/90 whitespace-pre-line">{a.texto}</p>
+                                            <p className={`font-serif text-[17px] leading-[1.65] text-texto/90 whitespace-pre-line ${a.tipo === 'CITA' ? 'italic' : ''}`}>{a.texto}</p>
                                         </div>
                                     </SpoilerOculto>
                                     {a.parte && <p className="text-texto-ter text-xs mt-2">{a.parte}</p>}

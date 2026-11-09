@@ -446,6 +446,7 @@ export default function LibroDetalle() {
                                                         {a.nombreUsuario}
                                                     </button>
                                                     <span>{new Date(a.fecha).toLocaleDateString('es-ES')}</span>
+                                                    <span className="border border-linea px-1.5 rounded">{a.tipo === 'CITA' ? 'Cita' : 'Nota'}</span>
                                                     {a.parte && <span>· {a.parte}</span>}
                                                     {!a.esPublica && <span className="border border-linea px-1.5 rounded">Privada</span>}
                                                 </div>
@@ -466,7 +467,7 @@ export default function LibroDetalle() {
                                             </div>
                                             <SpoilerOculto activo={a.tieneSpoiler && usuario?.id !== a.idusuario}>
                                                 <div className="max-w-[65ch]">
-                                                    <p className="font-serif text-[17px] leading-[1.65] text-texto/90 whitespace-pre-line">{a.texto}</p>
+                                                    <p className={`font-serif text-[17px] leading-[1.65] text-texto/90 whitespace-pre-line ${a.tipo === 'CITA' ? 'italic' : ''}`}>{a.texto}</p>
                                                 </div>
                                             </SpoilerOculto>
                                         </article>
