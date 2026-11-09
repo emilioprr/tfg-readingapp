@@ -16,6 +16,7 @@ export default function Admin() {
     const [cantidad, setCantidad] = useState(20)
     const [idioma, setIdioma] = useState('es')
     const [generosSeleccionados, setGenerosSeleccionados] = useState([])
+    const [otroGenero, setOtroGenero] = useState('')
     const [cargando, setCargando] = useState(false)
     const [resultado, setResultado] = useState('')
     const [error, setError] = useState('')
@@ -26,6 +27,16 @@ export default function Admin() {
     if (!usuario || usuario.rol !== 'ADMIN') return <p className="text-error">No tienes permisos de administrador</p>
 
     const toggleGenero = (g) => { setGenerosSeleccionados(prev => prev.includes(g) ? prev.filter(x => x !== g) : [...prev, g]) }
+
+    // Google Books no tiene una lista cerrada de categorías: cualquier texto sirve como género (subject:)
+    const anadirGenero = () => {
+        const texto = otroGenero.trim()
+        // Si ya hay un botón con ese género (sin distinguir mayúsculas), se selecciona ese en vez de duplicarlo
+        const g = [...GENEROS, ...generosSeleccionados].find(x => x.toLowerCase() === texto.toLowerCase()) ?? texto
+        if (texto) setGenerosSeleccionados(prev => prev.includes(g) ? prev : [...prev, g])
+        setOtroGenero('')
+    }
+    const generosPropios = generosSeleccionados.filter(g => !GENEROS.includes(g))
 
     const handleCargaMasiva = async (e) => {
         e.preventDefault(); setError(''); setResultado('')
@@ -62,12 +73,22 @@ export default function Admin() {
                     <div>
                         <label className="etiqueta block mb-2">Géneros ({generosSeleccionados.length} seleccionados)</label>
                         <div className="flex flex-wrap gap-2">
-                            {GENEROS.map((g) => (
+                            {[...GENEROS, ...generosPropios].map((g) => (
                                 <button key={g} type="button" onClick={() => toggleGenero(g)}
                                         aria-pressed={generosSeleccionados.includes(g)}
                                         className={`text-xs px-2.5 py-1 rounded ${generosSeleccionados.includes(g) ? 'bg-texto text-fondo' : 'border border-linea text-texto-sec hover:text-texto'}`}>{g}</button>
                             ))}
                         </div>
+                        <div className="flex gap-2 mt-3">
+                            <input id="otro-genero" value={otroGenero} onChange={(e) => setOtroGenero(e.target.value)}
+                                   onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); anadirGenero() } }}
+                                   placeholder="Otro género (p. ej. Science Fiction)" aria-label="Otro género"
+                                   className="campo flex-1 min-w-0" />
+                            <button type="button" onClick={anadirGenero} disabled={!otroGenero.trim()} className="btn-secundario">Añadir</button>
+                        </div>
+                        <p className="text-texto-ter text-xs mt-1">
+                            Cualquier categoría de Google Books, en inglés: Juvenile Fiction, Literary Criticism, True Crime…
+                        </p>
                     </div>
                     <div className="flex gap-4">
                         <div>

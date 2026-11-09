@@ -97,7 +97,8 @@ public class GoogleBooksService {
         Map<String, Integer> resultado = new LinkedHashMap<>();
 
         for (String categoria : categorias) {
-            String query = "subject:" + categoria;
+            // Entre comillas para que una categoría de varias palabras ("True Crime") se busque entera
+            String query = "subject:\"" + categoria.replace("\"", "") + "\"";
             int importados = importarPorCategoria(query, cantidadPorCategoria, idioma);
             resultado.put(categoria, importados);
         }
