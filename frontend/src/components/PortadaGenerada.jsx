@@ -16,18 +16,21 @@ function indiceColor(id, titulo) {
 export default function PortadaGenerada({ id, titulo, autor, className = '' }) {
     return (
         <div role="img" aria-label={`Portada de ${titulo || 'libro sin título'}`}
-             className={`@container relative overflow-hidden rounded-[2px] flex flex-col justify-between p-[8%] text-texto ${className}`}
+             className={`@container relative overflow-hidden rounded-[2px] text-texto ${className}`}
              style={{ backgroundColor: COLORES[indiceColor(id, titulo)] }}>
             <span aria-hidden className="absolute inset-y-0 left-0 w-[6%] bg-fondo/25" />
-            {/* El texto escala con el ancho de la portada (unidades de contenedor), así cabe en cualquier tamaño */}
-            <p className="font-serif leading-[1.1] text-[12cqw] line-clamp-5 pl-[4%] break-words @max-[3.5rem]:hidden">
-                {titulo}
-            </p>
-            {autor && (
-                <p className="font-sans uppercase tracking-[0.12em] text-[6.5cqw] text-texto/80 line-clamp-2 pl-[4%] @max-[3.5rem]:hidden">
-                    {autor}
+            {/* El texto y el relleno escalan con el ancho de la portada (unidades de contenedor), así cabe en cualquier
+                tamaño. Un relleno en % se calcularía sobre el ancho del padre y, en una fila ancha, agrandaría la portada */}
+            <div className="absolute inset-0 flex flex-col justify-between p-[8cqw]">
+                <p className="font-serif leading-[1.1] text-[12cqw] line-clamp-5 pl-[4%] break-words @max-[3.5rem]:hidden">
+                    {titulo}
                 </p>
-            )}
+                {autor && (
+                    <p className="font-sans uppercase tracking-[0.12em] text-[6.5cqw] text-texto/80 line-clamp-2 pl-[4%] @max-[3.5rem]:hidden">
+                        {autor}
+                    </p>
+                )}
+            </div>
         </div>
     )
 }
