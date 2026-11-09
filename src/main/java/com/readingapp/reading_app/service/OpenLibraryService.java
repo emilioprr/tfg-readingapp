@@ -50,7 +50,8 @@ public class OpenLibraryService {
             // Foto
             String fotoUrl = AUTHOR_PHOTO_URL.replace("{key}", key);
             try {
-                restTemplate.headForHeaders(fotoUrl);
+                // Sin default=false, Open Library responde 200 con una imagen vacía aunque el autor no tenga foto
+                restTemplate.headForHeaders(fotoUrl + "?default=false");
                 autor.setFoto(fotoUrl);
             } catch (Exception e) {
                 // No tiene foto
