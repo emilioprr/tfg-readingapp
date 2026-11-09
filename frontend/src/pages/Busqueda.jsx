@@ -19,6 +19,17 @@ const vacio = (texto) => <p className="font-serif text-xl text-texto-sec py-6">{
 
 const claveLibro = (l) => (l.externo ? `g-${l.idExterno}` : `l-${l.idlibro}`)
 
+// Igual que RelevanciaBusqueda.mismaObra: mismo título principal y alguna palabra del autor de 4+ letras en común
+const normalizar = (t) => (t || '').normalize('NFD').replace(/\p{M}/gu, '').toLowerCase()
+    .replace(/[^a-z0-9ñ ]/g, ' ').replace(/\s+/g, ' ').trim()
+const tituloPrincipal = (t) => normalizar((t || '').split(/[:.(/]/)[0])
+const palabrasAutor = (a) => normalizar(a).split(' ').filter(p => p.length >= 4)
+const mismaObra = (a, b) => tituloPrincipal(a.titulo) === tituloPrincipal(b.titulo)
+    && palabrasAutor(a.nombreAutor).some(p => palabrasAutor(b.nombreAutor).includes(p))
+
+const GOOGLE_INICIO = { titulo: 0, autor: 0, general: 0 }
+const MAX_TANDAS_GOOGLE = 5
+
 export default function Busqueda() {
     const { avisar, avisarCarga } = useAvisos()
     const [searchParams] = useSearchParams()
@@ -37,50 +48,65 @@ export default function Busqueda() {
 
     const paginaLocal = useRef(0)
     const localAgotado = useRef(false)
-    const googleIndex = useRef(0)
+    const googleIndex = useRef(GOOGLE_INICIO)
     const googleAgotado = useRef(false)
     const busquedaId = useRef(0)
+    const librosMostrados = useRef([])
+    const librosPendientes = useRef([])
 
-    const anadirLibros = useCallback((libros) => {
-        setResultados(prev => {
-            const claves = new Set(prev.map(claveLibro))
-            return [...prev, ...libros.filter(l => !claves.has(claveLibro(l)))]
-        })
+    // Guarda los libros recibidos que aún no están ni mostrados ni pendientes
+    const acumularLibros = useCallback((libros) => {
+        const vistos = [...librosMostrados.current, ...librosPendientes.current]
+        const claves = new Set(vistos.map(claveLibro))
+        // El backend solo quita ediciones repetidas dentro de cada tanda; aquí, las de tandas anteriores
+        const nuevos = libros.filter(l => !claves.has(claveLibro(l)) && !(l.externo && vistos.some(p => mismaObra(p, l))))
+        librosPendientes.current = [...librosPendientes.current, ...nuevos]
     }, [])
 
-    // Primero agota la base de datos local; cuando se acaba, sigue con Google Books
+    // Pasa a pantalla hasta `cuantos` libros pendientes y devuelve cuántos ha mostrado
+    const mostrarLibros = useCallback((cuantos) => {
+        const lote = librosPendientes.current.slice(0, cuantos)
+        librosPendientes.current = librosPendientes.current.slice(lote.length)
+        librosMostrados.current = [...librosMostrados.current, ...lote]
+        setResultados(librosMostrados.current)
+        return lote.length
+    }, [])
+
+    // Cada carga muestra SIZE libros: primero los de la base de datos y, cuando se acaban, los de Google Books.
+    // Lo que sobra de una página o tanda se guarda para el siguiente "Ver más"
     const cargarMasLibros = useCallback(async () => {
         const id = busquedaId.current
         try {
-            if (!localAgotado.current) {
+            let faltan = SIZE - mostrarLibros(SIZE)
+
+            if (faltan > 0 && !localAgotado.current) {
                 const res = await api.get(`/libros/buscar?titulo=${encodeURIComponent(query)}&page=${paginaLocal.current}&size=${SIZE}`)
                 if (id !== busquedaId.current) return
                 const locales = (res.data.content || res.data || []).map(l => ({ ...l, externo: false }))
-                anadirLibros(locales)
                 paginaLocal.current += 1
+                // La página local no llegó a 24: no hay más locales y se completa con Google
+                if (locales.length < SIZE) localAgotado.current = true
+                acumularLibros(locales)
+                faltan -= mostrarLibros(faltan)
                 setLoading(false)
-
-                if (locales.length === SIZE) {
-                    setHayMas(true)
-                    return
-                }
-                // La página local no llegó a 24: rellenamos con Google en la misma tanda
-                localAgotado.current = true
             }
 
             // Google Books solo para usuarios con sesión (el backend lo exige)
             if (!usuario) googleAgotado.current = true
 
-            if (!googleAgotado.current) {
+            // Se piden tandas hasta completar la página; con tope para no gastar cuota cuando casi todo son
+            // ediciones de obras ya mostradas (p. ej. "el principito")
+            for (let tanda = 0; faltan > 0 && !googleAgotado.current && tanda < MAX_TANDAS_GOOGLE; tanda++) {
                 setBuscandoExternos(true)
-                const res = await api.get(`/libros/buscar/google?q=${encodeURIComponent(query)}&startIndex=${googleIndex.current}`)
+                const res = await api.get('/libros/buscar/google', { params: { q: query, ...googleIndex.current } })
                 if (id !== busquedaId.current) return
-                googleIndex.current = res.data.siguienteIndex
+                googleIndex.current = res.data.siguiente
                 googleAgotado.current = !res.data.hayMas
-                anadirLibros(res.data.resultados || [])
+                acumularLibros(res.data.resultados || [])
+                faltan -= mostrarLibros(faltan)
             }
 
-            setHayMas(!(localAgotado.current && googleAgotado.current))
+            setHayMas(librosPendientes.current.length > 0 || !(localAgotado.current && googleAgotado.current))
         } catch (err) {
             console.error('Error buscando libros:', err); avisarCarga(err, 'No se ha podido completar la búsqueda de libros.')
         } finally {
@@ -90,7 +116,7 @@ export default function Busqueda() {
                 setCargandoMas(false)
             }
         }
-    }, [avisarCarga, anadirLibros, query, usuario])
+    }, [avisarCarga, acumularLibros, mostrarLibros, query, usuario])
 
     const verMas = async () => {
         setCargandoMas(true)
@@ -140,13 +166,15 @@ export default function Busqueda() {
     useEffect(() => {
         if (!query) return
         busquedaId.current++
+        librosMostrados.current = []
+        librosPendientes.current = []
         setResultados([])
         setHayMas(false)
         setLoading(true)
         setBuscandoExternos(false)
         paginaLocal.current = 0
         localAgotado.current = false
-        googleIndex.current = 0
+        googleIndex.current = GOOGLE_INICIO
         googleAgotado.current = false
 
         if (tab === 'libros') {

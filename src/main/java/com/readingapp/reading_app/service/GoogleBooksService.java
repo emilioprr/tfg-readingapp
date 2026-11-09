@@ -36,6 +36,8 @@ public class GoogleBooksService {
     // Caché de búsquedas: cada entrada es la respuesta de una petición (consulta + página)
     private static final Duration DURACION_CACHE = Duration.ofHours(6);
     private static final int MAX_ENTRADAS_CACHE = 1000;
+    /** Posición de una búsqueda de Google que ya no tiene más resultados. */
+    public static final int AGOTADA = -1;
     private record EntradaCache(List<Map<String, Object>> items, Instant caduca) {}
     private final Map<String, EntradaCache> cacheBusquedas = new ConcurrentHashMap<>();
 
@@ -135,39 +137,40 @@ public class GoogleBooksService {
     /**
      * Busca en Google Books SIN guardar nada. Excluye los libros que ya existen en local.
      *
-     * La primera tanda combina una búsqueda por título ("intitle") con la búsqueda general y la reordena
-     * por relevancia propia (ver {@link RelevanciaBusqueda}); las siguientes tandas continúan la búsqueda
-     * general. En ambos casos se deja una sola edición de cada obra.
+     * Cada tanda continúa la búsqueda por título ("intitle") y por autor ("inauthor") hasta que se agotan, porque
+     * son las que mejor coinciden; la búsqueda general solo rellena cuando no dan para una tanda decente.
+     * Recibe la posición por la que sigue cada búsqueda (AGOTADA si ya no tiene más) y devuelve las siguientes.
+     * El resultado se reordena por relevancia propia (ver {@link RelevanciaBusqueda}) con una sola edición de cada obra.
      */
-    public Map<String, Object> buscarEnGoogle(String query, int startIndex) {
+    public Map<String, Object> buscarEnGoogle(String query, int titulo, int autor, int general) {
         List<Map<String, Object>> candidatos = new ArrayList<>();
-        int index = startIndex;
-        boolean agotado = false;
+        String frase = "\"" + query.replace("\"", "") + "\"";
 
-        if (startIndex == 0) {
-            String frase = "\"" + query.replace("\"", "") + "\"";
+        if (titulo != AGOTADA) {
+            List<Map<String, Object>> items = pedirGoogle("intitle:" + frase, titulo);
             // Google Books a veces responde vacío de forma puntual: se reintenta una vez porque es la búsqueda que más aporta
-            List<Map<String, Object>> porTitulo = pedirGoogle("intitle:" + frase, 0);
-            if (porTitulo.isEmpty()) porTitulo = pedirGoogle("intitle:" + frase, 0);
-            candidatos.addAll(porTitulo);
-            candidatos.addAll(pedirGoogle("inauthor:" + frase, 0));
+            if (items.isEmpty()) items = pedirGoogle("intitle:" + frase, titulo);
+            titulo = items.isEmpty() ? AGOTADA : titulo + items.size();
+            candidatos.addAll(items);
+        }
+        if (autor != AGOTADA) {
+            List<Map<String, Object>> items = pedirGoogle("inauthor:" + frase, autor);
+            autor = items.isEmpty() ? AGOTADA : autor + items.size();
+            candidatos.addAll(items);
         }
 
-        // Al menos una petición de la búsqueda general (hasta 3 si hace falta para tener una tanda decente)
+        // La búsqueda general rellena hasta tener una tanda decente (como mucho 3 peticiones)
         int peticiones = 0;
-        while (peticiones == 0 || (candidatos.size() < 20 && peticiones < 3)) {
+        while (general != AGOTADA && candidatos.size() < 20 && peticiones < 3) {
             peticiones++;
-            List<Map<String, Object>> items = pedirGoogle(query, index);
-            if (items.isEmpty()) {
-                agotado = true;
-                break;
-            }
-            index += items.size();
+            List<Map<String, Object>> items = pedirGoogle(query, general);
+            general = items.isEmpty() ? AGOTADA : general + items.size();
             candidatos.addAll(items);
         }
 
         return Map.of("resultados", ordenarPorRelevancia(candidatos, query),
-                "siguienteIndex", index, "hayMas", !agotado);
+                "siguiente", Map.of("titulo", titulo, "autor", autor, "general", general),
+                "hayMas", titulo != AGOTADA || autor != AGOTADA || general != AGOTADA);
     }
 
     /**

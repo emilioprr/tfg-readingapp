@@ -101,8 +101,11 @@ public class LibroController {
     @GetMapping("/buscar/google")
     public ResponseEntity<Map<String, Object>> buscarEnGoogle(
             @RequestParam String q,
-            @RequestParam(defaultValue = "0") int startIndex) {
-        return ResponseEntity.ok(googleBooksService.buscarEnGoogle(q, startIndex));
+            // Posición por la que sigue cada búsqueda; -1 si ya se agotó
+            @RequestParam(defaultValue = "0") int titulo,
+            @RequestParam(defaultValue = "0") int autor,
+            @RequestParam(defaultValue = "0") int general) {
+        return ResponseEntity.ok(googleBooksService.buscarEnGoogle(q, titulo, autor, general));
     }
 
     @PostMapping("/importar/google/{idExterno}")

@@ -61,9 +61,9 @@ class GoogleBooksServiceTest {
         when(restTemplate.getForObject(anyString(), eq(Map.class), any(), anyInt(), any()))
                 .thenReturn(respuesta("Las ratas", "El camino"));
 
-        Map<String, Object> primera = googleBooksService.buscarEnGoogle("las ratas", 0);
+        Map<String, Object> primera = googleBooksService.buscarEnGoogle("las ratas", 0, 0, 0);
         int llamadas = llamadasAGoogle();
-        Map<String, Object> segunda = googleBooksService.buscarEnGoogle("las ratas", 0);
+        Map<String, Object> segunda = googleBooksService.buscarEnGoogle("las ratas", 0, 0, 0);
 
         assertThat(llamadas).isPositive();
         assertThat(llamadasAGoogle()).isEqualTo(llamadas);
@@ -82,11 +82,36 @@ class GoogleBooksServiceTest {
         when(restTemplate.getForObject(anyString(), eq(Map.class), any(), anyInt(), any()))
                 .thenReturn(Map.of());
 
-        googleBooksService.buscarEnGoogle("nada", 0);
+        googleBooksService.buscarEnGoogle("nada", 0, 0, 0);
         int llamadas = llamadasAGoogle();
-        googleBooksService.buscarEnGoogle("nada", 0);
+        googleBooksService.buscarEnGoogle("nada", 0, 0, 0);
 
         assertThat(llamadasAGoogle()).isEqualTo(llamadas * 2);
+    }
+
+    @Test
+    @DisplayName("La búsqueda por título continúa en la siguiente consulta mientras tenga resultados")
+    void busquedaPorTituloContinua() {
+        when(restTemplate.getForObject(anyString(), eq(Map.class), any(), anyInt(), any())).thenReturn(Map.of());
+        when(restTemplate.getForObject(anyString(), eq(Map.class), startsWith("intitle:"), anyInt(), any()))
+                .thenReturn(respuesta("Las ratas", "Las ratas del barco"));
+
+        Map<String, Object> primera = googleBooksService.buscarEnGoogle("las ratas", 0, 0, 0);
+        googleBooksService.buscarEnGoogle("las ratas", 2, GoogleBooksService.AGOTADA, GoogleBooksService.AGOTADA);
+
+        assertThat(primera.get("siguiente")).isEqualTo(Map.of("titulo", 2, "autor", -1, "general", -1));
+        assertThat(primera.get("hayMas")).isEqualTo(true);
+        verify(restTemplate).getForObject(anyString(), eq(Map.class), eq("intitle:\"las ratas\""), eq(2), any());
+    }
+
+    @Test
+    @DisplayName("Si ninguna búsqueda tiene más resultados, no hay más consultas")
+    void todasAgotadasNoHayMas() {
+        when(restTemplate.getForObject(anyString(), eq(Map.class), any(), anyInt(), any())).thenReturn(Map.of());
+
+        Map<String, Object> resultado = googleBooksService.buscarEnGoogle("nada", 0, 0, 0);
+
+        assertThat(resultado.get("hayMas")).isEqualTo(false);
     }
 
     // === IMPORTACIÓN Y AVISO A LOS SEGUIDORES DEL AUTOR ===
