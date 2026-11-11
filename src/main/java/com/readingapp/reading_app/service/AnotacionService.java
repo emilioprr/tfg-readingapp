@@ -76,8 +76,8 @@ public class AnotacionService {
     /*El propio usuario ve todas sus anotaciones; los demás solo las públicas.*/
     public List<AnotacionDTO.Response> obtenerPorUsuario(Long idusuario, Pageable pageable) {
         List<Anotacion> anotaciones = SecurityUtils.esUsuarioActual(idusuario)
-                ? anotacionRepository.findByUsuarioIdusuario(idusuario, pageable)
-                : anotacionRepository.findByUsuarioIdusuarioAndEsPublicaTrue(idusuario, pageable);
+                ? anotacionRepository.findByUsuarioIdusuarioOrderByFechaDescIdanotacionDesc(idusuario, pageable)
+                : anotacionRepository.findByUsuarioIdusuarioAndEsPublicaTrueOrderByFechaDescIdanotacionDesc(idusuario, pageable);
         return anotaciones.stream()
                 .map(this::toResponse)
                 .toList();
@@ -89,7 +89,7 @@ public class AnotacionService {
 
     public List<AnotacionDTO.Response> obtenerPorUsuarioYLibro(Long idusuario, Long idlibro) {
         SecurityUtils.validarUsuario(idusuario);
-        return anotacionRepository.findByUsuarioIdusuarioAndLibroIdlibro(idusuario, idlibro).stream()
+        return anotacionRepository.findByUsuarioIdusuarioAndLibroIdlibroOrderByFechaDescIdanotacionDesc(idusuario, idlibro).stream()
                 .map(this::toResponse)
                 .toList();
     }
@@ -127,7 +127,7 @@ public class AnotacionService {
     }
 
     public List<AnotacionDTO.Response> obtenerPublicasPorLibro(Long idlibro, Pageable pageable) {
-        return anotacionRepository.findByLibroIdlibroAndEsPublicaTrue(idlibro, pageable)
+        return anotacionRepository.findByLibroIdlibroAndEsPublicaTrueOrderByFechaDescIdanotacionDesc(idlibro, pageable)
                 .stream().map(this::toResponse).toList();
     }
     // === HELPERS ===

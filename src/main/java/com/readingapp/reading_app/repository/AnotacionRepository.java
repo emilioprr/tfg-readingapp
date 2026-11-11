@@ -12,12 +12,12 @@ import java.util.List;
 
 @Repository
 public interface AnotacionRepository extends JpaRepository<Anotacion, Long> {
-    List<Anotacion> findByUsuarioIdusuario(Long idusuario, Pageable pageable);
+    List<Anotacion> findByUsuarioIdusuarioOrderByFechaDescIdanotacionDesc(Long idusuario, Pageable pageable);
     List<Anotacion> findByLibroIdlibro(Long idlibro, Pageable pageable);
-    List<Anotacion> findByUsuarioIdusuarioAndLibroIdlibro(Long idusuario, Long idlibro);
+    List<Anotacion> findByUsuarioIdusuarioAndLibroIdlibroOrderByFechaDescIdanotacionDesc(Long idusuario, Long idlibro);
     List<Anotacion> findByUsuarioIdusuarioAndTipo(Long idusuario, TipoAnotacion tipo, Pageable pageable);
-    List<Anotacion> findByLibroIdlibroAndEsPublicaTrue(Long idlibro, Pageable pageable);
-    List<Anotacion> findByUsuarioIdusuarioAndEsPublicaTrue(Long idusuario, Pageable pageable);
+    List<Anotacion> findByLibroIdlibroAndEsPublicaTrueOrderByFechaDescIdanotacionDesc(Long idlibro, Pageable pageable);
+    List<Anotacion> findByUsuarioIdusuarioAndEsPublicaTrueOrderByFechaDescIdanotacionDesc(Long idusuario, Pageable pageable);
     List<Anotacion> findByUsuarioIdusuarioAndTipoAndEsPublicaTrue(Long idusuario, TipoAnotacion tipo, Pageable pageable);
 
     // === Muro de citas ===

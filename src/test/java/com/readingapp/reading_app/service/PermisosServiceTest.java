@@ -396,8 +396,8 @@ class PermisosServiceTest {
 
             anotacionService.obtenerPorUsuario(ID_PROPIETARIO, Pageable.unpaged());
 
-            verify(anotacionRepository).findByUsuarioIdusuarioAndEsPublicaTrue(ID_PROPIETARIO, Pageable.unpaged());
-            verify(anotacionRepository, never()).findByUsuarioIdusuario(any(), any());
+            verify(anotacionRepository).findByUsuarioIdusuarioAndEsPublicaTrueOrderByFechaDescIdanotacionDesc(ID_PROPIETARIO, Pageable.unpaged());
+            verify(anotacionRepository, never()).findByUsuarioIdusuarioOrderByFechaDescIdanotacionDesc(any(), any());
         }
 
         @Test
@@ -405,7 +405,7 @@ class PermisosServiceTest {
         void anonimoSoloPublicas() {
             anotacionService.obtenerPorUsuario(ID_PROPIETARIO, Pageable.unpaged());
 
-            verify(anotacionRepository).findByUsuarioIdusuarioAndEsPublicaTrue(ID_PROPIETARIO, Pageable.unpaged());
+            verify(anotacionRepository).findByUsuarioIdusuarioAndEsPublicaTrueOrderByFechaDescIdanotacionDesc(ID_PROPIETARIO, Pageable.unpaged());
         }
 
         @Test
@@ -415,8 +415,8 @@ class PermisosServiceTest {
 
             anotacionService.obtenerPorUsuario(ID_PROPIETARIO, Pageable.unpaged());
 
-            verify(anotacionRepository).findByUsuarioIdusuario(ID_PROPIETARIO, Pageable.unpaged());
-            verify(anotacionRepository, never()).findByUsuarioIdusuarioAndEsPublicaTrue(any(), any());
+            verify(anotacionRepository).findByUsuarioIdusuarioOrderByFechaDescIdanotacionDesc(ID_PROPIETARIO, Pageable.unpaged());
+            verify(anotacionRepository, never()).findByUsuarioIdusuarioAndEsPublicaTrueOrderByFechaDescIdanotacionDesc(any(), any());
         }
     }
 }
