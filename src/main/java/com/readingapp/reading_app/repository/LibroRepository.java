@@ -42,10 +42,8 @@ public interface LibroRepository extends JpaRepository<Libro, Long> {
     @Query("SELECT l FROM Libro l WHERE l.genero = :genero ORDER BY l.idlibro DESC")
     List<Libro> findByGenero(@Param("genero") String genero, Pageable pageable);
 
-    @Query("SELECT l FROM Libro l WHERE l.idlibro IN " +
-            "(SELECT r.libro.idlibro FROM Resena r WHERE r.esPublica = true " +
-            "AND r.fechaCreacion > :desde " +
-            "GROUP BY r.libro.idlibro ORDER BY COUNT(r) DESC)")
+    @Query("SELECT r.libro FROM Resena r WHERE r.esPublica = true AND r.fechaCreacion > :desde " +
+            "GROUP BY r.libro ORDER BY COUNT(r) DESC, r.libro.idlibro")
     List<Libro> findPopulares(@Param("desde") LocalDateTime desde, Pageable pageable);
 
     @Query("SELECT r.libro FROM Resena r WHERE r.esPublica = true AND r.usuario IN " +
