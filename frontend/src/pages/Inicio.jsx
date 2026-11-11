@@ -29,7 +29,7 @@ export default function Inicio() {
     const [errorProgreso, setErrorProgreso] = useState('')
     const [mostrarFinalizarModal, setMostrarFinalizarModal] = useState(false)
     const [mostrarAbandonarModal, setMostrarAbandonarModal] = useState(false)
-    const [mostrarAnotacionModal, setMostrarAnotacionModal] = useState(false)
+    const [libroAAnotar, setLibroAAnotar] = useState(null) // id del libro, fijado al abrir el diálogo: la lista se reordena tras actualizar
     const [librosPopulares, setLibrosPopulares] = useState([])
     const { racha, refrescarRacha } = useRacha()
     // Tras registrar lectura se piden las notificaciones al momento: si se cumple un reto, sale su aviso
@@ -110,10 +110,11 @@ export default function Inicio() {
                 refrescarNotificaciones()
                 navigate(`/libro/${libroActual.idlibro}/resena`)
             } else {
-                cargarLeyendo()
+                await cargarLeyendo()
+                setLeyendoIndex(0) // el libro recién actualizado pasa a ser el primero de la lista
                 cargarRetos()
                 refrescarNotificaciones()
-                setMostrarAnotacionModal(true)
+                setLibroAAnotar(libroActual.idlibro)
             }
         } catch (err) {
             setErrorProgreso(err.response?.data?.mensaje || 'Error al actualizar')
@@ -343,11 +344,11 @@ export default function Inicio() {
                 </Dialogo>
             )}
 
-            {mostrarAnotacionModal && (
-                <Dialogo titulo="¿Escribes algo en el margen?" onCerrar={() => setMostrarAnotacionModal(false)}
+            {libroAAnotar && (
+                <Dialogo titulo="¿Escribes algo en el margen?" onCerrar={() => setLibroAAnotar(null)}
                          acciones={<>
-                             <button onClick={() => setMostrarAnotacionModal(false)} className="btn-texto px-2">Ahora no</button>
-                             <button onClick={() => { setMostrarAnotacionModal(false); navigate(`/libro/${leyendo[leyendoIndex]?.idlibro}/anotaciones`) }}
+                             <button onClick={() => setLibroAAnotar(null)} className="btn-texto px-2">Ahora no</button>
+                             <button onClick={() => { setLibroAAnotar(null); navigate(`/libro/${libroAAnotar}/anotaciones`) }}
                                      className="btn-acento">
                                  Anotar
                              </button>
